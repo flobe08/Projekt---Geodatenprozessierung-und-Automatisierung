@@ -5,8 +5,9 @@ municipality in Bavaria. The pipeline downloads the required raw datasets,
 extracts the selected municipality boundary, and cuts the Bavaria
 OpenStreetMap dataset to this boundary.
 
-The workflow is designed so that another municipality can be processed by
-changing only one command line argument.
+The workflow is designed so that another municipality and another energy
+technology can be processed with command line arguments. Currently, the
+technology-specific download workflow is implemented for wind energy.
 
 ## Prepare Environment
 
@@ -20,11 +21,12 @@ Open PowerShell and start Ubuntu:
 wsl -d Ubuntu
 ```
 
-In Ubuntu, go to the project folder. Windows drive `E:` is available under
-`/mnt/e`:
+In Ubuntu, go to the project folder. Windows drives are available under
+`/mnt/<drive-letter>`. For example, a project on drive `E:` can be reached
+under `/mnt/e`.
 
 ```bash
-cd "/mnt/e/Eigene Daten/Studium/THD/Module/Semester 6/Geodatenprozessierung und Automatisierung/Projekt/Projekt---Geodatenprozessierung-und-Automatisierung"
+cd "/mnt/e/path/to/your/project"
 ```
 
 Install the required system packages:
@@ -59,19 +61,14 @@ not a Python package and must be installed as a system tool.
 Example for Drachselsried:
 
 ```bash
-python pipeline.py --municipality Drachselsried
+python pipeline.py --municipality Drachselsried --technology wind
 ```
 
-Example for another municipality:
+## Usage (without pipeline)
 
 ```bash
-python pipeline.py --municipality Bodenmais
-```
-
-To test only the OSM cutting step after script 1 has already created the
-municipality boundary:
-
-```bash
+python scripts/0_download_data.py --technology wind
+python scripts/1_grenzen.py --municipality Drachselsried
 python scripts/2_extract_osm.py --municipality Drachselsried
 ```
 
@@ -98,6 +95,19 @@ Raw data is downloaded automatically and stored in `data/raw`:
 - `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.dbf`
 - `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.prj`
 - `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.cpg`
+- `data/raw/schutzgebiete/biosphaerenreservate`
+- `data/raw/schutzgebiete/landschaftsschutzgebiete`
+- `data/raw/schutzgebiete/nationalparke`
+- `data/raw/schutzgebiete/naturparke`
+- `data/raw/schutzgebiete/naturschutzgebiete`
+- `data/raw/schutzgebiete/nationale_naturmonumente`
+- `data/raw/schutzgebiete/geschuetzte_landschaftsbestandteile_punkte`
+- `data/raw/schutzgebiete/geschuetzte_landschaftsbestandteile_flaechen`
+- `data/raw/schutzgebiete/naturdenkmale_punkte`
+- `data/raw/schutzgebiete/naturdenkmale_flaechen`
+- `data/raw/wind/natura2000/ffh`
+- `data/raw/wind/natura2000/vogelschutz`
+- `data/raw/wind/vogelkulissen_2024`
 
 Raw data is not included in the repository because of file size.
 
@@ -128,12 +138,14 @@ can also be loaded into QGIS or converted in later processing steps.
 The full workflow can be rerun with:
 
 ```bash
-python pipeline.py --municipality <municipality-name>
+python pipeline.py --municipality <municipality-name> --technology wind
 ```
 
 For another municipality, only the `--municipality` value has to be changed.
 The pipeline then downloads missing input data, recreates the municipality
-boundary, and cuts the OSM dataset again.
+boundary, and cuts the OSM dataset again. With `--technology wind`, additional
+wind-relevant raw datasets are downloaded.
+
 
 ## Submission Context
 

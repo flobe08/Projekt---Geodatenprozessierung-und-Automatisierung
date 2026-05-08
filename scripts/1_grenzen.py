@@ -2,12 +2,17 @@ from pathlib import Path
 import argparse
 import geopandas as gpd
 
+from utils import log_success
 
-INPUT_FILE = Path(
-    "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+INPUT_FILE = (
+    BASE_DIR
+    / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
 )
 
-OUTPUT_DIR = Path("data/processed/boundaries")
+OUTPUT_DIR = BASE_DIR / "data/processed/boundaries"
 
 
 def extract_municipality(municipality_name: str) -> None:
@@ -44,7 +49,7 @@ def extract_municipality(municipality_name: str) -> None:
         else:
             print("\nNo similar municipalities found.")
 
-        return
+        raise ValueError(f"Municipality not found: {municipality_name}")
 
     safe_name = municipality_name.lower().replace(" ", "_")
     output_file = OUTPUT_DIR / f"{safe_name}_boundary.gpkg"
@@ -57,6 +62,7 @@ def extract_municipality(municipality_name: str) -> None:
     print(f"Output written to: {output_file}")
     print("Bounding box:")
     print(f"{minx},{miny},{maxx},{maxy}")
+    log_success("Municipality boundary extraction finished.")
 
 
 if __name__ == "__main__":

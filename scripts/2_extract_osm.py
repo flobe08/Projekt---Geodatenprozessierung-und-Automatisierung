@@ -6,6 +6,7 @@ import tempfile
 
 import geopandas as gpd
 
+from utils import log_info, log_success
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -63,15 +64,15 @@ def extract_osm_for_municipality(municipality_name: str) -> None:
             "--overwrite",
         ]
 
-        print(f"Cutting OSM data for: {municipality_name}")
-        print(f"Boundary: {boundary_file}")
-        print(f"Input: {OSM_INPUT_FILE}")
-        print(f"Output: {output_file}")
-        print(f"Running: {' '.join(command)}")
+        log_info(f"Cutting OSM data for: {municipality_name}")
+        log_info(f"Boundary: {boundary_file}")
+        log_info(f"Input: {OSM_INPUT_FILE}")
+        log_info(f"Output: {output_file}")
+        log_info(f"Running: {' '.join(command)}")
 
         subprocess.run(command, check=True)
 
-    print("OSM cut finished.")
+        log_success("Cut OSM dataset finished.")
 
 
 def main() -> None:
