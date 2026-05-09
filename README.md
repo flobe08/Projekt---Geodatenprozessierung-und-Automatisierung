@@ -204,12 +204,6 @@ correctly.
 
 Processed data is written to `data/processed`:
 
-- `data/processed/boundaries/<municipality>_boundary.gpkg`
-- `data/processed/osm_highways/<municipality>_osm_highways.gpkg`
-- `data/processed/landuse/landnutzung_<municipality>.gpkg`
-- `data/processed/qgis_projects/<municipality>_map.qgz`
-- `data/processed/maps/<municipality>_map.pdf`
-
 The OSM highways GeoPackage contains the clipped OSM road layer. The clipped
 official landuse is written to a separate municipality GeoPackage and can be
 opened directly in QGIS.

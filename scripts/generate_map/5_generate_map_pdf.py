@@ -137,6 +137,34 @@ def ordered_project_layers(project: QgsProject) -> list:
     return layers
 
 
+def automatic_extent_scale(extent) -> float:
+    """Return a map padding factor based on the municipality size."""
+
+    max_size = max(extent.width(), extent.height())
+
+    if max_size < 5_000:
+        return 1.45
+
+    if max_size < 10_000:
+        return 1.25
+
+    if max_size < 20_000:
+        return 1.15
+
+    return 1.08
+
+
+def scale_map_extent(extent, layout_config: dict) -> None:
+    """Scale the map extent with automatic or manually configured padding."""
+
+    scale_setting = layout_config["map_extent_scale"]
+
+    if scale_setting == "auto":
+        extent.scale(automatic_extent_scale(extent))
+    else:
+        extent.scale(float(scale_setting))
+
+
 def add_label(
     layout: QgsPrintLayout,
     text: str,
@@ -206,23 +234,53 @@ def add_legend_row(
     color: str,
     label: str,
     outline_color: str | None = None,
+    symbol: str = "box",
 ) -> None:
-    """Add one legend row with a clear symbol box and aligned label."""
+    """Add one legend row with an aligned symbol and label."""
 
     if outline_color is None:
         outline_color = color
 
-    add_box(
-        layout,
-        x,
-        y + 1.0,
-        8,
-        3.6,
-        color,
-        outline_color,
-        "0.25",
-    )
-    add_label(layout, label, x + 12, y + 0.2, 8)
+    symbol_width = 8
+    symbol_height = 3.6
+    symbol_y = y + 1.2
+
+    if symbol == "line":
+        # Roads are shown as a road-like symbol: white fill, yellow edge,
+        # and a yellow center line.
+        add_box(
+            layout,
+            x,
+            symbol_y,
+            symbol_width,
+            symbol_height,
+            "255,255,255,255",
+            "0,0,0,255",
+            "0.25",
+        )
+        add_box(
+            layout,
+            x + 1.1,
+            symbol_y + 1.55,
+            symbol_width - 2.2,
+            0.5,
+            color,
+            color,
+            "0",
+        )
+    else:
+        add_box(
+            layout,
+            x,
+            symbol_y,
+            symbol_width,
+            symbol_height,
+            color,
+            outline_color,
+            "0.25",
+        )
+
+    add_label(layout, label, x + 12, y + 1.1, 8) # Align legend text vertically with the symbol.
 
 def add_scale_bar_block(
     layout: QgsPrintLayout,
@@ -274,7 +332,7 @@ def add_scale_bar_block(
 
     # QGIS does not always append the unit label to the last scale value in
     # standalone exports, so the unit is added as a separate aligned label.
-    add_label(layout, "m", x + width - 13, y + 1, 8)
+    add_label(layout, "m", x + width - 13, y + 1.4, 8)
 
     return scale_bar
 
@@ -330,55 +388,48 @@ def create_pdf_layout(
 
     boundary_layer = find_boundary_layer(project, municipality_name)
     main_extent = boundary_layer.extent()
-    main_extent.scale(1.20)
     map_config = get_map_config(technology)
+    layout_config = map_config["layout"]
+    scale_map_extent(main_extent, layout_config)
 
     # -------------------------------------------------------------------------
-    # 2.1 Define layout geometry
+    # 2.1 Read the shared static layout template
     # -------------------------------------------------------------------------
-    # A4 landscape size: 297 x 210 mm.
-    content_gap = 10
+    map_x = layout_config["map_x"]
+    map_y = layout_config["map_y"]
+    map_width = layout_config["map_width"]
+    map_height = layout_config["map_height"]
 
-    map_x = 12
-    map_y = 18
-    map_width = 210
-    map_height = 175
-    map_bottom = map_y + map_height
+    title_y = layout_config["title_y"]
+    title_width = layout_config["title_width"]
 
-    title_y = 7
-    title_width = map_width
+    footer_y = layout_config["footer_y"]
 
-    footer_y = map_bottom + 3
+    panel_x = layout_config["panel_x"]
+    panel_width = layout_config["panel_width"]
 
-    panel_x = map_x + map_width + content_gap
-    panel_y = map_y
-    panel_width = 58
+    description_y = layout_config["description_y"]
 
-    description_y = panel_y
+    legend_y = layout_config["legend_y"]
+    legend_width = layout_config["legend_width"]
+    legend_height = layout_config["legend_height"]
 
-    legend_y = panel_y + 54
+    legend_title_y = layout_config["legend_title_y"]
+    legend_section_y = layout_config["legend_section_y"]
 
-    legend_title_y = legend_y + 3
-    legend_section_y = legend_y + 14
+    legend_row_start_y = layout_config["legend_row_start_y"]
+    legend_row_gap = layout_config["legend_row_gap"]
 
-    legend_row_start_y = legend_y + 23
-    legend_row_gap = 8
-    legend_item_count = len(map_config["legend_items"])
+    grid_title_y = layout_config["grid_title_y"]
+    grid_row_y = layout_config["grid_row_y"]
 
-    grid_title_y = legend_row_start_y + legend_item_count * legend_row_gap + 2
-    grid_row_y = grid_title_y + 8
+    north_arrow_y = layout_config["north_arrow_y"]
 
-    legend_bottom_y = grid_row_y + 5
-    legend_height = legend_bottom_y - legend_y + 2
+    scale_bar_y = layout_config["scale_bar_y"]
+    scale_text_y = layout_config["scale_text_y"]
 
-    north_arrow_y = legend_y + legend_height + 4
-
-    scale_bar_y = north_arrow_y + 20
-    scale_text_y = scale_bar_y + 16
-
-    metadata_bottom_margin = 4
-    date_y = map_bottom - metadata_bottom_margin
-    author_y = date_y - 4
+    author_y = layout_config["author_y"]
+    date_y = layout_config["date_y"]
 
     # -------------------------------------------------------------------------
     # 2.2 Add centered map title
@@ -388,10 +439,10 @@ def create_pdf_layout(
         map_config["title"].format(municipality=municipality_name),
         map_x,
         title_y,
-        14,
+        layout_config["title_font_size"],
         True,
         title_width,
-        8,
+        layout_config["title_height"],
     )
     title_label.setHAlign(Qt.AlignCenter)
 
@@ -427,14 +478,14 @@ def create_pdf_layout(
         layout,
         textwrap.fill(
             map_config["description"].format(municipality=municipality_name),
-            width=34,
+            width=layout_config["description_wrap_width"],
         ),
         panel_x,
         description_y,
-        8,
+        layout_config["description_font_size"],
         False,
         panel_width,
-        34,
+        layout_config["description_height"],
     )
 
     # -------------------------------------------------------------------------
@@ -444,13 +495,13 @@ def create_pdf_layout(
         layout,
         panel_x,
         legend_y,
-        panel_width,
+        legend_width,
         legend_height,
         "255,255,255,235",
     )
 
     add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
-    add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y, 9, True)
+    add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y + 1, 9, True)
 
     for index, item in enumerate(map_config["legend_items"]):
         add_legend_row(
@@ -460,6 +511,7 @@ def create_pdf_layout(
             item["color"],
             item["label"],
             item["outline_color"],
+            item.get("symbol", "box"),
         )
 
     add_label(layout, "Gitternetz", panel_x + 2, grid_title_y, 9, True)
@@ -475,14 +527,20 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.6 Add north arrow and scale components
     # -------------------------------------------------------------------------
-    add_north_arrow(layout, panel_x, north_arrow_y, 15, 15)
+    add_north_arrow(
+        layout,
+        panel_x,
+        north_arrow_y,
+        layout_config["north_arrow_width"],
+        layout_config["north_arrow_height"],
+    )
 
     add_scale_bar_block(
         layout,
         map_item,
         panel_x,
         scale_bar_y,
-        panel_width,
+        legend_width,
         units_per_segment=map_config["scale_units_per_segment"],
     )
 
@@ -499,8 +557,20 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.7 Add metadata block
     # -------------------------------------------------------------------------
-    add_label(layout, "Autor: Elena Geiger, Florian Höpfl", panel_x, author_y, 7)
-    add_label(layout, f"Datum: {date.today().strftime('%d.%m.%Y')}", panel_x, date_y, 7)
+    add_label(
+        layout,
+        "Autor: Elena Geiger, Florian Höpfl",
+        panel_x,
+        author_y,
+        layout_config["metadata_font_size"],
+    )
+    add_label(
+        layout,
+        f"Datum: {date.today().strftime('%d.%m.%Y')}",
+        panel_x,
+        date_y,
+        layout_config["metadata_font_size"],
+    )
 
     # -------------------------------------------------------------------------
     # 2.8 Add footer information below map
@@ -508,15 +578,16 @@ def create_pdf_layout(
     add_label(
         layout,
         (
-            f"Datenquellen: {textwrap.fill(map_config['sources'], width=190)}\n"
+            "Datenquellen: "
+            f"{textwrap.fill(map_config['sources'], width=layout_config['footer_wrap_width'])}\n"
             "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
         ),
         map_x,
         footer_y,
-        6,
+        layout_config["footer_font_size"],
         False,
         map_width,
-        12,
+        layout_config["footer_height"],
     )
 
     return layout
