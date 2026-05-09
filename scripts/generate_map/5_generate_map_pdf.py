@@ -40,7 +40,9 @@ from qgis.PyQt.QtGui import QColor, QFont
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(BASE_DIR / "scripts/utils"))
+sys.path.append(str(BASE_DIR / "scripts/generate_map"))
 
+from map_config import get_map_config
 from utils import ColoredArgumentParser, log_error, log_info, log_success
 
 
@@ -276,50 +278,6 @@ def add_scale_bar_block(
 
     return scale_bar
 
-def technology_label(technology: str) -> str:
-    """Return the German display name for one energy technology."""
-
-    labels = {
-        "wind": "Windkraftanlagen",
-        "solar": "einen Photovoltaikpark",
-        "wasser": "Wasserkraftanlagen",
-    }
-
-    return labels[technology]
-
-
-def description_text(municipality_name: str, technology: str) -> str:
-    """Return map description text."""
-
-    if technology == "solar":
-        text = (
-            f"Die Karte zeigt eine geeignete Fläche für einen Photovoltaikpark "
-            f"in {municipality_name}, ausgewählt nach Kriterien wie Naturschutz, "
-            f"Infrastruktur und Sonneneinstrahlung (GHI). Weitere Details sind "
-            f"auf der Erläuterungsseite zu finden."
-        )
-    else:
-        text = (
-            f"Die Karte zeigt eine potenziell geeignete Fläche für "
-            f"{technology_label(technology)} in {municipality_name}. "
-            f"Weitere Details sind auf der Erläuterungsseite zu finden."
-        )
-
-    return textwrap.fill(text, width=34)
-
-
-def source_text() -> str:
-    """Return compact source information for the footer."""
-
-    text = (
-        "Luftbild / Hintergrundkarte: Bayerische Vermessungsverwaltung "
-        "und OpenStreetMap-Beiträge. Verwaltungsgrenzen: BKG / GeoBasis-DE. "
-        "Solardaten: Global Solar Atlas. Darstellung angepasst für die Kartenerstellung."
-    )
-
-    return textwrap.fill(text, width=190)
-
-
 def add_map_grid(map_item: QgsLayoutItemMap) -> None:
     """Add a light coordinate grid to the map frame."""
 
@@ -373,6 +331,7 @@ def create_pdf_layout(
     boundary_layer = find_boundary_layer(project, municipality_name)
     main_extent = boundary_layer.extent()
     main_extent.scale(1.20)
+    map_config = get_map_config(technology)
 
     # -------------------------------------------------------------------------
     # 2.1 Define layout geometry
@@ -402,12 +361,12 @@ def create_pdf_layout(
     legend_title_y = legend_y + 3
     legend_section_y = legend_y + 14
 
-    legend_row_1_y = legend_y + 23
-    legend_row_2_y = legend_y + 31
-    legend_row_3_y = legend_y + 39
+    legend_row_start_y = legend_y + 23
+    legend_row_gap = 8
+    legend_item_count = len(map_config["legend_items"])
 
-    grid_title_y = legend_y + 49
-    grid_row_y = legend_y + 57
+    grid_title_y = legend_row_start_y + legend_item_count * legend_row_gap + 2
+    grid_row_y = grid_title_y + 8
 
     legend_bottom_y = grid_row_y + 5
     legend_height = legend_bottom_y - legend_y + 2
@@ -426,7 +385,7 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     title_label = add_label(
         layout,
-        f"Potenzieller Standort für {technology_label(technology)} in {municipality_name}",
+        map_config["title"].format(municipality=municipality_name),
         map_x,
         title_y,
         14,
@@ -466,7 +425,10 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     add_label(
         layout,
-        description_text(municipality_name, technology),
+        textwrap.fill(
+            map_config["description"].format(municipality=municipality_name),
+            width=34,
+        ),
         panel_x,
         description_y,
         8,
@@ -488,32 +450,17 @@ def create_pdf_layout(
     )
 
     add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
-    add_label(layout, "Standortinformationen", panel_x + 2, legend_section_y, 9, True)
+    add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y, 9, True)
 
-    add_legend_row(
-        layout,
-        panel_x + 2,
-        legend_row_1_y,
-        "255,255,255,255",
-        "Gemeindegrenze",
-        "255,0,0,255",
-    )
-    add_legend_row(
-        layout,
-        panel_x + 2,
-        legend_row_2_y,
-        "31,60,160,255",
-        "Geeignete Flächen",
-        "31,60,160,255",
-    )
-    add_legend_row(
-        layout,
-        panel_x + 2,
-        legend_row_3_y,
-        "255,255,255,255",
-        "Gewählter Standort",
-        "255,0,0,255",
-    )
+    for index, item in enumerate(map_config["legend_items"]):
+        add_legend_row(
+            layout,
+            panel_x + 2,
+            legend_row_start_y + index * legend_row_gap,
+            item["color"],
+            item["label"],
+            item["outline_color"],
+        )
 
     add_label(layout, "Gitternetz", panel_x + 2, grid_title_y, 9, True)
     add_legend_row(
@@ -521,7 +468,7 @@ def create_pdf_layout(
         panel_x + 2,
         grid_row_y,
         "255,255,255,255",
-        "Abstand: 500 m",
+        map_config["grid_distance_label"],
         "120,120,120,160",
     )
 
@@ -536,7 +483,7 @@ def create_pdf_layout(
         panel_x,
         scale_bar_y,
         panel_width,
-        units_per_segment=1000,
+        units_per_segment=map_config["scale_units_per_segment"],
     )
 
     scale_denominator = round(map_item.scale())
@@ -560,24 +507,16 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     add_label(
         layout,
-        f"Datenquellen: {source_text()}",
+        (
+            f"Datenquellen: {textwrap.fill(map_config['sources'], width=190)}\n"
+            "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
+        ),
         map_x,
         footer_y,
-        5,
-        False,
-        map_width,
-        9,
-    )
-
-    add_label(
-        layout,
-        "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N",
-        map_x,
-        footer_y + 9,
         6,
         False,
         map_width,
-        5,
+        12,
     )
 
     return layout
