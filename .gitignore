@@ -29,3 +29,7 @@ data/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local Python environments
+.venv/
+.venv-wsl/

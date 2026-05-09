@@ -1,13 +1,32 @@
+"""
+Script 0: Download raw datasets.
+
+This script downloads all raw input datasets needed by the pipeline. ZIP files
+are extracted after download. The official landuse dataset is downloaded
+directly as a GeoPackage file.
+The datasets include administrative boundaries, official landuse data, nature
+conservation data, and technology-specific datasets.
+"""
+
 from pathlib import Path
 import argparse
 import os
 import requests
+import sys
 import zipfile
 
-from utils import log_dataset, log_info, log_section, log_success, log_warning
+sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
+from utils import (
+    ColoredArgumentParser,
+    log_dataset,
+    log_info,
+    log_section,
+    log_success,
+    log_warning,
+)
 
 # Project root directory.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def windows_long_path(path: Path) -> str:
@@ -32,18 +51,23 @@ def display_path(path: Path) -> str:
 # -----------------------------------------------------------------------------
 # General base datasets used for every pipeline run.
 # -----------------------------------------------------------------------------
-BAYERN_OSM_URL = "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf"
-ALKIS_VERWALTUNG_URL = "https://geodaten.bayern.de/odd/m/4/verwaltung/alkis-verwaltung.zip"
 
-BAYERN_OSM_FILE = BASE_DIR / "data/raw/osm/bayern-latest.osm.pbf"
+# Geofabrik is only needed for the old osmium-based PBF cutting workflow.
+# BAYERN_OSM_URL = "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf"
+ALKIS_VERWALTUNG_URL = "https://geodaten.bayern.de/odd/m/4/verwaltung/alkis-verwaltung.zip"
+LANDUSE_URL = "https://geodaten.bayern.de/odd/m/3/daten/ln/landnutzung.gpkg"
+
+# BAYERN_OSM_FILE = BASE_DIR / "data/raw/osm/bayern-latest.osm.pbf"
 ALKIS_VERWALTUNG_FILE = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip"
 ALKIS_EXTRACT_DIR = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern"
+LANDUSE_FILE = BASE_DIR / "data/raw/landuse/landnutzung.gpkg"
 
 
 # -----------------------------------------------------------------------------
 # Schutzgebiete des Naturschutzes.
 # Add the official LfU download links here.
 # -----------------------------------------------------------------------------
+
 BIOSPHAERENRESERVATE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/biosphaerenreservate_epsg25832_shp.zip"
 LANDSCHAFTSSCHUTZGEBIETE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/lsg_epsg25832_shp.zip"
 NATIONALPARKE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/nlp_epsg25832_shp.zip"
@@ -133,7 +157,9 @@ def has_extracted_geodata(extract_dir: Path) -> bool:
     geodata_suffixes = {".shp", ".gpkg", ".geojson", ".pbf"}
 
     return extract_dir.exists() and any(
-        file.suffix.lower() in geodata_suffixes
+        file.is_file()
+        and file.stat().st_size > 0
+        and file.suffix.lower() in geodata_suffixes
         for file in extract_dir.rglob("*")
     )
 
@@ -199,8 +225,9 @@ def download_base_data() -> None:
 
     log_section("Base datasets")
 
-    log_dataset("Dataset: bayern_osm")
-    download_file(BAYERN_OSM_URL, BAYERN_OSM_FILE)
+    # The current workflow gets roads from Overpass and does not need this file.
+    # log_dataset("Dataset: bayern_osm")
+    # download_file(BAYERN_OSM_URL, BAYERN_OSM_FILE)
 
     download_and_unzip_dataset(
         "alkis_verwaltungsgebiet",
@@ -208,6 +235,9 @@ def download_base_data() -> None:
         ALKIS_VERWALTUNG_FILE,
         ALKIS_EXTRACT_DIR,
     )
+
+    log_dataset("Dataset: landnutzung")
+    download_file(LANDUSE_URL, LANDUSE_FILE)
 
     # download Nature conservation datasets
     download_schutzgebiete_data()
@@ -268,7 +298,7 @@ def main() -> None:
     """Download and extract all required raw datasets."""
 
     # Read selected technology for additional downloads.
-    parser = argparse.ArgumentParser(
+    parser = ColoredArgumentParser(
         description="Download raw datasets for the geodata pipeline."
     )
     parser.add_argument(

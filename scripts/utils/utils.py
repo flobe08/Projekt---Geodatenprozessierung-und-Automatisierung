@@ -1,3 +1,7 @@
+import argparse
+import sys
+
+
 class Col:
     """ANSI colors for terminal log messages."""
 
@@ -42,3 +46,12 @@ def log_dataset(message: str) -> None:
     """Print one dataset heading."""
 
     print(f"\n{message}")
+
+
+class ColoredArgumentParser(argparse.ArgumentParser):
+    """Argument parser that prints command line errors in red."""
+
+    def error(self, message: str) -> None:
+        self.print_usage(sys.stderr)
+        log_error(f"{self.prog}: error: {message}")
+        raise SystemExit(2)

@@ -1,18 +1,53 @@
+"""
+Script 1: Extract municipality boundary.
+
+This script reads the Bavarian administrative boundary dataset and extracts
+one selected municipality as a GeoPackage for all following processing steps.
+"""
+
 from pathlib import Path
 import argparse
 import geopandas as gpd
+import sys
 
-from utils import log_success
+sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
+from utils import ColoredArgumentParser, log_error, log_info, log_success
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Input and output paths.
 INPUT_FILE = (
     BASE_DIR
     / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
 )
 
 OUTPUT_DIR = BASE_DIR / "data/processed/boundaries"
+
+
+def display_path(path: Path) -> str:
+    """Return a compact path for log messages."""
+
+    try:
+        return str(path.resolve().relative_to(BASE_DIR))
+    except ValueError:
+        return str(path)
+
+
+def write_boundary(output_file: Path, municipality: gpd.GeoDataFrame) -> None:
+    """Write the municipality boundary to a GeoPackage."""
+
+    try:
+        municipality.to_file(output_file, driver="GPKG")
+    except Exception as error:
+        # Writing can fail when QGIS or another program keeps the GeoPackage open.
+        log_error("Could not write municipality boundary.")
+        log_error(f"Output file: {display_path(output_file)}")
+        log_info("Close the file in QGIS or remove the layer from the QGIS project.")
+        log_info("Then run the pipeline again.")
+        raise SystemExit(
+            "Script 1 stopped because the boundary GeoPackage could not be written."
+        ) from error
 
 
 def extract_municipality(municipality_name: str) -> None:
@@ -54,7 +89,7 @@ def extract_municipality(municipality_name: str) -> None:
     safe_name = municipality_name.lower().replace(" ", "_")
     output_file = OUTPUT_DIR / f"{safe_name}_boundary.gpkg"
 
-    municipality.to_file(output_file, driver="GPKG")
+    write_boundary(output_file, municipality)
 
     minx, miny, maxx, maxy = municipality.total_bounds
 
@@ -66,7 +101,7 @@ def extract_municipality(municipality_name: str) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
+    parser = ColoredArgumentParser(
         description="Extract a municipality boundary from the Bavarian administrative dataset."
     )
 
