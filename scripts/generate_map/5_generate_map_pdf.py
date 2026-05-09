@@ -4,7 +4,7 @@ Script 5: Generate a map PDF from the QGIS project.
 Workflow:
 1. Open the QGIS project created by script 4.
 2. Create one A4 landscape print layout.
-3. Add one map, a compact information panel and a scale bar.
+3. Add one main map, a compact information panel, a north arrow and a scale bar.
 4. Export the layout as PDF.
 """
 
@@ -24,6 +24,7 @@ from qgis.core import (
     QgsLayoutItemLabel,
     QgsLayoutItemMap,
     QgsLayoutItemPage,
+    QgsLayoutItemPicture,
     QgsLayoutItemScaleBar,
     QgsLayoutItemShape,
     QgsLayoutPoint,
@@ -33,6 +34,7 @@ from qgis.core import (
     QgsUnitTypes,
     QgsVectorLayer,
 )
+from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor, QFont
 
 
@@ -47,6 +49,8 @@ from utils import ColoredArgumentParser, log_error, log_info, log_success
 # -----------------------------------------------------------------------------
 PROJECT_DIR = BASE_DIR / "data/processed/qgis_projects"
 OUTPUT_DIR = BASE_DIR / "data/processed/maps"
+
+NORTH_ARROW_PATH = BASE_DIR / "assets/svg/NorthArrow_11.svg"
 
 
 # -----------------------------------------------------------------------------
@@ -145,15 +149,18 @@ def add_label(
 
     label = QgsLayoutItemLabel(layout)
     label.setText(text)
+
     font = QFont("Arial", font_size)
     font.setBold(bold)
     label.setFont(font)
-    label.adjustSizeToText()
+
     layout.addLayoutItem(label)
     label.attemptMove(QgsLayoutPoint(x, y, QgsUnitTypes.LayoutMillimeters))
 
     if width is not None and height is not None:
         label.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
+    else:
+        label.adjustSizeToText()
 
     return label
 
@@ -166,23 +173,27 @@ def add_box(
     height: float,
     color: str,
     outline_color: str = "80,80,80,255",
+    outline_width: str = "0.2",
 ) -> QgsLayoutItemShape:
     """Add a simple colored rectangle to the layout."""
 
     box = QgsLayoutItemShape(layout)
     box.setShapeType(QgsLayoutItemShape.Rectangle)
+
     box.setSymbol(
         QgsFillSymbol.createSimple(
             {
                 "color": color,
                 "outline_color": outline_color,
-                "outline_width": "0.2",
+                "outline_width": outline_width,
             }
         )
     )
+
     layout.addLayoutItem(box)
     box.attemptMove(QgsLayoutPoint(x, y, QgsUnitTypes.LayoutMillimeters))
     box.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
+
     return box
 
 
@@ -192,37 +203,121 @@ def add_legend_row(
     y: float,
     color: str,
     label: str,
+    outline_color: str | None = None,
 ) -> None:
-    """Add one compact legend row to the information panel."""
+    """Add one legend row with a clear symbol box and aligned label."""
 
-    add_box(layout, x, y + 1.2, 7, 2.2, color, color)
-    add_label(layout, label, x + 10, y, 8)
+    if outline_color is None:
+        outline_color = color
 
+    add_box(
+        layout,
+        x,
+        y + 1.0,
+        8,
+        3.6,
+        color,
+        outline_color,
+        "0.25",
+    )
+    add_label(layout, label, x + 12, y + 0.2, 8)
+
+def add_scale_bar_block(
+    layout: QgsPrintLayout,
+    map_item: QgsLayoutItemMap,
+    x: float,
+    y: float,
+    width: float,
+    units_per_segment: int = 90,
+) -> QgsLayoutItemScaleBar:
+    """Add the boxed graphical scale bar component."""
+
+    box_height = 13
+    padding_x = 2
+    padding_y = 1
+
+    # Outer frame around the scale bar component.
+    add_box(
+        layout,
+        x,
+        y,
+        width,
+        box_height,
+        "255,255,255,255",
+        "0,0,0,255",
+        "0.25",
+    )
+
+    scale_bar = QgsLayoutItemScaleBar(layout)
+    scale_bar.setStyle("Single Box")
+    scale_bar.setLinkedMap(map_item)
+    scale_bar.setUnits(QgsUnitTypes.DistanceMeters)
+    scale_bar.setNumberOfSegments(2)
+    scale_bar.setNumberOfSegmentsLeft(0)
+    scale_bar.setUnitsPerSegment(units_per_segment)
+    scale_bar.setHeight(3)
+    scale_bar.setFont(QFont("Arial", 8))
+    scale_bar.setFontColor(QColor(0, 0, 0))
+
+    layout.addLayoutItem(scale_bar)
+
+    scale_bar.attemptMove(
+        QgsLayoutPoint(x + padding_x, y + padding_y, QgsUnitTypes.LayoutMillimeters)
+    )
+    scale_bar.attemptResize(
+        QgsLayoutSize(width - 2 * padding_x, box_height - 2 * padding_y, QgsUnitTypes.LayoutMillimeters)
+    )
+
+    scale_bar.update()
+
+    # QGIS does not always append the unit label to the last scale value in
+    # standalone exports, so the unit is added as a separate aligned label.
+    add_label(layout, "m", x + width - 13, y + 1, 8)
+
+    return scale_bar
 
 def technology_label(technology: str) -> str:
     """Return the German display name for one energy technology."""
 
     labels = {
         "wind": "Windkraftanlagen",
-        "solar": "Solaranlagen",
+        "solar": "einen Photovoltaikpark",
         "wasser": "Wasserkraftanlagen",
     }
+
     return labels[technology]
 
 
-def placeholder_text(line_width: int = 64) -> str:
-    """Return placeholder text for the map description and sources."""
+def description_text(municipality_name: str, technology: str) -> str:
+    """Return map description text."""
+
+    if technology == "solar":
+        text = (
+            f"Die Karte zeigt eine geeignete Fläche für einen Photovoltaikpark "
+            f"in {municipality_name}, ausgewählt nach Kriterien wie Naturschutz, "
+            f"Infrastruktur und Sonneneinstrahlung (GHI). Weitere Details sind "
+            f"auf der Erläuterungsseite zu finden."
+        )
+    else:
+        text = (
+            f"Die Karte zeigt eine potenziell geeignete Fläche für "
+            f"{technology_label(technology)} in {municipality_name}. "
+            f"Weitere Details sind auf der Erläuterungsseite zu finden."
+        )
+
+    return textwrap.fill(text, width=34)
+
+
+def source_text() -> str:
+    """Return compact source information for the footer."""
 
     text = (
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed eiusmod "
-        "tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim "
-        "veniam, quis nostrud exercitation ullamco laboris nisi ut aliquid ex "
-        "ea commodi consequat. Quis aute iure reprehenderit in voluptate velit "
-        "esse cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat "
-        "cupiditat non proident, sunt in culpa qui officia deserunt mollit "
-        "anim id est laborum."
+        "Luftbild / Hintergrundkarte: Bayerische Vermessungsverwaltung "
+        "und OpenStreetMap-Beiträge. Verwaltungsgrenzen: BKG / GeoBasis-DE. "
+        "Solardaten: Global Solar Atlas. Darstellung angepasst für die Kartenerstellung."
     )
-    return textwrap.fill(text, width=line_width)
+
+    return textwrap.fill(text, width=190)
 
 
 def add_map_grid(map_item: QgsLayoutItemMap) -> None:
@@ -230,13 +325,30 @@ def add_map_grid(map_item: QgsLayoutItemMap) -> None:
 
     grid = map_item.grid()
     grid.setEnabled(True)
-    grid.setIntervalX(1000)
-    grid.setIntervalY(1000)
-    grid.setGridLineColor(QColor(80, 80, 80, 120))
-    grid.setGridLineWidth(0.15)
+    grid.setIntervalX(500)
+    grid.setIntervalY(500)
+    grid.setGridLineColor(QColor(80, 80, 80, 90))
+    grid.setGridLineWidth(0.10)
     grid.setAnnotationEnabled(False)
-    grid.setAnnotationPrecision(0)
-    grid.setAnnotationFont(QFont("Arial", 6))
+
+
+def add_north_arrow(
+    layout: QgsPrintLayout,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+) -> None:
+    """Add the north arrow SVG from the project assets."""
+
+    require_file(NORTH_ARROW_PATH, "North arrow SVG not found")
+
+    north_arrow = QgsLayoutItemPicture(layout)
+    north_arrow.setPicturePath(str(NORTH_ARROW_PATH))
+
+    layout.addLayoutItem(north_arrow)
+    north_arrow.attemptMove(QgsLayoutPoint(x, y, QgsUnitTypes.LayoutMillimeters))
+    north_arrow.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
 
 
 # -----------------------------------------------------------------------------
@@ -247,11 +359,12 @@ def create_pdf_layout(
     municipality_name: str,
     technology: str,
 ) -> QgsPrintLayout:
-    """Create a print layout similar to a manual QGIS map sheet."""
+    """Create an A4 landscape map layout without an inset map."""
 
     layout = QgsPrintLayout(project)
     layout.initializeDefaults()
     layout.setName(f"{municipality_name} Map PDF")
+
     layout.pageCollection().page(0).setPageSize(
         "A4",
         QgsLayoutItemPage.Landscape,
@@ -259,70 +372,212 @@ def create_pdf_layout(
 
     boundary_layer = find_boundary_layer(project, municipality_name)
     main_extent = boundary_layer.extent()
-    main_extent.scale(1.02)
+    main_extent.scale(1.20)
 
-    add_label(
+    # -------------------------------------------------------------------------
+    # 2.1 Define layout geometry
+    # -------------------------------------------------------------------------
+    # A4 landscape size: 297 x 210 mm.
+    content_gap = 10
+
+    map_x = 12
+    map_y = 18
+    map_width = 210
+    map_height = 175
+    map_bottom = map_y + map_height
+
+    title_y = 7
+    title_width = map_width
+
+    footer_y = map_bottom + 3
+
+    panel_x = map_x + map_width + content_gap
+    panel_y = map_y
+    panel_width = 58
+
+    description_y = panel_y
+
+    legend_y = panel_y + 54
+
+    legend_title_y = legend_y + 3
+    legend_section_y = legend_y + 14
+
+    legend_row_1_y = legend_y + 23
+    legend_row_2_y = legend_y + 31
+    legend_row_3_y = legend_y + 39
+
+    grid_title_y = legend_y + 49
+    grid_row_y = legend_y + 57
+
+    legend_bottom_y = grid_row_y + 5
+    legend_height = legend_bottom_y - legend_y + 2
+
+    north_arrow_y = legend_y + legend_height + 4
+
+    scale_bar_y = north_arrow_y + 20
+    scale_text_y = scale_bar_y + 16
+
+    metadata_bottom_margin = 4
+    date_y = map_bottom - metadata_bottom_margin
+    author_y = date_y - 4
+
+    # -------------------------------------------------------------------------
+    # 2.2 Add centered map title
+    # -------------------------------------------------------------------------
+    title_label = add_label(
         layout,
-        f"Potenzielle Standorte für {technology_label(technology)} in {municipality_name}",
-        20,
-        10,
-        13,
+        f"Potenzieller Standort für {technology_label(technology)} in {municipality_name}",
+        map_x,
+        title_y,
+        14,
         True,
-        210,
+        title_width,
         8,
     )
+    title_label.setHAlign(Qt.AlignCenter)
 
-    # Main map on the left, following the layout style of a QGIS print map.
+    # -------------------------------------------------------------------------
+    # 2.3 Add main map item
+    # -------------------------------------------------------------------------
+    # The map item is configured before it is added to the layout. This follows
+    # the QGIS print layout documentation and avoids unwanted square map items.
     map_item = QgsLayoutItemMap(layout)
     map_item.setLayers(ordered_project_layers(project))
-    layout.addLayoutItem(map_item)
-    map_item.attemptMove(QgsLayoutPoint(16, 24, QgsUnitTypes.LayoutMillimeters))
-    map_item.attemptResize(QgsLayoutSize(208, 158, QgsUnitTypes.LayoutMillimeters))
-    map_item.setExtent(main_extent)
-    map_item.setFrameEnabled(True)
-    add_map_grid(map_item)
 
-    # Right-side description block.
-    add_label(
-        layout,
-        placeholder_text(32),
-        236,
-        24,
-        8,
-        False,
-        48,
-        42,
+    map_item.attemptMove(
+        QgsLayoutPoint(map_x, map_y, QgsUnitTypes.LayoutMillimeters)
+    )
+    map_item.attemptResize(
+        QgsLayoutSize(map_width, map_height, QgsUnitTypes.LayoutMillimeters)
     )
 
-    # Legend block on the right.
-    add_box(layout, 236, 68, 48, 74, "255,255,255,235")
-    add_label(layout, "Legende", 239, 72, 12, True)
-    add_label(layout, "Standortinformationen", 239, 85, 9, True)
-    add_legend_row(layout, 239, 95, "255,0,0,255", "Gemeindegrenze")
-    add_legend_row(layout, 239, 105, "90,118,145,255", "Landnutzung")
-    add_legend_row(layout, 239, 115, "255,170,0,255", "OSM-Straßen")
-    add_label(layout, "Gitternetz", 239, 127, 9, True)
-    add_legend_row(layout, 239, 136, "80,80,80,120", "Abstand: 1.000 m")
+    # zoomToExtent is used here instead of setExtent because it respects the
+    # configured layout item size more reliably in standalone PyQGIS scripts.
+    map_item.zoomToExtent(main_extent)
+    map_item.setFrameEnabled(True)
 
-    # North arrow placeholder and scale bar.
-    add_label(layout, "N\n▲", 247, 146, 18, True)
+    layout.addLayoutItem(map_item)
 
-    scale_bar = QgsLayoutItemScaleBar(layout)
-    scale_bar.setStyle("Single Box")
-    scale_bar.setLinkedMap(map_item)
-    scale_bar.applyDefaultSize()
-    layout.addLayoutItem(scale_bar)
-    scale_bar.attemptMove(QgsLayoutPoint(236, 166, QgsUnitTypes.LayoutMillimeters))
+    add_map_grid(map_item)
+    map_item.refresh()
 
-    # Footer with sources and metadata.
-    add_label(layout, "Datenquellen", 16, 185, 7, True)
-    add_label(layout, placeholder_text(145), 16, 190, 5, False, 208, 10)
+    # -------------------------------------------------------------------------
+    # 2.4 Add right-side description
+    # -------------------------------------------------------------------------
     add_label(
         layout,
-        f"Koordinatensystem: EPSG:25832 | Erstellt am: {date.today().isoformat()}",
-        236,
-        185,
-        7,
+        description_text(municipality_name, technology),
+        panel_x,
+        description_y,
+        8,
+        False,
+        panel_width,
+        34,
+    )
+
+    # -------------------------------------------------------------------------
+    # 2.5 Add legend
+    # -------------------------------------------------------------------------
+    add_box(
+        layout,
+        panel_x,
+        legend_y,
+        panel_width,
+        legend_height,
+        "255,255,255,235",
+    )
+
+    add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
+    add_label(layout, "Standortinformationen", panel_x + 2, legend_section_y, 9, True)
+
+    add_legend_row(
+        layout,
+        panel_x + 2,
+        legend_row_1_y,
+        "255,255,255,255",
+        "Gemeindegrenze",
+        "255,0,0,255",
+    )
+    add_legend_row(
+        layout,
+        panel_x + 2,
+        legend_row_2_y,
+        "31,60,160,255",
+        "Geeignete Flächen",
+        "31,60,160,255",
+    )
+    add_legend_row(
+        layout,
+        panel_x + 2,
+        legend_row_3_y,
+        "255,255,255,255",
+        "Gewählter Standort",
+        "255,0,0,255",
+    )
+
+    add_label(layout, "Gitternetz", panel_x + 2, grid_title_y, 9, True)
+    add_legend_row(
+        layout,
+        panel_x + 2,
+        grid_row_y,
+        "255,255,255,255",
+        "Abstand: 500 m",
+        "120,120,120,160",
+    )
+
+    # -------------------------------------------------------------------------
+    # 2.6 Add north arrow and scale components
+    # -------------------------------------------------------------------------
+    add_north_arrow(layout, panel_x, north_arrow_y, 15, 15)
+
+    add_scale_bar_block(
+        layout,
+        map_item,
+        panel_x,
+        scale_bar_y,
+        panel_width,
+        units_per_segment=1000,
+    )
+
+    scale_denominator = round(map_item.scale())
+
+    add_label(
+        layout,
+        f"1:{scale_denominator:,}".replace(",", "."),
+        panel_x,
+        scale_text_y,
+        8,
+    )
+
+    # -------------------------------------------------------------------------
+    # 2.7 Add metadata block
+    # -------------------------------------------------------------------------
+    add_label(layout, "Autor: Elena Geiger, Florian Höpfl", panel_x, author_y, 7)
+    add_label(layout, f"Datum: {date.today().strftime('%d.%m.%Y')}", panel_x, date_y, 7)
+
+    # -------------------------------------------------------------------------
+    # 2.8 Add footer information below map
+    # -------------------------------------------------------------------------
+    add_label(
+        layout,
+        f"Datenquellen: {source_text()}",
+        map_x,
+        footer_y,
+        5,
+        False,
+        map_width,
+        9,
+    )
+
+    add_label(
+        layout,
+        "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N",
+        map_x,
+        footer_y + 9,
+        6,
+        False,
+        map_width,
+        5,
     )
 
     return layout
@@ -332,7 +587,7 @@ def create_pdf_layout(
 # 3. Export QGIS project as PDF
 # -----------------------------------------------------------------------------
 def generate_map_pdf(municipality_name: str, technology: str) -> None:
-    """Open the QGIS project and export a simple PDF map."""
+    """Open the QGIS project and export a PDF map."""
 
     safe_name = safe_filename(municipality_name)
 
@@ -340,6 +595,8 @@ def generate_map_pdf(municipality_name: str, technology: str) -> None:
     output_file = OUTPUT_DIR / f"{safe_name}_map.pdf"
 
     require_file(project_file, "QGIS project not found. Run script 4 first")
+    require_file(NORTH_ARROW_PATH, "North arrow SVG not found")
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     remove_existing_output(output_file)
 
@@ -350,6 +607,7 @@ def generate_map_pdf(municipality_name: str, technology: str) -> None:
         raise RuntimeError(f"QGIS project could not be opened: {display_path(project_file)}")
 
     layout = create_pdf_layout(project, municipality_name, technology)
+
     exporter = QgsLayoutExporter(layout)
     settings = QgsLayoutExporter.PdfExportSettings()
 
@@ -365,14 +623,15 @@ def generate_map_pdf(municipality_name: str, technology: str) -> None:
 
 def main() -> None:
     parser = ColoredArgumentParser(
-        description="Generate a simple PDF map from the QGIS project."
+        description="Generate a PDF map from the QGIS project."
     )
 
     parser.add_argument(
         "--municipality",
         required=True,
-        help="Name of the municipality, e.g. Drachselsried",
+        help="Name of the municipality, e.g. Geiersthal",
     )
+
     parser.add_argument(
         "--technology",
         required=True,
@@ -385,6 +644,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+
     # QgsApplication is required when PyQGIS is used outside the QGIS GUI. (Doc: 1.4)
     qgs = QgsApplication([], False)
     qgs.initQgis()
