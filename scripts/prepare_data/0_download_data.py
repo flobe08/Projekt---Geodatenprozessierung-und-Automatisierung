@@ -4,21 +4,14 @@ Script 0: Prepare all raw datasets.
 Workflow:
 1. Download the common Bavarian administrative boundary dataset.
 2. Download the required official wind WFS exports for the workflow.
-3. Optionally download municipality-based OSM context roads.
-4. Stop with clear source hints when required inputs are still missing.
+3. Stop with clear source hints when required inputs are still missing.
 """
 
 from pathlib import Path
-import argparse
-import json
 import os
-import re
 import requests
 import sys
 import zipfile
-
-import geopandas as gpd
-from shapely.geometry import LineString
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
 from utils import (
@@ -59,37 +52,6 @@ WIND_VORRANG_TYPENAME = "WFS_Regionalplanung:Vorranggebiet_Windenergienutzung"
 WIND_VORBEHALT_TYPENAME = "WFS_Regionalplanung:Vorbehaltsgebiet_Windenergienutzung"
 
 
-# -----------------------------------------------------------------------------
-# 2. Optional OSM context data
-# -----------------------------------------------------------------------------
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
-OSM_CONTEXT_DIR = BASE_DIR / "data/processed/osm_context"
-
-OVERPASS_URLS = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-]
-
-ROAD_HIGHWAY_VALUES = {
-    "motorway",
-    "motorway_link",
-    "trunk",
-    "trunk_link",
-    "primary",
-    "primary_link",
-    "secondary",
-    "secondary_link",
-    "tertiary",
-    "tertiary_link",
-    "unclassified",
-    "residential",
-    "living_street",
-    "service",
-    "track",
-    "road",
-}
-
-
 def windows_long_path(path: Path) -> str:
     """Return a Windows-safe path string for long file paths."""
 
@@ -108,12 +70,6 @@ def display_path(path: Path) -> str:
         return str(path.resolve().relative_to(BASE_DIR))
     except ValueError:
         return str(path)
-
-
-def safe_filename(name: str) -> str:
-    """Create the same filename format as the municipality scripts."""
-
-    return name.lower().replace(" ", "_")
 
 
 def download_file(url: str, output_file: Path) -> None:
@@ -241,181 +197,6 @@ def download_base_data() -> None:
     unzip_file(ALKIS_VERWALTUNG_FILE, ALKIS_EXTRACT_DIR)
 
 
-def boundary_to_overpass_bbox(boundary: gpd.GeoDataFrame) -> str:
-    """Convert the municipality boundary to an Overpass bounding box."""
-
-    min_lon, min_lat, max_lon, max_lat = boundary.to_crs(epsg=4326).total_bounds
-    return f"{min_lat},{min_lon},{max_lat},{max_lon}"
-
-
-def build_roads_query(overpass_bbox: str) -> str:
-    """Build a focused Overpass query for road context data."""
-
-    return f"""
-[out:json][timeout:120];
-(
-  way["highway"]({overpass_bbox});
-);
-out tags geom;
-"""
-
-
-def clean_column_name(column: str, used_names: set[str]) -> str:
-    """Create a GeoPackage-safe column name."""
-
-    if column == "geometry":
-        return column
-
-    clean_name = re.sub(r"[^0-9a-zA-Z_]+", "_", column.lower()).strip("_")
-
-    if not clean_name:
-        clean_name = "field"
-
-    if clean_name[0].isdigit():
-        clean_name = f"field_{clean_name}"
-
-    if clean_name in {"fid", "geom", "geometry"}:
-        clean_name = f"attr_{clean_name}"
-
-    clean_name = clean_name[:58]
-    unique_name = clean_name
-    counter = 1
-
-    while unique_name in used_names:
-        suffix = f"_{counter}"
-        unique_name = f"{clean_name[:58 - len(suffix)]}{suffix}"
-        counter += 1
-
-    used_names.add(unique_name)
-    return unique_name
-
-
-def clean_for_geopackage(data: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Clean column names before writing data to GeoPackage."""
-
-    used_names = set()
-    rename_map = {
-        column: clean_column_name(str(column), used_names)
-        for column in data.columns
-    }
-
-    return data.rename(columns=rename_map)
-
-
-def remove_existing_output(output_file: Path, script_label: str) -> None:
-    """Remove an old output file before writing a fresh result."""
-
-    if not output_file.exists():
-        return
-
-    try:
-        output_file.unlink()
-    except PermissionError as error:
-        log_error("Output file is locked and cannot be overwritten.")
-        log_error(f"Locked file: {display_path(output_file)}")
-        log_info("Close the file in QGIS or remove the layer from the QGIS project.")
-        log_info("Then run the workflow again.")
-        raise SystemExit(
-            f"{script_label} stopped because an output file is still open."
-        ) from error
-
-
-def request_overpass(query: str) -> dict:
-    """Request raw Overpass JSON data, trying a fallback endpoint if needed."""
-
-    headers = {
-        "Accept": "application/json",
-        "User-Agent": "geodata-pipeline-student-project/1.0",
-    }
-
-    last_error = None
-
-    for url in OVERPASS_URLS:
-        log_info(f"Requesting OSM context roads from: {url}")
-
-        try:
-            response = requests.post(
-                url,
-                data={"data": query},
-                headers=headers,
-                timeout=180,
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as error:
-            last_error = error
-            log_warning(f"Overpass endpoint failed: {url}")
-
-            if getattr(error, "response", None) is not None:
-                log_warning(error.response.text[:500])
-
-    log_error(f"All Overpass endpoints failed: {last_error}")
-    raise RuntimeError("Could not download OSM context roads from Overpass.") from last_error
-
-
-def roads_to_geodataframe(overpass_data: dict) -> gpd.GeoDataFrame:
-    """Convert Overpass highway ways to a road line layer."""
-
-    features = []
-
-    for element in overpass_data.get("elements", []):
-        if element.get("type") != "way":
-            continue
-
-        highway_value = element.get("tags", {}).get("highway")
-
-        if highway_value not in ROAD_HIGHWAY_VALUES:
-            continue
-
-        coordinates = [
-            (node["lon"], node["lat"])
-            for node in element.get("geometry", [])
-            if "lon" in node and "lat" in node
-        ]
-
-        if len(coordinates) < 2:
-            continue
-
-        properties = {
-            "osm_id": str(element["id"]),
-            "osm_type": element["type"],
-            "geometry": LineString(coordinates),
-        }
-
-        for key, value in element.get("tags", {}).items():
-            properties[key] = str(value)
-
-        features.append(properties)
-
-    if not features:
-        return gpd.GeoDataFrame({"geometry": []}, geometry="geometry", crs="EPSG:4326")
-
-    return gpd.GeoDataFrame(features, geometry="geometry", crs="EPSG:4326")
-
-
-def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> None:
-    """Write one non-empty GeoPackage layer."""
-
-    if data.empty:
-        log_warning(f"No features for layer: {layer_name}")
-        return
-
-    data = clean_for_geopackage(data)
-
-    try:
-        data.to_file(output_file, layer=layer_name, driver="GPKG")
-    except Exception as error:
-        log_error(f"Could not write layer: {layer_name}")
-        log_error(f"Output file: {display_path(output_file)}")
-        log_info("Close the file in QGIS or remove the layer from the QGIS project.")
-        log_info("Then run the workflow again.")
-        raise SystemExit(
-            "Script 0 stopped because the OSM context GeoPackage could not be written."
-        ) from error
-
-    log_success(f"Written {layer_name}: {len(data)} features")
-
-
 def prepare_wind_raw_datasets() -> None:
     """Download all required official wind datasets for the workflow."""
 
@@ -434,48 +215,6 @@ def prepare_wind_raw_datasets() -> None:
     )
 
 
-def download_optional_osm_context(municipality_name: str) -> None:
-    """Download and clip optional OSM context roads for one municipality."""
-
-    safe_name = safe_filename(municipality_name)
-    boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
-    output_file = OSM_CONTEXT_DIR / f"{safe_name}_osm_context.gpkg"
-    raw_roads_file = OSM_CONTEXT_DIR / f"{safe_name}_osm_context_raw.json"
-
-    if not boundary_file.exists():
-        raise FileNotFoundError(
-            f"Boundary file not found: {boundary_file}. Run script 1 first."
-        )
-
-    OSM_CONTEXT_DIR.mkdir(parents=True, exist_ok=True)
-
-    boundary = gpd.read_file(boundary_file).to_crs(epsg=25832)
-    boundary_for_clip = boundary[["geometry"]].dissolve()
-
-    remove_existing_output(output_file, "Script 0")
-
-    log_section("Optional OSM context")
-    log_dataset("Dataset: osm_context_roads")
-    log_info(f"Downloading optional OSM context for: {municipality_name}")
-    log_info(f"Boundary: {display_path(boundary_file)}")
-    log_info(f"Output: {display_path(output_file)}")
-
-    overpass_bbox = boundary_to_overpass_bbox(boundary)
-    roads_query = build_roads_query(overpass_bbox)
-    overpass_data = request_overpass(roads_query)
-
-    with open(raw_roads_file, "w", encoding="utf-8") as file:
-        json.dump(overpass_data, file, ensure_ascii=False)
-
-    roads = roads_to_geodataframe(overpass_data)
-
-    if not roads.empty:
-        roads = gpd.clip(roads.to_crs(epsg=25832), boundary_for_clip)
-
-    write_layer(output_file, "osm_context_roads", roads)
-    log_success("Optional OSM context download finished.")
-
-
 def main() -> None:
     """Download and validate the raw datasets used by the selected workflow."""
 
@@ -488,15 +227,6 @@ def main() -> None:
         choices=["wind", "solar", "wasser"],
         help="Selected technology for the current workflow run.",
     )
-    parser.add_argument(
-        "--municipality",
-        help="Municipality name for optional municipality-based downloads.",
-    )
-    parser.add_argument(
-        "--with-osm-context",
-        action="store_true",
-        help="Also download municipality-based OSM context roads.",
-    )
     args = parser.parse_args()
 
     download_base_data()
@@ -504,15 +234,9 @@ def main() -> None:
     match args.technology:
         case "wind":
             prepare_wind_raw_datasets()
-            if args.with_osm_context:
-                if not args.municipality:
-                    raise SystemExit(
-                        "Script 0 needs --municipality when --with-osm-context is used."
-                    )
-                download_optional_osm_context(args.municipality)
-            else:
-                log_section("Optional OSM context")
-                log_info("OSM context download skipped.")
+            # Future optional step:
+            # OSM context data can be added here later if the workflow needs
+            # extra road context for map orientation.
         case "solar" | "wasser":
             log_info(f"No technology-specific raw download configured yet for: {args.technology}")
 

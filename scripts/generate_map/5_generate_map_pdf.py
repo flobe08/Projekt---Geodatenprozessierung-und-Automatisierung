@@ -427,6 +427,7 @@ def create_pdf_layout(
     footer_y = layout_config["footer_y"]
 
     panel_x = layout_config["panel_x"]
+    panel_y = layout_config["panel_y"]
     panel_width = layout_config["panel_width"]
 
     description_y = layout_config["description_y"]
@@ -449,8 +450,14 @@ def create_pdf_layout(
     scale_bar_y = layout_config["scale_bar_y"]
     scale_text_y = layout_config["scale_text_y"]
 
-    author_y = layout_config["author_y"]
-    date_y = layout_config["date_y"]
+    panel_height = (map_y + map_height) - panel_y
+    panel_bottom = panel_y + panel_height
+
+    # Metadata labels are anchored from the panel bottom instead of using only
+    # fixed absolute Y values. Otherwise the text can visually extend below the
+    # red helper frame although its top position still looks valid.
+    date_y = panel_bottom - 4.5
+    author_y = date_y - 3.7
 
     # -------------------------------------------------------------------------
     # 2.2 Add centered map title
@@ -496,13 +503,6 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.4 Add right-side description
     # -------------------------------------------------------------------------
-    add_debug_frame(
-        layout,
-        panel_x,
-        description_y,
-        panel_width,
-        layout_config["description_height"],
-    )  # todo:delte this lione
     add_label(
         layout,
         textwrap.fill(
@@ -576,9 +576,9 @@ def create_pdf_layout(
     add_debug_frame(
         layout,
         panel_x,
-        layout_config["panel_y"],
+        panel_y,
         panel_width,
-        185,
+        panel_height,
     )  # todo:delte this lione
 
     scale_denominator = round(map_item.scale())

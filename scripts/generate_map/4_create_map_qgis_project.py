@@ -5,8 +5,7 @@ Workflow:
 1. Load an OpenStreetMap web basemap.
 2. Load the official municipality boundary from script 1.
 3. Load the clipped wind vorrang and vorbehalt layers from script 3.
-4. Optionally load clipped OSM context roads from script 4.
-5. Save everything as a QGIS project for manual map layout work.
+4. Save everything as a QGIS project for manual map layout work.
 """
 
 from pathlib import Path
@@ -17,7 +16,6 @@ from qgis.core import (
     QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsFillSymbol,
-    QgsLineSymbol,
     QgsLayerTreeLayer,
     QgsProject,
     QgsReferencedRectangle,
@@ -34,7 +32,6 @@ from utils import ColoredArgumentParser
 
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
 WIND_DIR = BASE_DIR / "data/processed/wind"
-OSM_CONTEXT_DIR = BASE_DIR / "data/processed/osm_context"
 OUTPUT_DIR = BASE_DIR / "data/processed/qgis_projects"
 
 
@@ -161,18 +158,6 @@ def style_wind_vorbehalt(layer: QgsVectorLayer) -> None:
     layer.renderer().setSymbol(symbol)
 
 
-def style_osm_context(layer: QgsVectorLayer) -> None:
-    """Style optional OSM context roads with an orange line."""
-
-    symbol = QgsLineSymbol.createSimple(
-        {
-            "color": "255,170,0,255",
-            "width": "0.35",
-        }
-    )
-    layer.renderer().setSymbol(symbol)
-
-
 def create_wind_map_project(municipality_name: str) -> None:
     """Create a QGIS project for the wind workflow."""
 
@@ -180,7 +165,6 @@ def create_wind_map_project(municipality_name: str) -> None:
 
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
     wind_file = WIND_DIR / f"{safe_name}_wind_layers.gpkg"
-    osm_context_file = OSM_CONTEXT_DIR / f"{safe_name}_osm_context.gpkg"
     output_file = OUTPUT_DIR / f"{safe_name}_map.qgz"
 
     require_file(boundary_file, "Boundary file not found. Run script 1 first")
@@ -226,16 +210,6 @@ def create_wind_map_project(municipality_name: str) -> None:
         style_wind_vorbehalt(vorbehalt_layer)
         project.addMapLayer(vorbehalt_layer)
     project.addMapLayer(boundary_layer)
-
-    if osm_context_file.exists():
-        osm_context_layer = load_vector_layer(
-            osm_context_file,
-            "osm_context_roads",
-            "OSM Context Roads",
-        )
-        style_osm_context(osm_context_layer)
-        project.addMapLayer(osm_context_layer)
-        move_layer_to_top(project, osm_context_layer)
 
     extent = boundary_layer.extent()
     extent.scale(1.15)

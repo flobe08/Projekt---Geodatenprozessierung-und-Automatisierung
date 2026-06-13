@@ -55,11 +55,6 @@ def parse_arguments() -> argparse.Namespace:
         choices=["wind", "solar", "wasser"],
         help="Energy technology to prepare data for.",
     )
-    parser.add_argument(
-        "--with-osm-context",
-        action="store_true",
-        help="Also download OSM context roads for the selected municipality.",
-    )
 
     return parser.parse_args()
 
@@ -67,7 +62,6 @@ def parse_arguments() -> argparse.Namespace:
 def prepare_data(
     municipality: str,
     technology: str,
-    with_osm_context: bool,
 ) -> None:
     """Run all data preparation steps for one municipality and technology."""
 
@@ -85,23 +79,12 @@ def prepare_data(
 
     match technology:
         case "wind":
-            if with_osm_context:
-                run_script(
-                    "Step 3: Download optional OSM context roads",
-                    "prepare_data/0_download_data.py",
-                    [
-                        "--technology",
-                        technology,
-                        "--municipality",
-                        municipality,
-                        "--with-osm-context",
-                    ],
-                )
-            else:
-                log_info("Step 3 skipped: OSM context roads are optional.")
+            # Future optional step:
+            # OSM context roads can be added here later if the wind workflow
+            # should include extra road context for orientation in the map.
 
             run_script(
-                "Step 4: Clip wind datasets to the municipality",
+                "Step 3: Clip wind datasets to the municipality",
                 "wind/3_clip_wind_planning_areas.py",
                 ["--municipality", municipality],
             )
@@ -116,7 +99,7 @@ def main() -> None:
     """Run the complete data preparation workflow."""
 
     args = parse_arguments()
-    prepare_data(args.municipality, args.technology, args.with_osm_context)
+    prepare_data(args.municipality, args.technology)
     log_success("\nData preparation finished successfully.")
 
 
