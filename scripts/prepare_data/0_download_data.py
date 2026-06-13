@@ -1,32 +1,93 @@
 """
-Script 0: Download raw datasets.
+Script 0: Prepare all raw datasets.
 
-This script downloads all raw input datasets needed by the pipeline. ZIP files
-are extracted after download. The official landuse dataset is downloaded
-directly as a GeoPackage file.
-The datasets include administrative boundaries, official landuse data, nature
-conservation data, and technology-specific datasets.
+Workflow:
+1. Download the common Bavarian administrative boundary dataset.
+2. Download the required official wind WFS exports for the workflow.
+3. Optionally download municipality-based OSM context roads.
+4. Stop with clear source hints when required inputs are still missing.
 """
 
 from pathlib import Path
 import argparse
+import json
 import os
+import re
 import requests
 import sys
 import zipfile
+
+import geopandas as gpd
+from shapely.geometry import LineString
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
 from utils import (
     ColoredArgumentParser,
     log_dataset,
+    log_error,
     log_info,
     log_section,
     log_success,
     log_warning,
 )
 
-# Project root directory.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+# -----------------------------------------------------------------------------
+# 0. Common administrative boundary dataset
+# -----------------------------------------------------------------------------
+ALKIS_VERWALTUNG_URL = "https://geodaten.bayern.de/odd/m/4/verwaltung/alkis-verwaltung.zip"
+ALKIS_VERWALTUNG_FILE = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip"
+ALKIS_EXTRACT_DIR = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern"
+
+
+# -----------------------------------------------------------------------------
+# 1. Wind raw datasets
+# -----------------------------------------------------------------------------
+WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
+WIND_VORRANG_FILE = WIND_RAW_DIR / "wind_vorranggebiete.gpkg"
+WIND_VORBEHALT_FILE = WIND_RAW_DIR / "wind_vorbehaltsgebiete.gpkg"
+WFS_REGIONALPLANUNG_URL = "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung"
+WFS_REGIONALPLANUNG_CAPABILITIES_URL = (
+    "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung"
+    "?service=WFS&request=GetCapabilities"
+)
+WFS_VERSION = "2.0.0"
+WFS_OUTPUT_FORMAT = "Geopackage"
+WIND_VORRANG_TYPENAME = "WFS_Regionalplanung:Vorranggebiet_Windenergienutzung"
+WIND_VORBEHALT_TYPENAME = "WFS_Regionalplanung:Vorbehaltsgebiet_Windenergienutzung"
+
+
+# -----------------------------------------------------------------------------
+# 2. Optional OSM context data
+# -----------------------------------------------------------------------------
+BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+OSM_CONTEXT_DIR = BASE_DIR / "data/processed/osm_context"
+
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
+
+ROAD_HIGHWAY_VALUES = {
+    "motorway",
+    "motorway_link",
+    "trunk",
+    "trunk_link",
+    "primary",
+    "primary_link",
+    "secondary",
+    "secondary_link",
+    "tertiary",
+    "tertiary_link",
+    "unclassified",
+    "residential",
+    "living_street",
+    "service",
+    "track",
+    "road",
+}
 
 
 def windows_long_path(path: Path) -> str:
@@ -48,90 +109,12 @@ def display_path(path: Path) -> str:
     except ValueError:
         return str(path)
 
-# -----------------------------------------------------------------------------
-# General base datasets used for every pipeline run.
-# -----------------------------------------------------------------------------
 
-# Geofabrik is only needed for the old osmium-based PBF cutting workflow.
-# BAYERN_OSM_URL = "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf"
-ALKIS_VERWALTUNG_URL = "https://geodaten.bayern.de/odd/m/4/verwaltung/alkis-verwaltung.zip"
-LANDUSE_URL = "https://geodaten.bayern.de/odd/m/3/daten/ln/landnutzung.gpkg"
+def safe_filename(name: str) -> str:
+    """Create the same filename format as the municipality scripts."""
 
-# BAYERN_OSM_FILE = BASE_DIR / "data/raw/osm/bayern-latest.osm.pbf"
-ALKIS_VERWALTUNG_FILE = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip"
-ALKIS_EXTRACT_DIR = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern"
-LANDUSE_FILE = BASE_DIR / "data/raw/landuse/landnutzung.gpkg"
+    return name.lower().replace(" ", "_")
 
-
-# -----------------------------------------------------------------------------
-# Schutzgebiete des Naturschutzes.
-# Add the official LfU download links here.
-# -----------------------------------------------------------------------------
-
-BIOSPHAERENRESERVATE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/biosphaerenreservate_epsg25832_shp.zip"
-LANDSCHAFTSSCHUTZGEBIETE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/lsg_epsg25832_shp.zip"
-NATIONALPARKE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/nlp_epsg25832_shp.zip"
-NATURPARKE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/naturparke_epsg25832_shp.zip"
-NATURSCHUTZGEBIETE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/nsg_epsg25832_shp.zip"
-NATIONALE_NATURMONUMENTE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/nationale_naturmonumente_epsg25832_shp.zip"
-GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_PUNKTE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/landschaftsbestandteil_punktfoermig_epsg25832_shp.zip"
-GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_FLAECHEN_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/landschaftsbestandteil_flaechig_epsg25832_shp.zip"
-NATURDENKMALE_PUNKTE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/naturdenkmal_punktfoermig_epsg25832_shp.zip"
-NATURDENKMALE_FLAECHEN_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/naturdenkmal_flaechig_epsg25832_shp.zip"
-
-SCHUTZGEBIETE_RAW_DIR = BASE_DIR / "data/raw/schutzgebiete"
-
-BIOSPHAERENRESERVATE_FILE = SCHUTZGEBIETE_RAW_DIR / "biosphaerenreservate.zip"
-LANDSCHAFTSSCHUTZGEBIETE_FILE = SCHUTZGEBIETE_RAW_DIR / "landschaftsschutzgebiete.zip"
-NATIONALPARKE_FILE = SCHUTZGEBIETE_RAW_DIR / "nationalparke.zip"
-NATURPARKE_FILE = SCHUTZGEBIETE_RAW_DIR / "naturparke.zip"
-NATURSCHUTZGEBIETE_FILE = SCHUTZGEBIETE_RAW_DIR / "naturschutzgebiete.zip"
-NATIONALE_NATURMONUMENTE_FILE = SCHUTZGEBIETE_RAW_DIR / "nationale_naturmonumente.zip"
-GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_PUNKTE_FILE = (SCHUTZGEBIETE_RAW_DIR / "geschuetzte_landschaftsbestandteile_punkte.zip")
-GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_FLAECHEN_FILE = (SCHUTZGEBIETE_RAW_DIR / "geschuetzte_landschaftsbestandteile_flaechen.zip")
-NATURDENKMALE_PUNKTE_FILE = SCHUTZGEBIETE_RAW_DIR / "naturdenkmale_punkte.zip"
-NATURDENKMALE_FLAECHEN_FILE = SCHUTZGEBIETE_RAW_DIR / "naturdenkmale_flaechen.zip"
-
-SCHUTZGEBIETE_DATASETS = [
-    (BIOSPHAERENRESERVATE_URL, BIOSPHAERENRESERVATE_FILE, "biosphaerenreservate"),
-    (LANDSCHAFTSSCHUTZGEBIETE_URL, LANDSCHAFTSSCHUTZGEBIETE_FILE, "landschaftsschutzgebiete"),
-    (NATIONALPARKE_URL, NATIONALPARKE_FILE, "nationalparke"),
-    (NATURPARKE_URL, NATURPARKE_FILE, "naturparke"),
-    (NATURSCHUTZGEBIETE_URL, NATURSCHUTZGEBIETE_FILE, "naturschutzgebiete"),
-    (NATIONALE_NATURMONUMENTE_URL, NATIONALE_NATURMONUMENTE_FILE, "nationale_naturmonumente"),
-    (GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_PUNKTE_URL, GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_PUNKTE_FILE, "geschuetzte_landschaftsbestandteile_punkte",),
-    (GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_FLAECHEN_URL, GESCHUETZTE_LANDSCHAFTSBESTANDTEILE_FLAECHEN_FILE, "geschuetzte_landschaftsbestandteile_flaechen",),
-    (NATURDENKMALE_PUNKTE_URL, NATURDENKMALE_PUNKTE_FILE, "naturdenkmale_punkte"),
-    (NATURDENKMALE_FLAECHEN_URL, NATURDENKMALE_FLAECHEN_FILE, "naturdenkmale_flaechen"),
-]
-
-
-# -----------------------------------------------------------------------------
-# Additional official datasets for self created buffers the wind_self-energy workflow.
-# -----------------------------------------------------------------------------
-NATURA2000_FFH_URL = (
-    "https://www.lfu.bayern.de/gdi/dls/daten/natura2000/ffh_epsg25832_shp.zip"
-)
-NATURA2000_VOGELSCHUTZ_URL = (
-    "https://www.lfu.bayern.de/gdi/dls/daten/natura2000/vogelschutz_epsg25832_shp.zip"
-)
-VOGELKULISSEN_2024_URL = (
-    "https://www.lfu.bayern.de/natur/artenhilfsprogramme_voegel/"
-    "wiesenbrueter/vogelkulissen_2024/doc/vogelkulissen24.zip"
-)
-
-WIND_RAW_DIR = BASE_DIR / "data/raw/wind_self"
-NATURA2000_FFH_FILE = WIND_RAW_DIR / "natura2000_ffh_utm32.zip"
-NATURA2000_VOGELSCHUTZ_FILE = WIND_RAW_DIR / "natura2000_vogelschutz_utm32.zip"
-VOGELKULISSEN_2024_FILE = WIND_RAW_DIR / "vogelkulissen_2024.zip"
-NATURA2000_EXTRACT_DIR = WIND_RAW_DIR / "natura2000"
-VOGELKULISSEN_EXTRACT_DIR = WIND_RAW_DIR / "vogelkulissen_2024"
-
-# -----------------------------------------------------------------------------
-#  official datasets for the buffers for windenergy
-# -----------------------------------------------------------------------------
-
-(12)Wind_Donauwald_Url = "https://www.region-donau-wald.de/fileadmin/user_upload/pdfs/Regionalplan/laufende_Fortschreibungen/Windenergie/Beteiligungsverfahren/250714_DW_WindVRG_Exportdatei_Shape.zip"
 
 def download_file(url: str, output_file: Path) -> None:
     """Download a file if it does not already exist."""
@@ -145,7 +128,7 @@ def download_file(url: str, output_file: Path) -> None:
     log_info(f"Downloading: {url}")
     log_info(f"Saving to: {display_path(output_file)}")
 
-    response = requests.get(url, stream=True)
+    response = requests.get(url, stream=True, timeout=180)
     response.raise_for_status()
 
     with open(output_file, "wb") as file:
@@ -156,10 +139,53 @@ def download_file(url: str, output_file: Path) -> None:
     log_success(f"Saved: {display_path(output_file)}")
 
 
+def download_wfs_layer(
+    dataset_label: str,
+    type_name: str,
+    output_file: Path,
+) -> None:
+    """Download one WFS layer directly as GeoPackage."""
+
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    log_dataset(f"Dataset: {dataset_label}")
+
+    if output_file.exists() and output_file.stat().st_size > 0:
+        log_warning(f"Download skipped: {display_path(output_file)}")
+        return
+
+    log_info(f"WFS layer: {type_name}")
+    log_info(f"Source: {WFS_REGIONALPLANUNG_URL}")
+    log_info(f"Saving to: {display_path(output_file)}")
+
+    response = requests.get(
+        WFS_REGIONALPLANUNG_URL,
+        params={
+            "service": "WFS",
+            "version": WFS_VERSION,
+            "request": "GetFeature",
+            "typeNames": type_name,
+            "outputFormat": WFS_OUTPUT_FORMAT,
+        },
+        stream=True,
+        timeout=300,
+    )
+    response.raise_for_status()
+
+    with open(output_file, "wb") as file:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                file.write(chunk)
+
+    if output_file.stat().st_size == 0:
+        raise RuntimeError(f"Downloaded file is empty: {output_file}")
+
+    log_success(f"Saved: {display_path(output_file)}")
+
+
 def has_extracted_geodata(extract_dir: Path) -> bool:
     """Check whether an extraction folder already contains geodata files."""
 
-    geodata_suffixes = {".shp", ".gpkg", ".geojson", ".pbf"}
+    geodata_suffixes = {".shp", ".gpkg", ".geojson"}
 
     return extract_dir.exists() and any(
         file.is_file()
@@ -167,99 +193,6 @@ def has_extracted_geodata(extract_dir: Path) -> bool:
         and file.suffix.lower() in geodata_suffixes
         for file in extract_dir.rglob("*")
     )
-
-
-def download_and_unzip_dataset(
-    dataset_name: str,
-    url: str,
-    zip_file: Path,
-    extract_dir: Path,
-) -> None:
-    """Download and extract one dataset with compact status logs."""
-
-    log_dataset(f"Dataset: {dataset_name}")
-    download_file(url, zip_file)
-    unzip_file(zip_file, extract_dir)
-
-
-def download_wind_data() -> None:
-    """Download official planning and restriction datasets relevant for wind_self."""
-
-    log_section("Wind datasets")
-
-    download_and_unzip_dataset(
-        "natura2000_ffh",
-        NATURA2000_FFH_URL,
-        NATURA2000_FFH_FILE,
-        NATURA2000_EXTRACT_DIR / "ffh",
-    )
-    download_and_unzip_dataset(
-        "natura2000_vogelschutz",
-        NATURA2000_VOGELSCHUTZ_URL,
-        NATURA2000_VOGELSCHUTZ_FILE,
-        NATURA2000_EXTRACT_DIR / "vogelschutz",
-    )
-    download_and_unzip_dataset(
-        "vogelkulissen_2024",
-        VOGELKULISSEN_2024_URL,
-        VOGELKULISSEN_2024_FILE,
-        VOGELKULISSEN_EXTRACT_DIR,
-    )
-
-
-def download_schutzgebiete_data() -> None:
-    """Download official nature conservation area datasets when URLs are set."""
-
-    log_section("Nature conservation (base datasets)")
-
-    for url, zip_file, dataset_name in SCHUTZGEBIETE_DATASETS:
-        if not url:
-            log_warning(f"Skipping {dataset_name}: download URL not configured yet.")
-            continue
-
-        download_and_unzip_dataset(
-            dataset_name,
-            url,
-            zip_file,
-            SCHUTZGEBIETE_RAW_DIR / dataset_name,
-        )
-
-
-def download_base_data() -> None:
-    """Download and extract datasets used by every technology workflow."""
-
-    log_section("Base datasets")
-
-    # The current workflow gets roads from Overpass and does not need this file.
-    # log_dataset("Dataset: bayern_osm")
-    # download_file(BAYERN_OSM_URL, BAYERN_OSM_FILE)
-
-    download_and_unzip_dataset(
-        "alkis_verwaltungsgebiet",
-        ALKIS_VERWALTUNG_URL,
-        ALKIS_VERWALTUNG_FILE,
-        ALKIS_EXTRACT_DIR,
-    )
-
-    log_dataset("Dataset: landnutzung")
-    download_file(LANDUSE_URL, LANDUSE_FILE)
-
-    # download Nature conservation datasets
-    download_schutzgebiete_data()
-
-
-def download_technology_data(technology: str | None) -> None:
-    """Download optional datasets for the selected technology."""
-
-    match technology:
-        case "wind_self":
-            download_wind_data()
-        case "solar":
-            log_warning("No additional solar datasets configured yet.")
-        case "wasser":
-            log_warning("No additional wasser datasets configured yet.")
-        case _:
-            raise ValueError(f"Unknown technology: {technology}")
 
 
 def unzip_file(zip_file: Path, extract_dir: Path) -> None:
@@ -299,26 +232,289 @@ def unzip_file(zip_file: Path, extract_dir: Path) -> None:
     log_success("Extraction finished.")
 
 
-def main() -> None:
-    """Download and extract all required raw datasets."""
+def download_base_data() -> None:
+    """Download and extract the common administrative boundary dataset."""
 
-    # Read selected technology for additional downloads.
+    log_section("Base datasets")
+    log_dataset("Dataset: alkis_verwaltungsgebiet")
+    download_file(ALKIS_VERWALTUNG_URL, ALKIS_VERWALTUNG_FILE)
+    unzip_file(ALKIS_VERWALTUNG_FILE, ALKIS_EXTRACT_DIR)
+
+
+def boundary_to_overpass_bbox(boundary: gpd.GeoDataFrame) -> str:
+    """Convert the municipality boundary to an Overpass bounding box."""
+
+    min_lon, min_lat, max_lon, max_lat = boundary.to_crs(epsg=4326).total_bounds
+    return f"{min_lat},{min_lon},{max_lat},{max_lon}"
+
+
+def build_roads_query(overpass_bbox: str) -> str:
+    """Build a focused Overpass query for road context data."""
+
+    return f"""
+[out:json][timeout:120];
+(
+  way["highway"]({overpass_bbox});
+);
+out tags geom;
+"""
+
+
+def clean_column_name(column: str, used_names: set[str]) -> str:
+    """Create a GeoPackage-safe column name."""
+
+    if column == "geometry":
+        return column
+
+    clean_name = re.sub(r"[^0-9a-zA-Z_]+", "_", column.lower()).strip("_")
+
+    if not clean_name:
+        clean_name = "field"
+
+    if clean_name[0].isdigit():
+        clean_name = f"field_{clean_name}"
+
+    if clean_name in {"fid", "geom", "geometry"}:
+        clean_name = f"attr_{clean_name}"
+
+    clean_name = clean_name[:58]
+    unique_name = clean_name
+    counter = 1
+
+    while unique_name in used_names:
+        suffix = f"_{counter}"
+        unique_name = f"{clean_name[:58 - len(suffix)]}{suffix}"
+        counter += 1
+
+    used_names.add(unique_name)
+    return unique_name
+
+
+def clean_for_geopackage(data: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Clean column names before writing data to GeoPackage."""
+
+    used_names = set()
+    rename_map = {
+        column: clean_column_name(str(column), used_names)
+        for column in data.columns
+    }
+
+    return data.rename(columns=rename_map)
+
+
+def remove_existing_output(output_file: Path, script_label: str) -> None:
+    """Remove an old output file before writing a fresh result."""
+
+    if not output_file.exists():
+        return
+
+    try:
+        output_file.unlink()
+    except PermissionError as error:
+        log_error("Output file is locked and cannot be overwritten.")
+        log_error(f"Locked file: {display_path(output_file)}")
+        log_info("Close the file in QGIS or remove the layer from the QGIS project.")
+        log_info("Then run the workflow again.")
+        raise SystemExit(
+            f"{script_label} stopped because an output file is still open."
+        ) from error
+
+
+def request_overpass(query: str) -> dict:
+    """Request raw Overpass JSON data, trying a fallback endpoint if needed."""
+
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "geodata-pipeline-student-project/1.0",
+    }
+
+    last_error = None
+
+    for url in OVERPASS_URLS:
+        log_info(f"Requesting OSM context roads from: {url}")
+
+        try:
+            response = requests.post(
+                url,
+                data={"data": query},
+                headers=headers,
+                timeout=180,
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as error:
+            last_error = error
+            log_warning(f"Overpass endpoint failed: {url}")
+
+            if getattr(error, "response", None) is not None:
+                log_warning(error.response.text[:500])
+
+    log_error(f"All Overpass endpoints failed: {last_error}")
+    raise RuntimeError("Could not download OSM context roads from Overpass.") from last_error
+
+
+def roads_to_geodataframe(overpass_data: dict) -> gpd.GeoDataFrame:
+    """Convert Overpass highway ways to a road line layer."""
+
+    features = []
+
+    for element in overpass_data.get("elements", []):
+        if element.get("type") != "way":
+            continue
+
+        highway_value = element.get("tags", {}).get("highway")
+
+        if highway_value not in ROAD_HIGHWAY_VALUES:
+            continue
+
+        coordinates = [
+            (node["lon"], node["lat"])
+            for node in element.get("geometry", [])
+            if "lon" in node and "lat" in node
+        ]
+
+        if len(coordinates) < 2:
+            continue
+
+        properties = {
+            "osm_id": str(element["id"]),
+            "osm_type": element["type"],
+            "geometry": LineString(coordinates),
+        }
+
+        for key, value in element.get("tags", {}).items():
+            properties[key] = str(value)
+
+        features.append(properties)
+
+    if not features:
+        return gpd.GeoDataFrame({"geometry": []}, geometry="geometry", crs="EPSG:4326")
+
+    return gpd.GeoDataFrame(features, geometry="geometry", crs="EPSG:4326")
+
+
+def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> None:
+    """Write one non-empty GeoPackage layer."""
+
+    if data.empty:
+        log_warning(f"No features for layer: {layer_name}")
+        return
+
+    data = clean_for_geopackage(data)
+
+    try:
+        data.to_file(output_file, layer=layer_name, driver="GPKG")
+    except Exception as error:
+        log_error(f"Could not write layer: {layer_name}")
+        log_error(f"Output file: {display_path(output_file)}")
+        log_info("Close the file in QGIS or remove the layer from the QGIS project.")
+        log_info("Then run the workflow again.")
+        raise SystemExit(
+            "Script 0 stopped because the OSM context GeoPackage could not be written."
+        ) from error
+
+    log_success(f"Written {layer_name}: {len(data)} features")
+
+
+def prepare_wind_raw_datasets() -> None:
+    """Download all required official wind datasets for the workflow."""
+
+    WIND_RAW_DIR.mkdir(parents=True, exist_ok=True)
+
+    log_section("Wind datasets")
+    download_wfs_layer(
+        "wind_vorranggebiete",
+        WIND_VORRANG_TYPENAME,
+        WIND_VORRANG_FILE,
+    )
+    download_wfs_layer(
+        "wind_vorbehaltsgebiete",
+        WIND_VORBEHALT_TYPENAME,
+        WIND_VORBEHALT_FILE,
+    )
+
+
+def download_optional_osm_context(municipality_name: str) -> None:
+    """Download and clip optional OSM context roads for one municipality."""
+
+    safe_name = safe_filename(municipality_name)
+    boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
+    output_file = OSM_CONTEXT_DIR / f"{safe_name}_osm_context.gpkg"
+    raw_roads_file = OSM_CONTEXT_DIR / f"{safe_name}_osm_context_raw.json"
+
+    if not boundary_file.exists():
+        raise FileNotFoundError(
+            f"Boundary file not found: {boundary_file}. Run script 1 first."
+        )
+
+    OSM_CONTEXT_DIR.mkdir(parents=True, exist_ok=True)
+
+    boundary = gpd.read_file(boundary_file).to_crs(epsg=25832)
+    boundary_for_clip = boundary[["geometry"]].dissolve()
+
+    remove_existing_output(output_file, "Script 0")
+
+    log_section("Optional OSM context")
+    log_dataset("Dataset: osm_context_roads")
+    log_info(f"Downloading optional OSM context for: {municipality_name}")
+    log_info(f"Boundary: {display_path(boundary_file)}")
+    log_info(f"Output: {display_path(output_file)}")
+
+    overpass_bbox = boundary_to_overpass_bbox(boundary)
+    roads_query = build_roads_query(overpass_bbox)
+    overpass_data = request_overpass(roads_query)
+
+    with open(raw_roads_file, "w", encoding="utf-8") as file:
+        json.dump(overpass_data, file, ensure_ascii=False)
+
+    roads = roads_to_geodataframe(overpass_data)
+
+    if not roads.empty:
+        roads = gpd.clip(roads.to_crs(epsg=25832), boundary_for_clip)
+
+    write_layer(output_file, "osm_context_roads", roads)
+    log_success("Optional OSM context download finished.")
+
+
+def main() -> None:
+    """Download and validate the raw datasets used by the selected workflow."""
+
     parser = ColoredArgumentParser(
-        description="Download raw datasets for the geodata pipeline."
+        description="Download and validate raw datasets for the geodata pipeline."
     )
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind","wind_self", "solar", "wasser"],
-        help="Selected technology for additional datasets.",
+        choices=["wind", "solar", "wasser"],
+        help="Selected technology for the current workflow run.",
+    )
+    parser.add_argument(
+        "--municipality",
+        help="Municipality name for optional municipality-based downloads.",
+    )
+    parser.add_argument(
+        "--with-osm-context",
+        action="store_true",
+        help="Also download municipality-based OSM context roads.",
     )
     args = parser.parse_args()
 
-    # Step 1: Download datasets required for every pipeline run.
     download_base_data()
 
-    # Step 2: Download additional datasets for the selected technology.
-    download_technology_data(args.technology)
+    match args.technology:
+        case "wind":
+            prepare_wind_raw_datasets()
+            if args.with_osm_context:
+                if not args.municipality:
+                    raise SystemExit(
+                        "Script 0 needs --municipality when --with-osm-context is used."
+                    )
+                download_optional_osm_context(args.municipality)
+            else:
+                log_section("Optional OSM context")
+                log_info("OSM context download skipped.")
+        case "solar" | "wasser":
+            log_info(f"No technology-specific raw download configured yet for: {args.technology}")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ one selected municipality as a GeoPackage for all following processing steps.
 """
 
 from pathlib import Path
-import argparse
 import geopandas as gpd
 import sys
 
@@ -16,15 +15,19 @@ from utils import ColoredArgumentParser, log_error, log_info, log_success
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Input and output paths.
+# -----------------------------------------------------------------------------
+# 0. Input and output paths
+# -----------------------------------------------------------------------------
 INPUT_FILE = (
     BASE_DIR
     / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
 )
-
 OUTPUT_DIR = BASE_DIR / "data/processed/boundaries"
 
 
+# -----------------------------------------------------------------------------
+# Helper functions
+# -----------------------------------------------------------------------------
 def display_path(path: Path) -> str:
     """Return a compact path for log messages."""
 
@@ -50,6 +53,9 @@ def write_boundary(output_file: Path, municipality: gpd.GeoDataFrame) -> None:
         ) from error
 
 
+# -----------------------------------------------------------------------------
+# 1. Extract one municipality from the Bavarian boundary dataset
+# -----------------------------------------------------------------------------
 def extract_municipality(municipality_name: str) -> None:
     """Extract one municipality boundary from the Bavarian administrative dataset."""
 

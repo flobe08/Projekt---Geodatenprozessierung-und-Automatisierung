@@ -11,7 +11,6 @@ import subprocess
 import sys
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPTS_DIR.parent
 
 sys.path.append(str(SCRIPTS_DIR / "utils"))
 from utils import ColoredArgumentParser, log_info, log_section, log_success
@@ -25,14 +24,12 @@ def run_script(
     """Run a Python script from the scripts folder."""
 
     full_script_path = SCRIPTS_DIR / script_path
-
     command = [sys.executable, str(full_script_path)]
 
     if args:
         command.extend(args)
 
     display_command = [script_path]
-
     if args:
         display_command.extend(args)
 
@@ -44,7 +41,6 @@ def run_script(
 def parse_arguments() -> argparse.Namespace:
     """Read command line arguments for data preparation."""
 
-    # Select municipality and energy technology for this data preparation run.
     parser = ColoredArgumentParser(
         description="Prepare geodata for one municipality."
     )
@@ -56,45 +52,60 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind_self", "solar", "wasser"],
+        choices=["wind", "solar", "wasser"],
         help="Energy technology to prepare data for.",
+    )
+    parser.add_argument(
+        "--with-osm-context",
+        action="store_true",
+        help="Also download OSM context roads for the selected municipality.",
     )
 
     return parser.parse_args()
 
 
-def prepare_data(municipality: str, technology: str) -> None:
+def prepare_data(
+    municipality: str,
+    technology: str,
+    with_osm_context: bool,
+) -> None:
     """Run all data preparation steps for one municipality and technology."""
 
-    # Step 0: Download base data and technology-specific raw data.
     run_script(
-        "Step 0: Download raw data",
+        "Step 1: Download raw datasets",
         "prepare_data/0_download_data.py",
         ["--technology", technology],
     )
 
-    # Step 1: Extract the selected municipality boundary.
     run_script(
-        "Step 1: Extract municipality boundary",
+        "Step 2: Extract municipality boundary",
         "prepare_data/1_grenzen.py",
         ["--municipality", municipality],
     )
 
     match technology:
-        case "wind_self":
-            # Step 2: Download OSM roads from Overpass and clip them.
+        case "wind":
+            if with_osm_context:
+                run_script(
+                    "Step 3: Download optional OSM context roads",
+                    "prepare_data/0_download_data.py",
+                    [
+                        "--technology",
+                        technology,
+                        "--municipality",
+                        municipality,
+                        "--with-osm-context",
+                    ],
+                )
+            else:
+                log_info("Step 3 skipped: OSM context roads are optional.")
+
             run_script(
-                "Step 2: Download OSM roads",
-                "wind_self/2_download_overpass_data.py",
+                "Step 4: Clip wind datasets to the municipality",
+                "wind/3_clip_wind_planning_areas.py",
                 ["--municipality", municipality],
             )
 
-            # Step 3: Clip official landuse data to the municipality boundary.
-            run_script(
-                "Step 3: Clip official landuse",
-                "wind_self/3_clip_landuse.py",
-                ["--municipality", municipality],
-            )
         case "solar" | "wasser":
             log_info(f"No preparation scripts configured yet for: {technology}")
         case _:
@@ -105,14 +116,9 @@ def main() -> None:
     """Run the complete data preparation workflow."""
 
     args = parse_arguments()
-    prepare_data(args.municipality, args.technology)
-
+    prepare_data(args.municipality, args.technology, args.with_osm_context)
     log_success("\nData preparation finished successfully.")
 
 
 if __name__ == "__main__":
     main()
-
-#
-# source .venv-wsl/bin/activate
-# python3 scripts/prepare_data.py --municipality Drachselsried --technology wind_self

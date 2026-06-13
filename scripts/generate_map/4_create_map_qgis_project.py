@@ -4,8 +4,8 @@ Script 4: Create a QGIS map project.
 Workflow:
 1. Load an OpenStreetMap web basemap.
 2. Load the official municipality boundary from script 1.
-3. Load the clipped OSM highway data from script 2.
-4. Load the clipped official landuse data from script 3.
+3. Load the clipped wind vorrang and vorbehalt layers from script 3.
+4. Optionally load clipped OSM context roads from script 4.
 5. Save everything as a QGIS project for manual map layout work.
 """
 
@@ -13,8 +13,6 @@ from pathlib import Path
 import argparse
 import sys
 
-# PyQGIS imports. Main references: Python apps, layer loading, symbology and CRS.
-# (Docs: 1.4, 3, 3.2, 3.3, 6.8, 8)
 from qgis.core import (
     QgsApplication,
     QgsCoordinateReferenceSystem,
@@ -34,22 +32,28 @@ sys.path.append(str(BASE_DIR / "scripts/utils"))
 from utils import ColoredArgumentParser
 
 
-# -----------------------------------------------------------------------------
-# 0. Configuration: input and output paths
-# -----------------------------------------------------------------------------
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
-OSM_HIGHWAYS_DIR = BASE_DIR / "data/processed/osm_highways"
-LANDUSE_DIR = BASE_DIR / "data/processed/landuse"
+WIND_DIR = BASE_DIR / "data/processed/wind"
+OSM_CONTEXT_DIR = BASE_DIR / "data/processed/osm_context"
 OUTPUT_DIR = BASE_DIR / "data/processed/qgis_projects"
 
 
-# -----------------------------------------------------------------------------
-# Helper functions
-# -----------------------------------------------------------------------------
 def safe_filename(name: str) -> str:
     """Create a safe file name from a municipality name."""
 
     return name.lower().replace(" ", "_")
+
+
+def vorrang_layer_name(municipality_name: str) -> str:
+    """Create the municipality-specific layer name for wind vorrang areas."""
+
+    return f"wind_vorranggebiete_{safe_filename(municipality_name)}"
+
+
+def vorbehalt_layer_name(municipality_name: str) -> str:
+    """Create the municipality-specific layer name for wind vorbehalt areas."""
+
+    return f"wind_vorbehaltsgebiete_{safe_filename(municipality_name)}"
 
 
 def display_path(path: Path) -> str:
@@ -80,6 +84,31 @@ def load_vector_layer(path: Path, layer_name: str, display_name: str) -> QgsVect
     return layer
 
 
+def load_optional_vector_layer(
+    path: Path,
+    layer_name: str,
+    display_name: str,
+) -> QgsVectorLayer | None:
+    """Load one optional GeoPackage layer or return None when it is missing."""
+
+    uri = f"{path}|layername={layer_name}"
+    layer = QgsVectorLayer(uri, display_name, "ogr")
+
+    if not layer.isValid():
+        return None
+
+    return layer
+
+
+def layer_has_features(layer: QgsVectorLayer | None) -> bool:
+    """Return True only if the optional layer exists and contains features."""
+
+    if layer is None:
+        return False
+
+    return layer.featureCount() > 0
+
+
 def move_layer_to_top(project: QgsProject, layer: QgsVectorLayer) -> None:
     """Move a layer to the top of the QGIS layer tree."""
 
@@ -93,9 +122,6 @@ def move_layer_to_top(project: QgsProject, layer: QgsVectorLayer) -> None:
         parent.removeChildNode(layer_node)
 
 
-# -----------------------------------------------------------------------------
-# 1. Style map layers
-# -----------------------------------------------------------------------------
 def style_boundary(layer: QgsVectorLayer) -> None:
     """Style the municipality boundary with transparent fill and red outline."""
 
@@ -109,21 +135,34 @@ def style_boundary(layer: QgsVectorLayer) -> None:
     layer.renderer().setSymbol(symbol)
 
 
-def style_landuse(layer: QgsVectorLayer) -> None:
-    """Style official landuse with an opaque blue-gray fill."""
+def style_wind_vorrang(layer: QgsVectorLayer) -> None:
+    """Style wind vorrang areas with an opaque blue fill."""
 
     symbol = QgsFillSymbol.createSimple(
         {
-            "color": "92,118,145,255",
-            "outline_color": "50,70,95,255",
+            "color": "31,60,160,180",
+            "outline_color": "18,40,120,255",
             "outline_width": "0.15",
         }
     )
     layer.renderer().setSymbol(symbol)
 
 
-def style_osm_highways(layer: QgsVectorLayer) -> None:
-    """Style OSM highway lines with a visible orange line."""
+def style_wind_vorbehalt(layer: QgsVectorLayer) -> None:
+    """Style wind vorbehalt areas with a yellow fill."""
+
+    symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "232,177,35,190",
+            "outline_color": "168,124,10,255",
+            "outline_width": "0.15",
+        }
+    )
+    layer.renderer().setSymbol(symbol)
+
+
+def style_osm_context(layer: QgsVectorLayer) -> None:
+    """Style optional OSM context roads with an orange line."""
 
     symbol = QgsLineSymbol.createSimple(
         {
@@ -134,36 +173,25 @@ def style_osm_highways(layer: QgsVectorLayer) -> None:
     layer.renderer().setSymbol(symbol)
 
 
-# -----------------------------------------------------------------------------
-# 2. Create QGIS project for one municipality
-# -----------------------------------------------------------------------------
-def create_map_project(municipality_name: str) -> None:
-    """Create a QGIS project with basemap, boundary, OSM highways and landuse."""
+def create_wind_map_project(municipality_name: str) -> None:
+    """Create a QGIS project for the wind workflow."""
 
     safe_name = safe_filename(municipality_name)
 
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
-    osm_highways_file = OSM_HIGHWAYS_DIR / f"{safe_name}_osm_highways.gpkg"
-    landuse_file = LANDUSE_DIR / f"landnutzung_{safe_name}.gpkg"
+    wind_file = WIND_DIR / f"{safe_name}_wind_layers.gpkg"
+    osm_context_file = OSM_CONTEXT_DIR / f"{safe_name}_osm_context.gpkg"
     output_file = OUTPUT_DIR / f"{safe_name}_map.qgz"
 
     require_file(boundary_file, "Boundary file not found. Run script 1 first")
-    require_file(osm_highways_file, "OSM highway file not found. Run script 2 first")
-    require_file(landuse_file, "Landuse file not found. Run script 3 first")
+    require_file(wind_file, "Wind planning file not found. Run script 3 first")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # A QGIS project stores map layers, CRS and project settings. (Doc: 3.3)
     project = QgsProject.instance()
     project.clear()
-
-    # EPSG:25832 is suitable for metric distance analysis in Bavaria. (Doc: 8)
     project.setCrs(QgsCoordinateReferenceSystem("EPSG:25832"))
 
-    # -------------------------------------------------------------------------
-    # 2.1 Add OpenStreetMap web basemap
-    # -------------------------------------------------------------------------
-    # XYZ tiles are loaded as a raster layer. (Doc: 3.2)
     osm_url = "type=xyz&url=https://tile.openstreetmap.org/{z}/{x}/{y}.png"
     osm_layer = QgsRasterLayer(osm_url, "OSM Standard", "wms")
 
@@ -172,64 +200,86 @@ def create_map_project(municipality_name: str) -> None:
 
     project.addMapLayer(osm_layer)
 
-    # -------------------------------------------------------------------------
-    # 2.2 Add processed vector layers
-    # -------------------------------------------------------------------------
-    # GeoPackage layers are loaded as vector layers. (Doc: 3)
-    landuse_layer = load_vector_layer(landuse_file, "official_landuse", "Landnutzung")
-    osm_highways_layer = load_vector_layer(osm_highways_file, "osm_roads", "OSM Highways")
+    vorrang_layer = load_vector_layer(
+        wind_file,
+        vorrang_layer_name(municipality_name),
+        f"Wind Vorranggebiete {municipality_name}",
+    )
+    vorbehalt_layer = load_optional_vector_layer(
+        wind_file,
+        vorbehalt_layer_name(municipality_name),
+        f"Wind Vorbehaltsgebiete {municipality_name}",
+    )
     boundary_layer = QgsVectorLayer(str(boundary_file), municipality_name, "ogr")
 
     if not boundary_layer.isValid():
         raise RuntimeError(f"Boundary layer could not be loaded: {boundary_file}")
 
-    style_landuse(landuse_layer)
-    style_osm_highways(osm_highways_layer)
+    style_wind_vorrang(vorrang_layer)
     style_boundary(boundary_layer)
 
-    project.addMapLayer(landuse_layer)
-    project.addMapLayer(osm_highways_layer)
+    project.addMapLayer(vorrang_layer)
+    # Empty optional layers are kept in the GeoPackage for a stable output
+    # structure, but they are skipped in the QGIS project to avoid styling
+    # issues and visual clutter.
+    if layer_has_features(vorbehalt_layer):
+        style_wind_vorbehalt(vorbehalt_layer)
+        project.addMapLayer(vorbehalt_layer)
     project.addMapLayer(boundary_layer)
 
-    # -------------------------------------------------------------------------
-    # 2.3 Set project extent and layer order
-    # -------------------------------------------------------------------------
+    if osm_context_file.exists():
+        osm_context_layer = load_vector_layer(
+            osm_context_file,
+            "osm_context_roads",
+            "OSM Context Roads",
+        )
+        style_osm_context(osm_context_layer)
+        project.addMapLayer(osm_context_layer)
+        move_layer_to_top(project, osm_context_layer)
+
     extent = boundary_layer.extent()
     extent.scale(1.15)
     project.viewSettings().setDefaultViewExtent(
         QgsReferencedRectangle(extent, boundary_layer.crs())
     )
 
-    move_layer_to_top(project, landuse_layer)
-    move_layer_to_top(project, osm_highways_layer)
+    if layer_has_features(vorbehalt_layer):
+        move_layer_to_top(project, vorbehalt_layer)
+    move_layer_to_top(project, vorrang_layer)
     move_layer_to_top(project, boundary_layer)
 
-    # -------------------------------------------------------------------------
-    # 2.4 Save QGIS project
-    # -------------------------------------------------------------------------
     project.write(str(output_file))
-
     print(f"QGIS map project created: {display_path(output_file)}")
 
 
 def main() -> None:
     parser = ColoredArgumentParser(
-        description="Create a QGIS map project with OSM, boundary, highways and landuse."
+        description="Create a QGIS map project for one municipality."
     )
-
     parser.add_argument(
         "--municipality",
         required=True,
         help="Name of the municipality, e.g. Drachselsried",
     )
+    parser.add_argument(
+        "--technology",
+        required=True,
+        choices=["wind", "solar", "wasser"],
+        help="Energy technology used for the layer setup.",
+    )
 
     args = parser.parse_args()
-    create_map_project(args.municipality)
+
+    match args.technology:
+        case "wind":
+            create_wind_map_project(args.municipality)
+        case _:
+            raise SystemExit(
+                f"Script 4 currently supports only the wind workflow, not: {args.technology}"
+            )
 
 
 if __name__ == "__main__":
-
-    # QgsApplication is required when PyQGIS is used outside the QGIS GUI. (Doc: 1.4)
     qgs = QgsApplication([], False)
     qgs.initQgis()
 

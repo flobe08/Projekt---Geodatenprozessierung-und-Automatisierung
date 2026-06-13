@@ -227,6 +227,27 @@ def add_box(
     return box
 
 
+def add_debug_frame(
+    layout: QgsPrintLayout,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+) -> None:
+    """Add a temporary red frame to visualize layout blocks."""
+
+    add_box(
+        layout,
+        x,
+        y,
+        width,
+        height,
+        "255,255,255,0",
+        "255,0,0,255",
+        "0.2",
+    )
+
+
 def add_legend_row(
     layout: QgsPrintLayout,
     x: float,
@@ -470,10 +491,18 @@ def create_pdf_layout(
 
     add_map_grid(map_item)
     map_item.refresh()
+    add_debug_frame(layout, map_x, map_y, map_width, map_height)  # todo:delte this lione
 
     # -------------------------------------------------------------------------
     # 2.4 Add right-side description
     # -------------------------------------------------------------------------
+    add_debug_frame(
+        layout,
+        panel_x,
+        description_y,
+        panel_width,
+        layout_config["description_height"],
+    )  # todo:delte this lione
     add_label(
         layout,
         textwrap.fill(
@@ -499,6 +528,7 @@ def create_pdf_layout(
         legend_height,
         "255,255,255,235",
     )
+    add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)  # todo:delte this lione
 
     add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
     add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y + 1, 9, True)
@@ -543,6 +573,13 @@ def create_pdf_layout(
         legend_width,
         units_per_segment=map_config["scale_units_per_segment"],
     )
+    add_debug_frame(
+        layout,
+        panel_x,
+        layout_config["panel_y"],
+        panel_width,
+        185,
+    )  # todo:delte this lione
 
     scale_denominator = round(map_item.scale())
 
@@ -559,7 +596,7 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     add_label(
         layout,
-        "Autor: Elena Geiger, Florian Höpfl",
+        "Autor: Elena Geiger, Florian Hoepfl",
         panel_x,
         author_y,
         layout_config["metadata_font_size"],
@@ -589,6 +626,13 @@ def create_pdf_layout(
         map_width,
         layout_config["footer_height"],
     )
+    add_debug_frame(
+        layout,
+        map_x,
+        footer_y,
+        map_width,
+        layout_config["footer_height"],
+    )  # todo:delte this lione
 
     return layout
 
@@ -645,7 +689,7 @@ def main() -> None:
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind_self", "solar", "wasser"],
+        choices=["wind", "solar", "wasser"],
         help="Energy technology used for the map title.",
     )
 

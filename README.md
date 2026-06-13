@@ -1,19 +1,22 @@
-# Reproducible Pipeline for One Municipality
+# Reproducible Wind Workflow for One Municipality
 
-This project contains a reproducible geodata workflow for one selected
-municipality in Bavaria. The workflow prepares official geodata and
-OpenStreetMap highways for QGIS and can generate a basic QGIS project and PDF
-map.
+This project builds a reproducible wind-planning workflow for one municipality
+in Bavaria. The current workflow is intentionally simple and stable:
+
+1. Download the Bavarian administrative boundaries
+2. Extract one municipality boundary
+3. Clip official wind planning areas to this municipality
+   (/4. Optionally download OSM context roads)
+5. Store the results as GeoPackages
+6. Create a QGIS project
+7. Export a PDF map
 
 The workflow is split into two entry points:
 
-- `scripts/prepare_data.py`: downloads and prepares data in the normal WSL
-  Python environment.
-- `scripts/generate_map.py`: creates a QGIS project and PDF map with the
-  system QGIS Python environment.
+- `scripts/prepare_data.py` for normal Python data preparation
+- `scripts/generate_map.py` for PyQGIS project and PDF generation
 
-This split is intentional because PyQGIS is not part of the normal Python
-virtual environment.
+This split is required because PyQGIS is not installed through `pip`.
 
 ## Project Structure
 
@@ -21,40 +24,30 @@ virtual environment.
 scripts/
   prepare_data.py
   generate_map.py
-  utils/
-    utils.py
   prepare_data/
     0_download_data.py
     1_grenzen.py
-    2_download_overpass_data.py
-    3_clip_landuse.py
+  wind/
+    3_clip_wind_planning_areas.py
   generate_map/
     4_create_map_qgis_project.py
     5_generate_map_pdf.py
+    map_config.py
+  utils/
+    utils.py
 ```
 
-## Prepare Environment
+## Recommended Setup
 
-The recommended setup on Windows is WSL with Ubuntu. This keeps the geodata
-workflow reproducible and avoids Windows path issues.
+The recommended setup is WSL with Ubuntu on Windows.
 
-## Quick Start for a New Machine
-
-Clone the repository first:
-
-```bash
-git clone <repository-url>
-cd Projekt---Geodatenprozessierung-und-Automatisierung
-```
-
-Start Ubuntu/WSL from PowerShell:
+Start WSL from PowerShell:
 
 ```powershell
 wsl -d Ubuntu
 ```
 
-If the repository is stored on a Windows drive, move to the project folder from
-inside WSL. Windows drives are mounted under `/mnt/<drive-letter>`:
+Move into the project folder:
 
 ```bash
 cd "/mnt/e/path/to/Projekt---Geodatenprozessierung-und-Automatisierung"
@@ -67,211 +60,277 @@ sudo apt update
 sudo apt install python3 python3-venv python3-pip qgis python3-qgis
 ```
 
-Create the project environment:
+Create the Python environment for the preparation scripts:
 
 ```bash
 python3 -m venv .venv-wsl
 source .venv-wsl/bin/activate
 pip install -r requirements.txt
-```
-
-Run the complete workflow:
-
-```bash
-bash run_workflow.sh Drachselsried wind_self
-```
-
-The script first runs the normal Python data preparation inside `.venv-wsl`.
-Afterwards it leaves the virtual environment and runs the QGIS map generation
-with the system PyQGIS installation.
-
-## Python Dependencies
-
-`requirements.txt` installs only the Python dependencies. It does not install
-QGIS or PyQGIS.
-
-## QGIS / PyQGIS
-
-`scripts/generate_map.py` uses the PyQGIS API to create a QGIS project and a
-simple PDF map automatically.
-
-PyQGIS is not part of the normal Python virtual environment and therefore
-cannot be installed with `pip install -r requirements.txt`.
-
-The map generation workflow must be executed with the QGIS Python environment,
-for example after leaving the virtual environment:
-
-```bash
 deactivate
-python3 scripts/generate_map.py --municipality Drachselsried --technology wind_self
 ```
-
-The implementation is based on the official PyQGIS Developer Cookbook:
-
-https://docs.qgis.org/3.44/de/docs/pyqgis_developer_cookbook/index.html
-
-## Usage
-
-Prepare all data for Drachselsried:
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/prepare_data.py --municipality Drachselsried --technology wind_self
-```
-
-Generate the QGIS project and PDF map afterwards:
-
-```bash
-deactivate
-python3 scripts/generate_map.py --municipality Drachselsried --technology wind_self
-```
-
-## Usage Without Entry Points
-
-The data preparation scripts can also be executed individually inside the
-normal Python virtual environment:
-
-```bash
-python3 scripts/prepare_data/0_download_data.py --technology wind_self
-python3 scripts/prepare_data/1_grenzen.py --municipality Drachselsried
-python3 scripts/prepare_data/2_download_overpass_data.py --municipality Drachselsried
-python3 scripts/prepare_data/3_clip_landuse.py --municipality Drachselsried
-```
-
-The map generation scripts require the QGIS Python environment:
-
-```bash
-python3 scripts/generate_map/4_create_map_qgis_project.py --municipality Drachselsried
-python3 scripts/generate_map/5_generate_map_pdf.py --municipality Drachselsried
-```
-
-## Workflow
-
-1. `scripts/prepare_data/0_download_data.py`
-   Downloads the required raw datasets, including administrative boundaries,
-   official landuse data, nature conservation datasets, and wind datasets.
-
-2. `scripts/prepare_data/1_grenzen.py`
-   Extracts the selected municipality from the administrative boundaries and
-   writes it as a GeoPackage.
-
-3. `scripts/prepare_data/2_download_overpass_data.py`
-   Downloads OSM highways from Overpass, clips them to the municipality
-   boundary, and writes the `osm_roads` layer to a GeoPackage.
-
-4. `scripts/prepare_data/3_clip_landuse.py`
-   Clips the official landuse dataset to the municipality boundary and writes
-   the `official_landuse` layer to a municipality GeoPackage.
-
-5. `scripts/generate_map/4_create_map_qgis_project.py`
-   Creates a QGIS project containing an OpenStreetMap background layer,
-   municipality boundary, OSM highways and official landuse.
-
-6. `scripts/generate_map/5_generate_map_pdf.py`
-   Exports a simple PDF map from the generated QGIS project.
-
-## Input Data
-
-Raw data is downloaded automatically and stored in `data/raw`:
-
-- `data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip`
-- `data/raw/landuse/landnutzung.gpkg`
-- `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp`
-- `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shx`
-- `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.dbf`
-- `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.prj`
-- `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.cpg`
-- `data/raw/schutzgebiete/*`
-- `data/raw/wind/natura2000/ffh`
-- `data/raw/wind/natura2000/vogelschutz`
-- `data/raw/wind/vogelkulissen_2024`
-
-Raw data is not included in the repository because of file size.
-
-The administrative boundary dataset is delivered as a Shapefile. A Shapefile
-is not a single file, but a group of files:
-
-- `.shp`: stores the geometry
-- `.shx`: spatial index for the geometry
-- `.dbf`: attribute table
-- `.prj`: coordinate reference system
-- `.cpg`: text encoding information
-
-All of these files belong together and are required to read the Shapefile
-correctly.
-
-## Outputs
-
-Processed data is written to `data/processed`:
-
-The OSM highways GeoPackage contains the clipped OSM road layer. The clipped
-official landuse is written to a separate municipality GeoPackage and can be
-opened directly in QGIS.
-
-## Reproducibility
-
-The full workflow can be rerun with:
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/prepare_data.py --municipality <municipality-name> --technology wind_self
-
-deactivate
-python3 scripts/generate_map.py --municipality <municipality-name> --technology wind_self
-```
-
-For another municipality, only the `--municipality` value has to be changed.
-The data preparation workflow then downloads missing input data, recreates the
-municipality boundary, downloads OSM roads, and clips official landuse again.
-With `--technology wind`, additional wind-relevant raw datasets are downloaded.
 
 ## Usage Summary
 
 Recommended full workflow:
 
-Start Ubuntu/WSL first:
-
-```powershell
-wsl -d Ubuntu
+```bash
+bash run_workflow.sh Drachselsried wind
 ```
 
-Go to the project folder:
+Run the same workflow with optional OSM context roads:
 
 ```bash
-cd "/mnt/e/path/to/Projekt---Geodatenprozessierung-und-Automatisierung"
+bash run_workflow.sh Drachselsried wind --with-osm-context
 ```
 
-Install the required system packages:
+## Step-by-Step Usage
+
+Prepare the data only:
 
 ```bash
-sudo apt update
-sudo apt install python3 python3-venv python3-pip qgis python3-qgis
-```
-
-Create the Python environment and install the Python requirements:
-
-```bash
-python3 -m venv .venv-wsl
 source .venv-wsl/bin/activate
-pip install -r requirements.txt
+python3 scripts/prepare_data.py --municipality Drachselsried --technology wind
 deactivate
 ```
 
-Run the automatic workflow:
+Prepare the data and also add optional OSM context roads:
 
 ```bash
-bash run_workflow.sh Drachselsried wind_self
+source .venv-wsl/bin/activate
+python3 scripts/prepare_data.py --municipality Drachselsried --technology wind --with-osm-context
+deactivate
 ```
 
-For another municipality, replace `Drachselsried` with the municipality name.
-For another technology, replace `wind` with `solar` or `wasser`.
+Generate the QGIS project and PDF map:
 
+```bash
+python3 scripts/generate_map.py --municipality Drachselsried --technology wind
+```
 
-## Submission Context
+## Run Every Script Manually
 
-This workflow is part of the topic "Reproducible pipeline for one
-municipality". Further project steps can add official open datasets relevant
-to energy infrastructure and spatial planning, such as protected areas,
-distance buffers, restricted zones, power lines, substations, generators, and
-large consumers. These layers should be cleaned, harmonized, reprojected, and
-stored in a structured geospatial format for exploration in QGIS.
+Data preparation:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/prepare_data/0_download_data.py --technology wind
+python3 scripts/prepare_data/1_grenzen.py --municipality Drachselsried
+python3 scripts/prepare_data/0_download_data.py --technology wind --municipality Drachselsried --with-osm-context
+python3 scripts/wind/3_clip_wind_planning_areas.py --municipality Drachselsried
+deactivate
+```
+
+Map generation:
+
+```bash
+python3 scripts/generate_map/4_create_map_qgis_project.py --municipality Drachselsried --technology wind
+python3 scripts/generate_map/5_generate_map_pdf.py --municipality Drachselsried --technology wind
+```
+
+## Workflow Explanation
+
+### Step 1: Download raw datasets
+
+`scripts/prepare_data/0_download_data.py`
+
+This script:
+
+- downloads the Bavarian administrative boundary ZIP
+- extracts the ALKIS boundary dataset
+- downloads the required wind GeoPackages directly from the official WFS
+
+The wind data are now downloaded automatically from the official WFS.
+
+### Step 2: Extract municipality boundary
+
+`scripts/prepare_data/1_grenzen.py`
+
+This script extracts one municipality from the Bavarian administrative
+boundaries and writes:
+
+- `data/processed/boundaries/<municipality>_boundary.gpkg`
+
+### Step 3: Clip official wind areas to municipality
+
+`scripts/wind/3_clip_wind_planning_areas.py`
+
+This script reads the official wind datasets, clips them to the municipality
+boundary, and writes:
+
+- `data/processed/wind/<municipality>_wind_layers.gpkg`
+
+The output can contain these layers:
+
+- `wind_vorranggebiete_<municipality>`
+- `wind_vorbehaltsgebiete_<municipality>`
+
+### Step 4: Optionally download OSM context roads
+
+`scripts/prepare_data/0_download_data.py --with-osm-context`
+
+This optional download is handled inside script 0 after the municipality
+boundary already exists. In this project, OSM does **not** define the wind
+planning result. It is only used for orientation in QGIS and in the PDF map.
+
+The OSM output is written to:
+
+- `data/processed/osm_context/<municipality>_osm_context.gpkg`
+- `data/processed/osm_context/<municipality>_osm_context_raw.json`
+
+The GeoPackage contains the processed roads layer:
+
+- `osm_context_roads`
+
+### Step 5: Create QGIS project
+
+`scripts/generate_map/4_create_map_qgis_project.py`
+
+This script builds a QGIS project with:
+
+- OSM web basemap
+- municipality boundary
+- clipped wind vorrang areas
+- clipped wind vorbehalt areas
+- optional OSM context roads
+
+### Step 6: Export PDF map
+
+`scripts/generate_map/5_generate_map_pdf.py`
+
+This script exports an A4 landscape PDF map from the generated QGIS project.
+
+## Input Data
+
+### 1. Bavarian administrative boundaries
+
+- downloaded automatically by script 0
+- source dataset: ALKIS administrative boundaries for Bavaria
+
+### 2. Official wind WFS exports
+
+These are the key datasets for the wind workflow.
+
+Expected files:
+
+- `data/raw/wind/wind_vorranggebiete.gpkg`
+- `data/raw/wind/wind_vorbehaltsgebiete.gpkg`
+
+Recommended source:
+
+- WFS service: [https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung](https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung)
+- GetCapabilities: [https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung?service=WFS&request=GetCapabilities](https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung?service=WFS&request=GetCapabilities)
+- Regional planning background: [https://www.landesentwicklung-bayern.de/instrumente/regionalplaene.html](https://www.landesentwicklung-bayern.de/instrumente/regionalplaene.html)
+
+Recommended WFS layers:
+
+- `Vorranggebiet fuer die Errichtung von Windenergieanlagen`
+- `Vorbehaltsgebiet fuer die Errichtung von Windenergieanlagen`
+
+Technical WFS layer names used in the automated download:
+
+- `WFS_Regionalplanung:Vorranggebiet_Windenergienutzung`
+- `WFS_Regionalplanung:Vorbehaltsgebiet_Windenergienutzung`
+
+QGIS WFS connection, if you want to inspect the service manually:
+
+1. `Layer > Layer hinzufügen > WFS/OGC API - Features-Layer hinzufügen`
+2. Neue Verbindung anlegen
+3. URL einfügen:
+
+```text
+https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung
+```
+
+4. Verbinden
+5. Diese beiden Layer auswählen:
+   - `Vorranggebiet für die Errichtung von Windenergieanlagen`
+   - `Vorbehaltsgebiet für die Errichtung von Windenergieanlagen`
+
+### 3. Optional OSM context roads
+
+These roads are requested automatically from Overpass when
+`--with-osm-context` is used in script 0 or in `scripts/prepare_data.py`.
+
+In this project, "OSM data" means:
+
+- optional road and highway line data
+- used as contextual map information
+- not used as the official planning basis
+
+## What The WFS Datasets Are
+
+The two WFS layers are official **regional planning result layers** from
+Regionalplanung Bayern:
+
+- `Vorranggebiet fuer die Errichtung von Windenergieanlagen`
+- `Vorbehaltsgebiet fuer die Errichtung von Windenergieanlagen`
+
+For the project, they are treated as official planning designations that are
+already the result of a planning and balancing process.
+
+## What The WFS Datasets Consider
+
+This point is important for the written report:
+
+- the WFS shows the final planning designations
+- the WFS itself does **not** fully document every detailed criterion per area
+- therefore the workflow should **not** claim that it independently proves or
+  reconstructs all underlying criteria such as species protection, settlement
+  distances, military constraints, or every planning trade-off
+
+What can be said safely:
+
+- the layers come from the official regional planning context in Bavaria
+- they represent official planning outputs, not a self-derived proxy
+- the detailed justification can vary by planning region and by planning
+  update status
+- exact explanations must be read in the responsible regional plan documents
+  and explanatory texts, not in the WFS alone
+
+That limitation is completely acceptable and should be stated explicitly in the
+report.
+
+## Output Data
+
+Processed outputs are written here:
+
+- `data/processed/boundaries/<municipality>_boundary.gpkg`
+- `data/processed/wind/<municipality>_wind_layers.gpkg`
+- `data/processed/osm_context/<municipality>_osm_context.gpkg`
+- `data/processed/qgis_projects/<municipality>_map.qgz`
+- `data/processed/maps/<municipality>_map.pdf`
+
+## Why This Workflow Is Better Than The Older One
+
+The older approach combined landuse and OSM context as the main thematic basis.
+That was useful for experimentation, but weaker for a wind-planning topic.
+
+The current workflow is stronger because:
+
+- the municipality boundary comes from an official administrative dataset
+- the wind layer comes from the official regional planning context
+- OSM stays optional and clearly secondary
+- the result is still reproducible and QGIS-ready
+
+## Reproducibility
+
+To rerun the workflow for another municipality, change only:
+
+- `--municipality`
+- optionally `--with-osm-context`
+
+Example:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/prepare_data.py --municipality Bodenmais --technology wind --with-osm-context
+deactivate
+python3 scripts/generate_map.py --municipality Bodenmais --technology wind
+```
+
+## Notes
+
+- `wind` is the currently implemented full workflow.
+- `solar` and `wasser` remain CLI placeholders for later extensions.
+- PyQGIS scripts must run with the system QGIS Python environment, not inside
+  the plain virtual environment.

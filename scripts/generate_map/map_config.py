@@ -17,7 +17,7 @@ PLACEHOLDER_TEXT = (
 # -----------------------------------------------------------------------------
 LAYOUT_TEMPLATE = {
     # A4 landscape page size: 297 x 210 mm.
-    # The layout is intentionally static. If wind_self, solar or hydropower need
+    # The layout is intentionally static. If wind, solar or hydropower need
     # different spacing later, change only the technology-specific overrides.
     "map_x": 12,  # Left position of the main map in millimeters.
     "map_y": 18,  # Top position of the main map in millimeters.
@@ -63,63 +63,76 @@ TECHNOLOGY_CONFIG = {
     # -------------------------------------------------------------------------
     # Wind map configuration
     # -------------------------------------------------------------------------
-    "wind_self": {
-        "title": "Potenzielle Standorte für Windkraftanlagen in {municipality}",  # PDF title.
-        "description": PLACEHOLDER_TEXT,  # Text block in the right panel.
-        "sources": PLACEHOLDER_TEXT,  # Data source text in the footer.
-        "legend_section": "Standortinformationen",  # Bold legend subsection title.
+    "wind": {
+        "title": "Potenzielle Standorte für Windkraftanlagen in {municipality}",
+        "description": PLACEHOLDER_TEXT,
+        "sources": PLACEHOLDER_TEXT,
+        "legend_section": "Standortinformationen",
         "legend_items": [
             {
-                "label": "Gemeindegrenze",  # Legend label.
-                "color": "255,255,255,255",  # fill color.
-                "outline_color": "255,0,0,255",  # outline color.
+                "label": "Gemeindegrenze",
+                "color": "255,255,255,255",
+                "outline_color": "255,0,0,255",
             },
             {
-                "label": "Nutzungsdaten",  # Legend label.
-                "color": "90,118,145,255",  # fill color.
-                "outline_color": "90,118,145,255",  # outline color.
+                "label": "Vorranggebiete Wind",
+                "color": "90,118,145,255",
+                "outline_color": "90,118,145,255",
             },
             {
-                "label": "OSM-Straßendaten",  # Legend label.
-                "color": "255,170,0,255",  # line color.
-                "outline_color": "255,170,0,255",  #  symbol outline color.
-                "symbol": "line",  # Use road-like legend symbol instead of box.
+                "label": "Vorbehaltsgebiete Wind",
+                "color": "232,177,35,255",
+                "outline_color": "232,177,35,255",
+            },
+            {
+                "label": "OSM-Kontextstraßen",
+                "color": "255,170,0,255",
+                "outline_color": "255,170,0,255",
+                "symbol": "line",
             },
         ],
-        "grid_distance_label": "Abstand: 500 m",  # Text next to grid symbol.
-        "scale_units_per_segment": 1000,  # Scale bar segment length in meters.
-        "layout_overrides": {},  # Not needed: LAYOUT_TEMPLATE is currently tuned for wind_self.
+        "grid_distance_label": "Abstand: 500 m",
+        "scale_units_per_segment": 1000,
+        "layout_overrides": {
+            "legend_height": 68,
+            "grid_title_y": 128,
+            "grid_row_y": 133,
+            "north_arrow_y": 152,
+            "scale_bar_y": 170,
+            "scale_text_y": 184,
+            "author_y": 195,
+            "date_y": 199,
+        },
     },
 
     # -------------------------------------------------------------------------
     # Solar map configuration
     # -------------------------------------------------------------------------
     "solar": {
-        "title": "Potenzieller Standort für einen Photovoltaikpark in {municipality}",  # PDF title.
-        "description": PLACEHOLDER_TEXT,  # Text block in the right panel.
-        "sources": PLACEHOLDER_TEXT,  # Data source text in the footer.
-        "legend_section": "Standortinformationen",  # Bold legend subsection title.
+        "title": "Potenzieller Standort für einen Photovoltaikpark in {municipality}",
+        "description": PLACEHOLDER_TEXT,
+        "sources": PLACEHOLDER_TEXT,
+        "legend_section": "Standortinformationen",
         "legend_items": [
             {
-                "label": "Gemeindegrenze",  # Legend label.
-                "color": "255,255,255,255",  # fill color.
-                "outline_color": "255,0,0,255",  # outline color.
+                "label": "Gemeindegrenze",
+                "color": "255,255,255,255",
+                "outline_color": "255,0,0,255",
             },
             {
-                "label": "Geeignete Flächen",  # Legend label.
-                "color": "31,60,160,255",  # fill color.
-                "outline_color": "31,60,160,255",  # outline color.
+                "label": "Geeignete Flaechen",
+                "color": "31,60,160,255",
+                "outline_color": "31,60,160,255",
             },
             {
-                "label": "Gewählter Standort",  # Legend label.
-                "color": "255,255,255,255",  # fill color.
-                "outline_color": "255,0,0,255",  # outline color.
+                "label": "Gewaehlter Standort",
+                "color": "255,255,255,255",
+                "outline_color": "255,0,0,255",
             },
         ],
-        "grid_distance_label": "Abstand: 500 m",  # Text next to grid symbol.
-        "scale_units_per_segment": 1000,  # Scale bar segment length in meters.
+        "grid_distance_label": "Abstand: 500 m",
+        "scale_units_per_segment": 1000,
         "layout_overrides": {
-            # Example overrides with current default values.
             "legend_height": 52,
             "grid_title_y": 112,
             "grid_row_y": 117,
@@ -130,32 +143,31 @@ TECHNOLOGY_CONFIG = {
     # Hydropower map configuration
     # -------------------------------------------------------------------------
     "wasser": {
-        "title": "Potenzielle Standorte für Wasserkraftanlagen in {municipality}",  # PDF title.
-        "description": PLACEHOLDER_TEXT,  # Text block in the right panel.
-        "sources": PLACEHOLDER_TEXT,  # Data source text in the footer.
-        "legend_section": "Standortinformationen",  # Bold legend subsection title.
+        "title": "Potenzielle Standorte für Wasserkraftanlagen in {municipality}",
+        "description": PLACEHOLDER_TEXT,
+        "sources": PLACEHOLDER_TEXT,
+        "legend_section": "Standortinformationen",
         "legend_items": [
             {
-                "label": "Gemeindegrenze",  # Legend label.
-                "color": "255,255,255,255",  # fill color.
-                "outline_color": "255,0,0,255",  # outline color.
+                "label": "Gemeindegrenze",
+                "color": "255,255,255,255",
+                "outline_color": "255,0,0,255",
             },
             {
-                "label": "Nutzungsdaten",  # Legend label.
-                "color": "90,118,145,255",  # fill color.
-                "outline_color": "90,118,145,255",  # outline color.
+                "label": "Nutzungsdaten",
+                "color": "90,118,145,255",
+                "outline_color": "90,118,145,255",
             },
             {
-                "label": "OSM-Straßendaten",  # Legend label.
-                "color": "255,170,0,255",  # line color.
-                "outline_color": "255,170,0,255",  # symbol outline color.
-                "symbol": "line",  # Use road-like legend symbol instead of box.
+                "label": "OSM-Straßendaten",
+                "color": "255,170,0,255",
+                "outline_color": "255,170,0,255",
+                "symbol": "line",
             },
         ],
-        "grid_distance_label": "Abstand: 500 m",  # Text next to grid symbol.
-        "scale_units_per_segment": 1000,  # Scale bar segment length in meters.
+        "grid_distance_label": "Abstand: 500 m",
+        "scale_units_per_segment": 1000,
         "layout_overrides": {
-            # Example overrides with current default values.
             "legend_height": 52,
             "grid_title_y": 112,
             "grid_row_y": 117,
