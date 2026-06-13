@@ -645,7 +645,7 @@ def main() -> None:
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind", "solar", "wasser"],
+        choices=["wind_self", "solar", "wasser"],
         help="Energy technology used for the map title.",
     )
 

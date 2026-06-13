@@ -17,7 +17,7 @@ PLACEHOLDER_TEXT = (
 # -----------------------------------------------------------------------------
 LAYOUT_TEMPLATE = {
     # A4 landscape page size: 297 x 210 mm.
-    # The layout is intentionally static. If wind, solar or hydropower need
+    # The layout is intentionally static. If wind_self, solar or hydropower need
     # different spacing later, change only the technology-specific overrides.
     "map_x": 12,  # Left position of the main map in millimeters.
     "map_y": 18,  # Top position of the main map in millimeters.
@@ -63,7 +63,7 @@ TECHNOLOGY_CONFIG = {
     # -------------------------------------------------------------------------
     # Wind map configuration
     # -------------------------------------------------------------------------
-    "wind": {
+    "wind_self": {
         "title": "Potenzielle Standorte für Windkraftanlagen in {municipality}",  # PDF title.
         "description": PLACEHOLDER_TEXT,  # Text block in the right panel.
         "sources": PLACEHOLDER_TEXT,  # Data source text in the footer.
@@ -88,7 +88,7 @@ TECHNOLOGY_CONFIG = {
         ],
         "grid_distance_label": "Abstand: 500 m",  # Text next to grid symbol.
         "scale_units_per_segment": 1000,  # Scale bar segment length in meters.
-        "layout_overrides": {},  # Not needed: LAYOUT_TEMPLATE is currently tuned for wind.
+        "layout_overrides": {},  # Not needed: LAYOUT_TEMPLATE is currently tuned for wind_self.
     },
 
     # -------------------------------------------------------------------------

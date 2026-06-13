@@ -19,19 +19,19 @@ from utils import ColoredArgumentParser, log_info, log_section, log_success
 
 def run_script(
     step_name: str,
-    script_name: str,
+    script_path: str,
     args: list[str] | None = None,
 ) -> None:
-    """Run a Python script from the prepare_data scripts folder."""
+    """Run a Python script from the scripts folder."""
 
-    script_path = SCRIPTS_DIR / "prepare_data" / script_name
+    full_script_path = SCRIPTS_DIR / script_path
 
-    command = [sys.executable, str(script_path)]
+    command = [sys.executable, str(full_script_path)]
 
     if args:
         command.extend(args)
 
-    display_command = [f"prepare_data/{script_name}"]
+    display_command = [script_path]
 
     if args:
         display_command.extend(args)
@@ -56,7 +56,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind", "solar", "wasser"],
+        choices=["wind_self", "solar", "wasser"],
         help="Energy technology to prepare data for.",
     )
 
@@ -69,30 +69,36 @@ def prepare_data(municipality: str, technology: str) -> None:
     # Step 0: Download base data and technology-specific raw data.
     run_script(
         "Step 0: Download raw data",
-        "0_download_data.py",
+        "prepare_data/0_download_data.py",
         ["--technology", technology],
     )
 
     # Step 1: Extract the selected municipality boundary.
     run_script(
         "Step 1: Extract municipality boundary",
-        "1_grenzen.py",
+        "prepare_data/1_grenzen.py",
         ["--municipality", municipality],
     )
 
-    # Step 2: Download OSM roads from Overpass and clip them.
-    run_script(
-        "Step 2: Download OSM roads",
-        "2_download_overpass_data.py",
-        ["--municipality", municipality],
-    )
+    match technology:
+        case "wind_self":
+            # Step 2: Download OSM roads from Overpass and clip them.
+            run_script(
+                "Step 2: Download OSM roads",
+                "wind_self/2_download_overpass_data.py",
+                ["--municipality", municipality],
+            )
 
-    # Step 3: Clip official landuse data to the municipality boundary.
-    run_script(
-        "Step 3: Clip official landuse",
-        "3_clip_landuse.py",
-        ["--municipality", municipality],
-    )
+            # Step 3: Clip official landuse data to the municipality boundary.
+            run_script(
+                "Step 3: Clip official landuse",
+                "wind_self/3_clip_landuse.py",
+                ["--municipality", municipality],
+            )
+        case "solar" | "wasser":
+            log_info(f"No preparation scripts configured yet for: {technology}")
+        case _:
+            raise ValueError(f"Unknown technology: {technology}")
 
 
 def main() -> None:
@@ -109,4 +115,4 @@ if __name__ == "__main__":
 
 #
 # source .venv-wsl/bin/activate
-# python3 scripts/prepare_data.py --municipality Drachselsried --technology wind
+# python3 scripts/prepare_data.py --municipality Drachselsried --technology wind_self

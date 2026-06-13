@@ -55,7 +55,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind", "solar", "wasser"],
+        choices=["wind_self", "solar", "wasser"],
         help="Energy technology used for the map title.",
     )
 
@@ -92,4 +92,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-# python scripts/generate_map.py --municipality Drachselsried --technology wind
+# python scripts/generate_map.py --municipality Drachselsried --technology wind_self

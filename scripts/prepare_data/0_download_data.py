@@ -107,7 +107,7 @@ SCHUTZGEBIETE_DATASETS = [
 
 
 # -----------------------------------------------------------------------------
-# Additional official datasets for the wind-energy workflow.
+# Additional official datasets for self created buffers the wind_self-energy workflow.
 # -----------------------------------------------------------------------------
 NATURA2000_FFH_URL = (
     "https://www.lfu.bayern.de/gdi/dls/daten/natura2000/ffh_epsg25832_shp.zip"
@@ -120,13 +120,18 @@ VOGELKULISSEN_2024_URL = (
     "wiesenbrueter/vogelkulissen_2024/doc/vogelkulissen24.zip"
 )
 
-WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
+WIND_RAW_DIR = BASE_DIR / "data/raw/wind_self"
 NATURA2000_FFH_FILE = WIND_RAW_DIR / "natura2000_ffh_utm32.zip"
 NATURA2000_VOGELSCHUTZ_FILE = WIND_RAW_DIR / "natura2000_vogelschutz_utm32.zip"
 VOGELKULISSEN_2024_FILE = WIND_RAW_DIR / "vogelkulissen_2024.zip"
 NATURA2000_EXTRACT_DIR = WIND_RAW_DIR / "natura2000"
 VOGELKULISSEN_EXTRACT_DIR = WIND_RAW_DIR / "vogelkulissen_2024"
 
+# -----------------------------------------------------------------------------
+#  official datasets for the buffers for windenergy
+# -----------------------------------------------------------------------------
+
+(12)Wind_Donauwald_Url = "https://www.region-donau-wald.de/fileadmin/user_upload/pdfs/Regionalplan/laufende_Fortschreibungen/Windenergie/Beteiligungsverfahren/250714_DW_WindVRG_Exportdatei_Shape.zip"
 
 def download_file(url: str, output_file: Path) -> None:
     """Download a file if it does not already exist."""
@@ -178,7 +183,7 @@ def download_and_unzip_dataset(
 
 
 def download_wind_data() -> None:
-    """Download official planning and restriction datasets relevant for wind."""
+    """Download official planning and restriction datasets relevant for wind_self."""
 
     log_section("Wind datasets")
 
@@ -247,7 +252,7 @@ def download_technology_data(technology: str | None) -> None:
     """Download optional datasets for the selected technology."""
 
     match technology:
-        case "wind":
+        case "wind_self":
             download_wind_data()
         case "solar":
             log_warning("No additional solar datasets configured yet.")
@@ -304,7 +309,7 @@ def main() -> None:
     parser.add_argument(
         "--technology",
         required=True,
-        choices=["wind", "solar", "wasser"],
+        choices=["wind","wind_self", "solar", "wasser"],
         help="Selected technology for additional datasets.",
     )
     args = parser.parse_args()

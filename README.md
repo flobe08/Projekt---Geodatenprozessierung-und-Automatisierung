@@ -78,7 +78,7 @@ pip install -r requirements.txt
 Run the complete workflow:
 
 ```bash
-bash run_workflow.sh Drachselsried wind
+bash run_workflow.sh Drachselsried wind_self
 ```
 
 The script first runs the normal Python data preparation inside `.venv-wsl`.
@@ -103,7 +103,7 @@ for example after leaving the virtual environment:
 
 ```bash
 deactivate
-python3 scripts/generate_map.py --municipality Drachselsried --technology wind
+python3 scripts/generate_map.py --municipality Drachselsried --technology wind_self
 ```
 
 The implementation is based on the official PyQGIS Developer Cookbook:
@@ -116,14 +116,14 @@ Prepare all data for Drachselsried:
 
 ```bash
 source .venv-wsl/bin/activate
-python3 scripts/prepare_data.py --municipality Drachselsried --technology wind
+python3 scripts/prepare_data.py --municipality Drachselsried --technology wind_self
 ```
 
 Generate the QGIS project and PDF map afterwards:
 
 ```bash
 deactivate
-python3 scripts/generate_map.py --municipality Drachselsried --technology wind
+python3 scripts/generate_map.py --municipality Drachselsried --technology wind_self
 ```
 
 ## Usage Without Entry Points
@@ -132,7 +132,7 @@ The data preparation scripts can also be executed individually inside the
 normal Python virtual environment:
 
 ```bash
-python3 scripts/prepare_data/0_download_data.py --technology wind
+python3 scripts/prepare_data/0_download_data.py --technology wind_self
 python3 scripts/prepare_data/1_grenzen.py --municipality Drachselsried
 python3 scripts/prepare_data/2_download_overpass_data.py --municipality Drachselsried
 python3 scripts/prepare_data/3_clip_landuse.py --municipality Drachselsried
@@ -214,10 +214,10 @@ The full workflow can be rerun with:
 
 ```bash
 source .venv-wsl/bin/activate
-python3 scripts/prepare_data.py --municipality <municipality-name> --technology wind
+python3 scripts/prepare_data.py --municipality <municipality-name> --technology wind_self
 
 deactivate
-python3 scripts/generate_map.py --municipality <municipality-name> --technology wind
+python3 scripts/generate_map.py --municipality <municipality-name> --technology wind_self
 ```
 
 For another municipality, only the `--municipality` value has to be changed.
@@ -260,7 +260,7 @@ deactivate
 Run the automatic workflow:
 
 ```bash
-bash run_workflow.sh Drachselsried wind
+bash run_workflow.sh Drachselsried wind_self
 ```
 
 For another municipality, replace `Drachselsried` with the municipality name.
