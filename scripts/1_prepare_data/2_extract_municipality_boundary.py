@@ -1,5 +1,5 @@
 """
-Script 1: Extract municipality boundary.
+Script 2: Extract municipality boundary.
 
 This script reads the Bavarian administrative boundary dataset and extracts
 one selected municipality as a GeoPackage for all following processing steps.
@@ -49,7 +49,7 @@ def write_boundary(output_file: Path, municipality: gpd.GeoDataFrame) -> None:
         log_info("Close the file in QGIS or remove the layer from the QGIS project.")
         log_info("Then run the pipeline again.")
         raise SystemExit(
-            "Script 1 stopped because the boundary GeoPackage could not be written."
+            "Script 2 stopped because the boundary GeoPackage could not be written."
         ) from error
 
 

@@ -1,8 +1,8 @@
 """
-Script 5: Generate a map PDF from the QGIS project.
+Script 2: Generate a map PDF from the QGIS project.
 
 Workflow:
-1. Open the QGIS project created by script 4.
+1. Open the QGIS project created by map script 1.
 2. Create one A4 landscape print layout.
 3. Add one main map, a compact information panel, a north arrow and a scale bar.
 4. Export the layout as PDF.
@@ -12,6 +12,7 @@ from pathlib import Path
 import argparse
 import textwrap
 import sys
+import warnings
 from datetime import date
 
 # PyQGIS imports. Main references: Python apps, projects, layouts and PDF export.
@@ -40,10 +41,13 @@ from qgis.PyQt.QtGui import QColor, QFont
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(BASE_DIR / "scripts/utils"))
-sys.path.append(str(BASE_DIR / "scripts/generate_map"))
+sys.path.append(str(BASE_DIR / "scripts/3_generate_map"))
 
 from map_config import get_map_config
 from utils import ColoredArgumentParser, log_error, log_info, log_success
+
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 # -----------------------------------------------------------------------------
@@ -62,6 +66,18 @@ def safe_filename(name: str) -> str:
     """Create the same filename format as the other scripts."""
 
     return name.lower().replace(" ", "_")
+
+
+def qgis_project_file_name(municipality_name: str, technology: str) -> str:
+    """Create the technology-specific QGIS project file name."""
+
+    return f"{safe_filename(municipality_name)}_map_{technology}.qgz"
+
+
+def map_pdf_file_name(municipality_name: str, technology: str) -> str:
+    """Create the technology-specific map PDF file name."""
+
+    return f"{safe_filename(municipality_name)}_map_{technology}.pdf"
 
 
 def display_path(path: Path) -> str:
@@ -94,7 +110,7 @@ def remove_existing_output(output_file: Path) -> None:
         log_error(f"Locked file: {display_path(output_file)}")
         log_info("Close the PDF viewer and run the script again.")
         raise SystemExit(
-            "Script 5 stopped because the output PDF is still open. "
+            "Map script 2 stopped because the output PDF is still open. "
             f"Close it first: {display_path(output_file)}"
         ) from error
 
@@ -289,6 +305,29 @@ def add_legend_row(
             color,
             "0",
         )
+    elif symbol == "stripe_box":
+        add_box(
+            layout,
+            x,
+            symbol_y,
+            symbol_width,
+            symbol_height,
+            "255,255,255,255",
+            outline_color,
+            "0.25",
+        )
+        slash_label = add_label(
+            layout,
+            "///",
+            x + 1.0,
+            symbol_y - 0.15,
+            8,
+            True,
+            symbol_width - 1.6,
+            symbol_height + 0.8,
+        )
+        slash_label.setFont(QFont("Arial", 8, QFont.Bold))
+        slash_label.setFontColor(QColor(*[int(value) for value in color.split(",")[:3]]))
     else:
         add_box(
             layout,
@@ -596,7 +635,7 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     add_label(
         layout,
-        "Autor: Elena Geiger, Florian Hoepfl",
+        "Autor: Elena Geiger, Florian Höpfl",
         panel_x,
         author_y,
         layout_config["metadata_font_size"],
@@ -645,10 +684,10 @@ def generate_map_pdf(municipality_name: str, technology: str) -> None:
 
     safe_name = safe_filename(municipality_name)
 
-    project_file = PROJECT_DIR / f"{safe_name}_map.qgz"
-    output_file = OUTPUT_DIR / f"{safe_name}_map.pdf"
+    project_file = PROJECT_DIR / qgis_project_file_name(municipality_name, technology)
+    output_file = OUTPUT_DIR / map_pdf_file_name(municipality_name, technology)
 
-    require_file(project_file, "QGIS project not found. Run script 4 first")
+    require_file(project_file, "QGIS project not found. Run map script 1 first")
     require_file(NORTH_ARROW_PATH, "North arrow SVG not found")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -25,12 +25,12 @@ fachliche Einordnung erfolgt deshalb auf Basis von `source_layer`.
 
 ## Workflow-Entscheidung
 
-Die Landnutzung wird zuerst vollständig als Flächendatensatz übernommen:
+Die Landnutzung wird zuerst als gemeindespezifischer Arbeitsdatensatz übernommen:
 
 1. `landnutzung.gpkg` wird als offizieller Originaldatensatz geladen.
 2. Die Gemeinde-Bounding-Box wird als schneller Vorfilter verwendet.
 3. Jeder Polygon-Layer wird exakt mit der Gemeindegrenze zugeschnitten.
-4. Die zugeschnittenen Layer werden zusammengeführt.
+4. Die zugeschnittenen `ln_*`-Layer bleiben im Output einzeln erhalten.
 5. Punkte und Linien werden für den Landnutzungs-Output nicht übernommen.
 
 Beim Zuschnitt können an der Gemeindegrenze technisch Punkt- oder Linienreste
@@ -55,7 +55,7 @@ data/processed/landuse/landnutzung_drachselsried.gpkg
 ## Layer im Originaldatensatz
 
 Diese Layer werden in `data/raw/landuse/landnutzung.gpkg` erwartet und in
-Skript 3 geprüft:
+Skript 4 geprüft:
 
 | source_layer | Geometrie | Erste Interpretation im Wind-Workflow |
 | --- | --- | --- |

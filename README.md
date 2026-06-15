@@ -1,7 +1,9 @@
-# Reproduzierbarer Wind-Workflow für eine Gemeinde
+# Reproduzierbarer Energie-Workflow für eine Gemeinde
 
-Dieses Projekt erstellt einen reproduzierbaren Workflow für eine Gemeinde in
-Bayern. Der aktuelle Fokus liegt auf **Windkraft**.
+Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow für eine
+ausgewählte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow**
+durchgängig umgesetzt. Der **Solar-Workflow** wird vorbereitet und basiert auf
+OSM-Verkehrsachsen sowie rechtlichen 200-m- und 500-m-Pufferzonen.
 
 ## Setup
 
@@ -22,7 +24,7 @@ In den Projektordner wechseln:
 cd "/mnt/e/Eigene Daten/Studium/THD/Module/Semester 6/Geodatenprozessierung und Automatisierung/Projekt/Projekt---Geodatenprozessierung-und-Automatisierung"
 ```
 
-Benötigte Systempakete installieren:
+Systempakete installieren:
 
 ```bash
 sudo apt update
@@ -38,7 +40,7 @@ pip install -r requirements.txt
 deactivate
 ```
 
-## Vollständiger Start
+## Schnellstart
 
 Empfohlener Gesamtworkflow:
 
@@ -46,51 +48,51 @@ Empfohlener Gesamtworkflow:
 bash run_workflow.sh Drachselsried wind
 ```
 
-## Einzelne Hauptskripte
+## Hauptskripte
 
 Daten vorbereiten:
 
 ```bash
 source .venv-wsl/bin/activate
-python3 scripts/prepare_data.py --municipality Drachselsried --technology wind
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind
 deactivate
 ```
 
 QGIS-Projekt und PDF-Karte erzeugen:
 
 ```bash
-python3 scripts/generate_map.py --municipality Drachselsried --technology wind
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 ```
 
-## Manueller Ablauf ohne Bash-Skript
+## Manuelle Ausführung ohne Bash-Skript
 
-Wenn du nicht `run_workflow.sh` verwenden willst, kannst du alle Schritte auch
-manuell ausführen. Das Ergebnis ist dasselbe.
+Wenn du jeden Schritt einzeln starten willst, erreichst du dasselbe Ergebnis
+mit diesen Befehlen.
 
-### 1. Datenvorbereitung
+### Wind
 
 ```bash
 source .venv-wsl/bin/activate
-python3 scripts/prepare_data/0_download_data.py --technology wind
-python3 scripts/prepare_data/1_grenzen.py --municipality Drachselsried
-python3 scripts/wind/3_clip_wind_planning_areas.py --municipality Drachselsried
+python3 scripts/1_prepare_data/1_download_data.py --technology wind
+python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
+python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
 deactivate
+python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology wind
+python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology wind
 ```
 
-### 2. Kartenerzeugung
+### Solar
 
 ```bash
-python3 scripts/generate_map/4_create_map_qgis_project.py --municipality Drachselsried --technology wind
-python3 scripts/generate_map/5_generate_map_pdf.py --municipality Drachselsried --technology wind
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data/1_download_data.py --technology solar
+python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
+python3 scripts/2_2_solar/1_download_osm_transport_data.py --municipality Drachselsried
+python3 scripts/2_2_solar/3_prepare_solar_layers.py --municipality Drachselsried
+deactivate
+python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology solar
+python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology solar
 ```
-
-Kurz zusammengefasst:
-
-1. `0_download_data.py` lädt die Rohdaten herunter.
-2. `1_grenzen.py` extrahiert die Gemeindegrenze.
-3. `3_clip_wind_planning_areas.py` schneidet die Windflächen auf die Gemeinde zu.
-4. `4_create_map_qgis_project.py` erzeugt das QGIS-Projekt.
-5. `5_generate_map_pdf.py` exportiert die PDF-Karte.
 
 ## Wichtige Hinweise
 
@@ -100,3 +102,5 @@ Kurz zusammengefasst:
   Git versioniert.
 - Die genaue Schritt-für-Schritt-Anleitung steht in
   [ANLEITUNG.md](ANLEITUNG.md).
+- Die manuelle Datenprüfung und Verifikation steht in
+  [description/VERIFIKATION.md](description/VERIFIKATION.md).

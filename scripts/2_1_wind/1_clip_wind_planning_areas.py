@@ -1,11 +1,15 @@
 """
-Script 3: Clip all wind datasets to one municipality.
+Script 1: Clip all wind datasets to one municipality.
 
 Workflow:
-1. Read the municipality boundary from script 1.
+1. Read the municipality boundary from script 2.
 2. Read the official WFS exports for Vorranggebiete and Vorbehaltsgebiete.
 3. Clip both datasets exactly to the municipality boundary.
-4. Store the municipality result as one GeoPackage with two layers.
+4. Store the municipality result as one GeoPackage with detail layers and one
+   combined technology layer:
+   - wind_vorranggebiete_<municipality>
+   - wind_vorbehaltsgebiete_<municipality>
+   - wind_spezifisch
 """
 
 from pathlib import Path
@@ -13,6 +17,7 @@ import re
 import sys
 
 import geopandas as gpd
+import pandas as pd
 from pyogrio.errors import DataSourceError
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
@@ -45,6 +50,12 @@ def vorbehalt_layer_name(municipality_name: str) -> str:
     """Create a municipality-specific layer name for wind vorbehalt areas."""
 
     return f"wind_vorbehaltsgebiete_{safe_filename(municipality_name)}"
+
+
+def wind_specific_layer_name() -> str:
+    """Create the shared layer name for all wind-specific planning areas."""
+
+    return "wind_spezifisch"
 
 
 def display_path(path: Path) -> str:
@@ -110,9 +121,9 @@ def remove_existing_output(output_file: Path) -> None:
         log_error("Output GeoPackage is locked and cannot be overwritten.")
         log_error(f"Locked file: {display_path(output_file)}")
         log_info("Close the file in QGIS or remove the layer from the QGIS project.")
-        log_info("Then run script 3 again.")
+        log_info("Then run the wind script again.")
         raise SystemExit(
-            "Script 3 stopped because an output GeoPackage is still open."
+            "Wind script 1 stopped because an output GeoPackage is still open."
         ) from error
 
 
@@ -149,7 +160,7 @@ def clip_dataset(
     if not vector_file.exists() or vector_file.stat().st_size == 0:
         log_error(f"Missing input dataset: {display_path(vector_file)}")
         raise SystemExit(
-            "Script 3 stopped because one required wind dataset is missing."
+            "Wind script 1 stopped because one required wind dataset is missing."
         )
 
     boundary_25832 = boundary.to_crs(epsg=25832)
@@ -176,6 +187,23 @@ def clip_dataset(
     return clipped
 
 
+def merge_wind_specific_layers(
+    wind_layers: list[gpd.GeoDataFrame],
+) -> gpd.GeoDataFrame:
+    """Merge all wind-specific layers into one QGIS-friendly overview layer."""
+
+    non_empty_layers = [layer for layer in wind_layers if not layer.empty]
+
+    if not non_empty_layers:
+        return gpd.GeoDataFrame({"geometry": []}, geometry="geometry", crs="EPSG:25832")
+
+    return gpd.GeoDataFrame(
+        pd.concat(non_empty_layers, ignore_index=True),
+        geometry="geometry",
+        crs="EPSG:25832",
+    )
+
+
 def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> None:
     """Write one GeoPackage layer, even when it contains no features."""
 
@@ -186,9 +214,9 @@ def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> N
         log_error(f"Could not write layer: {layer_name}")
         log_error(f"Output file: {display_path(output_file)}")
         log_info("Close the file in QGIS or remove the layer from the QGIS project.")
-        log_info("Then run script 3 again.")
+        log_info("Then run the wind script again.")
         raise SystemExit(
-            "Script 3 stopped because the GeoPackage could not be written."
+            "Wind script 1 stopped because the GeoPackage could not be written."
         ) from error
 
     if data.empty:
@@ -206,7 +234,7 @@ def clip_wind_datasets_for_municipality(municipality_name: str) -> None:
 
     if not boundary_file.exists():
         raise FileNotFoundError(
-            f"Boundary file not found: {boundary_file}. Run script 1 first."
+            f"Boundary file not found: {boundary_file}. Run script 2 first."
         )
 
     WIND_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -220,9 +248,11 @@ def clip_wind_datasets_for_municipality(municipality_name: str) -> None:
 
     vorrang = clip_dataset(WIND_VORRANG_FILE, boundary, "wind_vorranggebiete")
     vorbehalt = clip_dataset(WIND_VORBEHALT_FILE, boundary, "wind_vorbehaltsgebiete")
+    wind_spezifisch = merge_wind_specific_layers([vorrang, vorbehalt])
 
     write_layer(output_file, vorrang_layer_name(municipality_name), vorrang)
     write_layer(output_file, vorbehalt_layer_name(municipality_name), vorbehalt)
+    write_layer(output_file, wind_specific_layer_name(), wind_spezifisch)
     log_success("Wind dataset clipping finished.")
 
 

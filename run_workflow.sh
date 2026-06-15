@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Full workflow wrapper.
+# Internally this script calls:
+# - scripts/1_prepare_data.py
+# - scripts/3_generate_map.py
+# The technology-specific steps are triggered there:
+# - wind   -> scripts/2_1_wind/
+# - solar  -> scripts/2_2_solar/
+# - wasser -> scripts/2_3_wasser/ (later)
+
 MUNICIPALITY="${1:-Drachselsried}"
 TECHNOLOGY="${2:-wind}"
 
@@ -15,10 +24,10 @@ fi
 
 echo "Preparing data for: ${MUNICIPALITY} (${TECHNOLOGY})"
 source .venv-wsl/bin/activate
-python3 scripts/prepare_data.py --municipality "${MUNICIPALITY}" --technology "${TECHNOLOGY}"
+python3 scripts/1_prepare_data.py --municipality "${MUNICIPALITY}" --technology "${TECHNOLOGY}"
 deactivate
 
 echo "Generating QGIS project and PDF map for: ${MUNICIPALITY}"
-python3 scripts/generate_map.py --municipality "${MUNICIPALITY}" --technology "${TECHNOLOGY}"
+python3 scripts/3_generate_map.py --municipality "${MUNICIPALITY}" --technology "${TECHNOLOGY}"
 
 echo "Workflow finished successfully."

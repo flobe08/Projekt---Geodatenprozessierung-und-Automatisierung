@@ -13,8 +13,7 @@ Die Struktur ist bereits für drei Technologierichtungen vorbereitet:
 
 Aktuell ist nur der Bereich **Wind** vollständig umgesetzt und verifiziert.
 
-
-## 1. Wind
+## 1. Allgemein
 
 ### 1.1 Verifikation der Gemeindegrenze
 
@@ -28,7 +27,7 @@ Vorgehen zur Verifikation:
 1. Der originale Verwaltungsdatensatz wurde in QGIS geladen.
 2. In der Attributtabelle wurde die Gemeinde **Drachselsried** geprüft.
 3. Die Gemeinde wurde im Originaldatensatz räumlich lokalisiert.
-4. Der von `scripts/prepare_data/1_grenzen.py` erzeugte Output wurde geladen:
+4. Der aktuelle Skript-Output wurde geladen:
 
 ```text
 data/processed/boundaries/drachselsried_boundary.gpkg
@@ -43,8 +42,63 @@ Ergebnis:
   von Drachselsried überein.
 - Damit ist die Extraktion der Gemeindegrenze fachlich plausibel verifiziert.
 
+Historische Referenz:
 
-### 1.2 Verifikation der Wind-WFS-Daten
+```text
+# TODO: nicht mehr verwendet
+scripts/prepare_data/1_grenzen.py
+```
+
+Aktuelle Referenz:
+
+```text
+scripts/1_prepare_data/2_extract_municipality_boundary.py
+```
+
+## 2. Allgemeine Schutzgebiete
+
+### 2.1 Verifikation der Schutzgebietsdaten
+
+Verwendete Datensätze:
+
+- allgemeine Schutzgebietsdatensätze des LfU Bayern
+- Natura-2000-Datensätze FFH und Vogelschutz
+- automatischer Skript-Output:
+
+```text
+data/processed/schutzgebiete/drachselsried_schutzgebiete.gpkg
+```
+
+Vorgehen zur Verifikation:
+
+1. Die originalen Schutzgebietsdatensätze wurden in QGIS geladen.
+2. Die Gemeindegrenze von Drachselsried wurde ergänzt.
+3. Die flächenhaften Datensätze wurden manuell mit der Gemeinde verglichen.
+4. Der automatische Output aus
+   `scripts/1_prepare_data/3_build_protection_layers.py` wurde geladen.
+5. Die beiden Ergebnislayer
+   - `naturschutz_allgemein_hart`
+   - `naturschutz_allgemein_weich`
+   wurden mit den Originaldaten visuell überlagert.
+
+Ergebnis:
+
+- Die automatisierten Schutzgebietslayer sind räumlich plausibel.
+- Die Einteilung in harte und weiche Restriktionen ist methodisch nachvollziehbar.
+- Großräumige Schutzkategorien wie Naturparke, Landschaftsschutzgebiete und
+  Biosphärenreservate werden bewusst nicht automatisch als absolute
+  Ausschlussflächen behandelt.
+
+Methodischer Hinweis:
+
+- punktförmige Schutzobjekte bleiben weiterhin dokumentiert und verfügbar
+- sie werden als eigene geclippte Punktlayer mit ausgegeben
+- für den zusammengeführten harten Ausschlusslayer werden aber weiterhin die
+  flächenhaften Schutzgebietsdaten bevorzugt
+
+## 3. Wind
+
+### 3.1 Verifikation der Wind-WFS-Daten
 
 Verwendete Datensätze:
 
@@ -74,8 +128,7 @@ Ergebnis:
 - Damit ist der Download der offiziellen Winddatensätze fachlich plausibel
   verifiziert.
 
-
-### 1.3 Verifikation des Clips der Windflächen
+### 3.2 Verifikation des Clips der Windflächen
 
 Verwendete Datensätze:
 
@@ -89,14 +142,20 @@ Automatischer Output:
 data/processed/wind/drachselsried_wind_layers.gpkg
 ```
 
+Relevante Layer:
+
+- `wind_vorranggebiete_drachselsried`
+- `wind_vorbehaltsgebiete_drachselsried`
+- `wind_spezifisch`
+
 Vorgehen zur Verifikation:
 
 1. Der originale Wind-Datensatz wurde manuell in QGIS geladen.
 2. Die Gemeindegrenze von Drachselsried wurde geladen.
 3. Der originale Wind-Datensatz wurde manuell mit der Gemeindegrenze
    zugeschnitten.
-4. Der manuelle Zuschnitt wurde mit dem Output von
-   `scripts/wind/3_clip_wind_planning_areas.py` überlagert.
+4. Der manuelle Zuschnitt wurde mit dem Output des aktuellen Skripts
+   überlagert.
 5. Die Geometrien wurden visuell verglichen.
 
 Ergebnis:
@@ -104,13 +163,29 @@ Ergebnis:
 - Der automatische Skript-Output stimmt räumlich mit dem manuell erzeugten
   Zuschnitt überein.
 - Der Clip der Windflächen ist damit fachlich nachvollziehbar verifiziert.
+- Der Layer `wind_spezifisch` fasst die technologiespezifischen Windflächen
+  für eine einfache QGIS-Prüfung zusammen.
 
+Historische Referenz:
 
-### 1.4 Verifikation der optionalen OSM-Kontextdaten
+```text
+# TODO: nicht mehr verwendet
+scripts/wind/3_clip_wind_planning_areas.py
+```
+
+Aktuelle Referenz:
+
+```text
+scripts/2_1_wind/1_clip_wind_planning_areas.py
+```
+
+### 3.3 Verifikation der optionalen OSM-Kontextdaten
 
 Verwendeter Datensatz:
 
-- `data/processed/osm_context/drachselsried_osm_context.gpkg`
+```text
+data/processed/osm_context/drachselsried_osm_context.gpkg
+```
 
 Vorgehen zur Verifikation:
 
@@ -127,21 +202,77 @@ Ergebnis:
 - Die OSM-Daten eignen sich als Kontextlayer, nicht als offizielle
   Planungsgrundlage.
 
+Hinweis:
 
-### 1.5 Zusammenfassung Wind
+```text
+# TODO: nicht mehr verwendet
+Die optionalen OSM-Kontextdaten sind aktuell nicht mehr Teil des aktiven
+Wind-Workflows, sollen aber als frühere Arbeitsschritte dokumentiert bleiben.
+```
+
+### 3.4 Zusammenfassung Wind
 
 Für den Wind-Workflow wurden die zentralen Schritte verifiziert:
 
 - Gemeindegrenze aus offiziellem Verwaltungsdatensatz
 - Windflächen aus offiziellem WFS
 - Clip der Windflächen auf die Gemeinde
-- optionale OSM-Kontextdaten
+- optionale OSM-Kontextdaten aus einem früheren Workflow-Schritt
 
 Damit ist der aktuelle Wind-Workflow fachlich plausibel und für die weitere
 Kartenerstellung geeignet.
 
+## 4. Solar
 
-## 2. Solar
+Noch nicht fachlich vollständig verifiziert.
+
+Geplant ist später die Dokumentation von:
+
+- Eingabedatensätzen
+- Vergleich Originaldaten vs. Skript-Output
+- Verifikation der Zuschnitte und Kartenlayer
+- Verifikation der 200-m- und 500-m-Zonen gegen den amtlichen WMS
+  `Planungsgrundlagen Solar` des Energie-Atlas Bayern
+- Verifikation der referenzierten WMS-Layer
+  `PV-Freiflächenkulisse - Zoomstufe 1` und
+  `PV-Freiflächenkulisse - Zoomstufe 2`
+
+Manueller QGIS-Weg für die spätere Solar-Verifikation:
+
+1. In QGIS `WMS/WMTS` öffnen.
+2. Den Dienst `Planungsgrundlagen Solar` registrieren:
+
+```text
+https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar
+```
+
+3. Danach die verfügbaren Layer laden.
+4. Für die Freiflächenkulisse besonders verwenden:
+   - `PV-Freiflächenkulisse - Zoomstufe 1`
+   - `PV-Freiflächenkulisse - Zoomstufe 2`
+5. Diese amtlichen WMS-Layer mit
+   - Gemeindegrenze
+   - OSM-Verkehrsachsen
+   - 200-m- und 500-m-Pufferzonen
+   visuell überlagern.
+
+Hinweis zur Methodik:
+
+- Die beiden Zoomstufen sind WMS-Layer und damit primär Darstellungsdienste.
+- Sie dienen in diesem Projekt als amtliche Referenz und Plausibilisierung.
+- Die eigentliche automatisierte Analyse erfolgt weiterhin über die eigenen
+  Vektorlayer aus OSM und Bufferoperationen.
+
+Historische Notizen:
+
+```text
+# TODO: nicht mehr verwendet
+Frühere Solar-Notizen und Zwischenstände wurden bewusst nicht gelöscht.
+Sie stehen jetzt getrennt in den Solar-Workflow- und Methoden-Dateien, damit
+keine bereits erarbeitete Begründung verloren geht.
+```
+
+## 5. Wasser
 
 Noch nicht fachlich verifiziert.
 
@@ -151,13 +282,17 @@ Geplant ist später die Dokumentation von:
 - Vergleich Originaldaten vs. Skript-Output
 - Verifikation der Zuschnitte und Kartenlayer
 
+## 6. WFS-Einbindung in QGIS
 
-## 3. Wasser
+Zur manuellen WFS-Prüfung in QGIS:
 
-Noch nicht fachlich verifiziert.
+1. `Layer > Layer hinzufügen > WFS/OGC API - Features-Layer hinzufügen`
+2. Neue Verbindung anlegen
+3. URL eintragen:
 
-Geplant ist später die Dokumentation von:
+```text
+https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung
+```
 
-- Eingabedatensätzen
-- Vergleich Originaldaten vs. Skript-Output
-- Verifikation der Zuschnitte und Kartenlayer
+4. Verbinden
+5. Relevante Layer laden

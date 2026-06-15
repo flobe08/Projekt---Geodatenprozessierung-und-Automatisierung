@@ -1,7 +1,7 @@
 """
-Prepare data entry point.
+Script 1: Prepare data workflow.
 
-This script runs the data preparation steps in the correct order for one
+This entry point runs the data preparation steps in the correct order for one
 selected municipality and one selected energy technology.
 """
 
@@ -67,30 +67,61 @@ def prepare_data(
 
     run_script(
         "Step 1: Download raw datasets",
-        "prepare_data/0_download_data.py",
+        "1_prepare_data/1_download_data.py",
         ["--technology", technology],
     )
 
     run_script(
         "Step 2: Extract municipality boundary",
-        "prepare_data/1_grenzen.py",
+        "1_prepare_data/2_extract_municipality_boundary.py",
+        ["--municipality", municipality],
+    )
+
+    run_script(
+        "Step 3: Build general protection layers",
+        "1_prepare_data/3_build_protection_layers.py",
+        ["--municipality", municipality],
+    )
+
+    run_script(
+        "Step 4: Clip official landuse",
+        "1_prepare_data/4_clip_landuse.py",
         ["--municipality", municipality],
     )
 
     match technology:
         case "wind":
-            # Future optional step:
-            # OSM context roads can be added here later if the wind workflow
-            # should include extra road context for orientation in the map.
+            run_script(
+                "Step 5: Download OSM network data",
+                "1_prepare_data/5_download_osm_network_data.py",
+                ["--municipality", municipality, "--technology", technology],
+            )
 
             run_script(
-                "Step 3: Clip wind datasets to the municipality",
-                "wind/3_clip_wind_planning_areas.py",
+                "Step 6: Clip wind datasets to the municipality",
+                "2_1_wind/1_clip_wind_planning_areas.py",
                 ["--municipality", municipality],
             )
 
-        case "solar" | "wasser":
-            log_info(f"No preparation scripts configured yet for: {technology}")
+        case "solar":
+            run_script(
+                "Step 5: Download OSM network data",
+                "1_prepare_data/5_download_osm_network_data.py",
+                ["--municipality", municipality, "--technology", technology],
+            )
+
+            run_script(
+                "Step 6: Prepare solar buffer layers",
+                "2_2_solar/3_prepare_solar_layers.py",
+                ["--municipality", municipality],
+            )
+
+        case "wasser":
+            run_script(
+                "Step 5: Download OSM network data",
+                "1_prepare_data/5_download_osm_network_data.py",
+                ["--municipality", municipality, "--technology", technology],
+            )
         case _:
             raise ValueError(f"Unknown technology: {technology}")
 

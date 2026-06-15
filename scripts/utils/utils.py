@@ -7,6 +7,7 @@ class Col:
 
     END = "\033[0m"
     INFO = "\033[94m"
+    DETAIL = "\033[96m"
     SUCCESS = "\033[92m"
     WARNING = "\033[93m"
     ERROR = "\033[91m"
@@ -22,6 +23,12 @@ def log_success(message: str) -> None:
     """Print a success log message."""
 
     print(f"{Col.SUCCESS}{message}{Col.END}")
+
+
+def log_detail(message: str) -> None:
+    """Print a highlighted detail log message."""
+
+    print(f"{Col.DETAIL}{message}{Col.END}")
 
 
 def log_warning(message: str) -> None:
