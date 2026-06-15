@@ -1,5 +1,5 @@
 """
-Script 3: Prepare solar buffer layers.
+Script 2: Prepare solar buffer layers.
 
 Workflow:
 1. Read the municipality boundary from script 2.

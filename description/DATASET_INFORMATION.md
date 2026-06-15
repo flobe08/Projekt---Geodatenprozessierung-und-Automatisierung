@@ -28,6 +28,7 @@ Hinweis:
 - wird aktuell nicht im Standard-Download geladen
 - wird bei Bedarf separat über `scripts/1_prepare_data/4_clip_landuse.py`
   verarbeitet
+- der offizielle Download ist groß und liegt ungefähr im Bereich von 5 bis 6 GB
 - das Original bleibt unter `data/raw/landuse/landnutzung.gpkg` unverändert
 - der Output ist ein kleinerer Gemeinde-Arbeitsdatensatz mit den einzelnen
   zugeschnittenen `ln_*`-Layern:
@@ -246,10 +247,19 @@ Output:
 
 - `pv_förderkulisse_500m_<gemeinde>`
 - `pv_privilegierung_200m_<gemeinde>`
+- `pv_verkehrsachsen_500m_<gemeinde>`
+- `pv_verkehrsachsen_200m_<gemeinde>`
 
 Datei:
 
 - `data/processed/solar/<gemeinde>_solar_layers.gpkg`
+
+Zusätzliche Arbeitslayer:
+
+- `data/processed/solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
+- `data/processed/solar/<gemeinde>_landuse_solar_potenzial.gpkg`
+- `data/processed/solar/<gemeinde>_landuse_solar_geeignet.gpkg`
+- `data/processed/solar/<gemeinde>_landuse_solar_unentschlossen.gpkg`
 
 ## OSM-Netzdaten als gemeinsamer Eingangsdatenblock
 

@@ -1,8 +1,8 @@
 """
-Script 4: Prepare solar-specific landuse layers.
+Script 3: Prepare solar-specific landuse layers.
 
 Workflow:
-1. Read the municipality landuse GeoPackage created by script 4.
+1. Read the municipality landuse GeoPackage created by prepare-data script 4.
 2. Filter the official landuse classes via the field ``source_layer``.
 3. Build three solar-specific output layers.
 4. Save each category as its own GeoPackage for QGIS and manual validation.

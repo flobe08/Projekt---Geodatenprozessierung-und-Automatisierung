@@ -107,8 +107,8 @@ TECHNOLOGY_CONFIG = {
             },
             {
                 "label": "Weiche Naturschutz-Konfliktflächen",
-                "color": "230,155,52,255",
-                "outline_color": "190,120,20,255",
+                "color": "245,210,80,90",
+                "outline_color": "196,150,35,180",
             },
         ],
         "grid_distance_label": "Abstand: 500 m",
@@ -131,18 +131,22 @@ TECHNOLOGY_CONFIG = {
             "Autobahnen und Schienenwegen in {municipality}. Der 500-m-Bereich "
             "bildet die EEG-Förderkulisse näherungsweise ab, der 200-m-Bereich "
             "eine strengere BauGB-orientierte Privilegierung entlang von "
-            "Autobahnen und passend gefilterten Schienenwegen. Zusätzlich wird "
-            "die amtliche Freiflächenkulisse des Energie-Atlas Bayern als "
-            "visuelle Referenz eingeblendet. Die Analyse-Layer sind räumliche "
-            "Näherungen und keine abschließende Genehmigungsprüfung."
+            "Autobahnen und passend gefilterten Schienenwegen. Zusätzlich "
+            "werden harte und weiche Naturschutzflächen als Konfliktrahmen "
+            "dargestellt. Die amtliche Freiflächenkulisse des Energie-Atlas "
+            "Bayern wird als visuelle Referenz eingeblendet. Die Analyse-Layer "
+            "sind räumliche Näherungen und keine abschließende "
+            "Genehmigungsprüfung."
         ),
         "sources": (
             "Gemeindegrenze: ALKIS Bayern. OSM-Verkehrsachsen: OpenStreetMap "
             "über Overpass. Förderkulisse: angenähert nach EEG 2023 "
             "Paragraf 37 Abs. 1 Nr. 2 Buchstabe c. Privilegierung: "
             "angenähert nach BauGB Paragraf 35 Abs. 1 Nr. 8 Buchstabe b. "
-            "Amtliche Referenz: Energie-Atlas Bayern, Planungsgrundlagen Solar "
-            "(PV-Freiflächenkulisse Zoomstufe 1 und 2) als WMS."
+            "Naturschutz: Bayerisches Landesamt für Umwelt, Schutzgebiete und "
+            "Natura-2000-Daten. Amtliche Referenz: Energie-Atlas Bayern, "
+            "Planungsgrundlagen Solar (PV-Freiflächenkulisse Zoomstufe 1 und "
+            "2) als WMS."
         ),
         "legend_section": "Analyse und Referenz",
         "legend_items": [
@@ -172,6 +176,17 @@ TECHNOLOGY_CONFIG = {
                 "outline_color": "18,40,120,255",
             },
             {
+                "label": "Harte Naturschutz-Restriktionen",
+                "color": "255,0,0,255",
+                "outline_color": "255,0,0,255",
+                "symbol": "stripe_box",
+            },
+            {
+                "label": "Weiche Naturschutz-Konfliktflächen",
+                "color": "245,210,80,90",
+                "outline_color": "196,150,35,180",
+            },
+            {
                 "label": "Autobahnen und Schienenwege",
                 "color": "60,60,60,255",
                 "outline_color": "60,60,60,255",
@@ -181,14 +196,14 @@ TECHNOLOGY_CONFIG = {
         "grid_distance_label": "Abstand: 500 m",
         "scale_units_per_segment": 1000,
         "layout_overrides": {
-            "legend_height": 76,
-            "grid_title_y": 136,
-            "grid_row_y": 141,
-            "north_arrow_y": 156,
-            "scale_bar_y": 174,
-            "scale_text_y": 190,
-            "author_y": 196,
-            "date_y": 200,
+            "legend_height": 92,
+            "grid_title_y": 152,
+            "grid_row_y": 157,
+            "north_arrow_y": 171,
+            "scale_bar_y": 188,
+            "scale_text_y": 204,
+            "author_y": 210,
+            "date_y": 214,
         },
     },
     "wasser": {

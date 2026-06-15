@@ -103,7 +103,7 @@ def generate_map(municipality: str, technology: str) -> None:
     if technology == "solar":
         run_script(
             "Step 7: Download solar WMS reference rasters",
-            "2_2_solar/2_download_solar_reference_wms.py",
+            "2_2_solar/1_download_solar_reference_wms.py",
             ["--municipality", municipality],
         )
 

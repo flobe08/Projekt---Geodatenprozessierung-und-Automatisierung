@@ -20,6 +20,7 @@ from datetime import date
 from qgis.core import (
     QgsApplication,
     QgsFillSymbol,
+    QgsLinePatternFillSymbolLayer,
     QgsLayerTreeLayer,
     QgsLayoutExporter,
     QgsLayoutItemLabel,
@@ -32,6 +33,7 @@ from qgis.core import (
     QgsLayoutSize,
     QgsPrintLayout,
     QgsProject,
+    QgsSimpleFillSymbolLayer,
     QgsUnitTypes,
     QgsVectorLayer,
 )
@@ -243,6 +245,53 @@ def add_box(
     return box
 
 
+def color_from_rgba_string(rgba: str) -> QColor:
+    """Convert a QGIS-style RGBA string into a QColor."""
+
+    red, green, blue, alpha = [int(value) for value in rgba.split(",")]
+    return QColor(red, green, blue, alpha)
+
+
+def add_hatched_box(
+    layout: QgsPrintLayout,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    color: str,
+    outline_color: str,
+) -> QgsLayoutItemShape:
+    """Add a small legend box with a real QGIS line-pattern fill."""
+
+    base_fill = QgsSimpleFillSymbolLayer.create(
+        {
+            "color": "255,255,255,255",
+            "outline_color": outline_color,
+            "outline_width": "0.25",
+        }
+    )
+
+    hatch_fill = QgsLinePatternFillSymbolLayer()
+    hatch_fill.setColor(color_from_rgba_string(color))
+    hatch_fill.setLineWidth(0.22)
+    hatch_fill.setDistance(1.45)
+    hatch_fill.setAngle(45)
+
+    symbol = QgsFillSymbol()
+    symbol.changeSymbolLayer(0, base_fill)
+    symbol.appendSymbolLayer(hatch_fill)
+
+    box = QgsLayoutItemShape(layout)
+    box.setShapeType(QgsLayoutItemShape.Rectangle)
+    box.setSymbol(symbol)
+
+    layout.addLayoutItem(box)
+    box.attemptMove(QgsLayoutPoint(x, y, QgsUnitTypes.LayoutMillimeters))
+    box.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
+
+    return box
+
+
 def add_debug_frame(
     layout: QgsPrintLayout,
     x: float,
@@ -306,28 +355,15 @@ def add_legend_row(
             "0",
         )
     elif symbol == "stripe_box":
-        add_box(
+        add_hatched_box(
             layout,
             x,
             symbol_y,
             symbol_width,
             symbol_height,
-            "255,255,255,255",
+            color,
             outline_color,
-            "0.25",
         )
-        slash_label = add_label(
-            layout,
-            "///",
-            x + 1.0,
-            symbol_y - 0.15,
-            8,
-            True,
-            symbol_width - 1.6,
-            symbol_height + 0.8,
-        )
-        slash_label.setFont(QFont("Arial", 8, QFont.Bold))
-        slash_label.setFontColor(QColor(*[int(value) for value in color.split(",")[:3]]))
     else:
         add_box(
             layout,
@@ -537,7 +573,7 @@ def create_pdf_layout(
 
     add_map_grid(map_item)
     map_item.refresh()
-    add_debug_frame(layout, map_x, map_y, map_width, map_height)  # todo:delte this lione
+    add_debug_frame(layout, map_x, map_y, map_width, map_height)  # todo: delete this line
 
     # -------------------------------------------------------------------------
     # 2.4 Add right-side description
@@ -567,7 +603,7 @@ def create_pdf_layout(
         legend_height,
         "255,255,255,235",
     )
-    add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)  # todo:delte this lione
+    add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)  # todo: delete this line
 
     add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
     add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y + 1, 9, True)
@@ -618,7 +654,7 @@ def create_pdf_layout(
         panel_y,
         panel_width,
         panel_height,
-    )  # todo:delte this lione
+    )  # todo:delete this line
 
     scale_denominator = round(map_item.scale())
 
@@ -671,7 +707,7 @@ def create_pdf_layout(
         footer_y,
         map_width,
         layout_config["footer_height"],
-    )  # todo:delte this lione
+    )  # todo:delete this line
 
     return layout
 

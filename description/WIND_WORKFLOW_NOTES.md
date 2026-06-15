@@ -16,9 +16,12 @@ buffers or landuse proxies.
 1. `scripts/1_prepare_data/1_download_data.py`
 2. `scripts/1_prepare_data/2_extract_municipality_boundary.py`
 3. `scripts/1_prepare_data/3_build_protection_layers.py`
-4. `scripts/2_1_wind/1_clip_wind_planning_areas.py`
-5. `scripts/3_generate_map/1_create_map_qgis_project.py`
-6. `scripts/3_generate_map/2_generate_map_pdf.py`
+4. `scripts/1_prepare_data/4_clip_landuse.py`
+5. `scripts/1_prepare_data/5_download_osm_network_data.py --technology wind`
+6. `scripts/2_1_wind/1_clip_wind_planning_areas.py`
+7. `scripts/2_1_wind/2_prepare_wind_landuse.py`
+8. `scripts/3_generate_map/1_create_map_qgis_project.py`
+9. `scripts/3_generate_map/2_generate_map_pdf.py`
 
 ## Main datasets
 
@@ -32,11 +35,64 @@ buffers or landuse proxies.
 - `wind_vorranggebiete.gpkg`
 - `wind_vorbehaltsgebiete.gpkg`
 
+### Official municipality landuse
+
+- source: `data/raw/landuse/landnutzung.gpkg`
+- municipality clip:
+  `data/processed/landuse/landnutzung_<municipality>.gpkg`
+
+Additional wind-specific working outputs:
+
+- `data/processed/wind/<municipality>_landuse_wind_ausschluss.gpkg`
+- `data/processed/wind/<municipality>_landuse_wind_potenzial.gpkg`
+- `data/processed/wind/<municipality>_landuse_wind_geeignet.gpkg`
+- `data/processed/wind/<municipality>_landuse_wind_unentschlossen.gpkg`
+
+Hinweis:
+
+- Die Landnutzungs-Outputs sind aktuell Arbeits- und Prüflayer.
+- Sie sind im QGIS-Projektskript bereits als nächste TODO-Stufe vorbereitet,
+  aber noch nicht aktiv in die finale Windkarte eingebunden.
+
+### OSM-Straßendaten
+
+- `data/processed/osm_highways/<municipality>_osm_highways.gpkg`
+
+Wichtige Layer:
+
+- `osm_roads_raw`
+- `osm_roads_wind_ausschluss`
+
+Hinweis:
+
+- Der technologiespezifische OSM-Ausschlusslayer ist aktuell ebenfalls nur
+  vorbereitet und noch nicht aktiv in die finale Windkarte eingebunden.
+
+### Aktueller Kartenstand
+
+Die aktuelle Windkarte bindet bereits ein:
+
+- offizielle Wind-Vorranggebiete
+- offizielle Wind-Vorbehaltsgebiete
+- harte allgemeine Naturschutz-Restriktionen
+- weiche allgemeine Naturschutz-Konfliktflächen
+- windspezifische Naturschutz-Restriktionen
+
+Zusätzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
+
+- `landuse_wind_ausschluss`
+- `osm_roads_wind_ausschluss`
+
+Diese beiden Layer stehen im QGIS-Projektskript bereits als `TODO` bereit und
+werden später zugeschaltet, sobald die endgültige Ausschlusslogik feststeht.
+
 ### General protection datasets
 
 - official LfU protection area downloads
-- municipality output:
-  `data/processed/schutzgebiete/<municipality>_schutzgebiete.gpkg`
+- municipality outputs:
+  - `data/processed/schutzgebiete/<municipality>_naturschutz_allgemein_hart.gpkg`
+  - `data/processed/schutzgebiete/<municipality>_naturschutz_allgemein_weich.gpkg`
+  - `data/processed/schutzgebiete/<municipality>_naturschutz_wind.gpkg`
 
 The current protection workflow separates:
 
@@ -45,7 +101,7 @@ The current protection workflow separates:
 
 The wind-specific planning result is additionally available as:
 
-- `wind_spezifisch`
+- `naturschutz_wind`
 
 Technical WFS layer names:
 

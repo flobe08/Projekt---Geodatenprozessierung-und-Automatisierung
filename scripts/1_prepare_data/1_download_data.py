@@ -139,11 +139,10 @@ WFS_OUTPUT_FORMAT = "Geopackage"
 WIND_VORRANG_TYPENAME = "WFS_Regionalplanung:Vorranggebiet_Windenergienutzung"
 WIND_VORBEHALT_TYPENAME = "WFS_Regionalplanung:Vorbehaltsgebiet_Windenergienutzung"
 
-# TODO: currently not used.
-# Wind-specific bird-area dataset used for naturschutz_wind.
+# Wind-specific bird-area dataset used for the naturschutz_wind output.
 VOGELKULISSEN_2024_URL = (
     "https://www.lfu.bayern.de/natur/artenhilfsprogramme_voegel/wiesenbrueter/vogelkulissen_2024/doc/vogelkulissen24.zip"
-   )
+)
 VOGELKULISSEN_2024_FILE = WIND_RAW_DIR / "vogelkulissen_2024.zip"
 VOGELKULISSEN_2024_EXTRACT_DIR = WIND_RAW_DIR / "vogelkulissen_2024"
 
@@ -324,6 +323,14 @@ def download_general_base_datasets() -> None:
     """Download the common official base datasets."""
 
     log_dataset("Dataset: landnutzung")
+    log_warning(
+        "Hinweis: Die amtliche Landnutzung ist ein großer Bayern-Datensatz "
+        "von ungefähr 5 bis 6 GB."
+    )
+    log_warning(
+        "Der erste Download kann deshalb deutlich länger dauern als die "
+        "anderen allgemeinen Datensätze."
+    )
     # Die Landnutzung wird bewusst einmal vollständig lokal vorgehalten.
     # Der eigentliche Gemeinde-Arbeitsdatensatz wird erst später in Script 4
     # per Bounding-Box-Vorfilter und exaktem Gemeindezuschnitt erzeugt.

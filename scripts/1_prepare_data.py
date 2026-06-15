@@ -65,6 +65,15 @@ def prepare_data(
 ) -> None:
     """Run all data preparation steps for one municipality and technology."""
 
+    log_info(
+        "Hinweis: Der allgemeine Download-Workflow kann länger dauern, "
+        "weil mehrere große Bayern-Datensätze verarbeitet werden."
+    )
+    log_info(
+        "Vor allem die amtliche Landnutzung liegt im Bereich von mehreren GB "
+        "und braucht beim ersten lokalen Download spürbar länger."
+    )
+
     run_script(
         "Step 1: Download raw datasets",
         "1_prepare_data/1_download_data.py",
@@ -112,7 +121,7 @@ def prepare_data(
 
             run_script(
                 "Step 6: Prepare solar buffer layers",
-                "2_2_solar/3_prepare_solar_layers.py",
+                "2_2_solar/2_prepare_solar_layers.py",
                 ["--municipality", municipality],
             )
 

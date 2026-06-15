@@ -12,15 +12,19 @@ Workflow:
 from pathlib import Path
 import sys
 
+from qgis.PyQt.QtGui import QImage
+from qgis.PyQt.QtGui import QColor
 from qgis.core import (
     QgsApplication,
     QgsCoordinateReferenceSystem,
     QgsFillSymbol,
+    QgsLinePatternFillSymbolLayer,
     QgsLayerTreeLayer,
     QgsLineSymbol,
     QgsProject,
     QgsRasterLayer,
     QgsReferencedRectangle,
+    QgsSimpleFillSymbolLayer,
     QgsSingleSymbolRenderer,
     QgsVectorLayer,
 )
@@ -40,6 +44,8 @@ WIND_DIR = BASE_DIR / "data/processed/wind"
 PROTECTION_DIR = BASE_DIR / "data/processed/schutzgebiete"
 SOLAR_DIR = BASE_DIR / "data/processed/solar"
 SOLAR_REFERENCE_DIR = BASE_DIR / "data/processed/solar_reference"
+OSM_HIGHWAY_DIR = BASE_DIR / "data/processed/osm_highways"
+OSM_TRANSPORT_DIR = BASE_DIR / "data/processed/osm_transport"
 OUTPUT_DIR = BASE_DIR / "data/processed/qgis_projects"
 
 SOLAR_WMS_ZOOM_1 = "PV-Freiflächenkulisse - Zoomstufe 1"
@@ -121,6 +127,42 @@ def solar_baugb_layer_name(municipality_name: str) -> str:
     return f"pv_privilegierung_200m_{safe_filename(municipality_name)}"
 
 
+def wind_landuse_ausschluss_file_name(municipality_name: str) -> str:
+    """Create the municipality-specific file name for wind landuse exclusions."""
+
+    return f"{safe_filename(municipality_name)}_landuse_wind_ausschluss.gpkg"
+
+
+def solar_landuse_ausschluss_file_name(municipality_name: str) -> str:
+    """Create the municipality-specific file name for solar landuse exclusions."""
+
+    return f"{safe_filename(municipality_name)}_landuse_solar_ausschluss.gpkg"
+
+
+def wind_landuse_ausschluss_layer_name() -> str:
+    """Return the layer name for wind landuse exclusions."""
+
+    return "landuse_wind_ausschluss"
+
+
+def solar_landuse_ausschluss_layer_name() -> str:
+    """Return the layer name for solar landuse exclusions."""
+
+    return "landuse_solar_ausschluss"
+
+
+def osm_wind_ausschluss_layer_name() -> str:
+    """Return the prepared OSM exclusion layer name for wind."""
+
+    return "osm_roads_wind_ausschluss"
+
+
+def osm_solar_ausschluss_layer_name() -> str:
+    """Return the prepared OSM exclusion layer name for solar."""
+
+    return "osm_roads_solar_ausschluss"
+
+
 def qgis_project_file_name(municipality_name: str, technology: str) -> str:
     """Create the technology-specific QGIS project file name."""
 
@@ -193,6 +235,31 @@ def load_optional_raster_layer(
         log_warning(f"Solar reference raster not found: {display_path(raster_file)}")
         return None
 
+    image = QImage(str(raster_file))
+
+    if image.isNull():
+        log_warning(
+            f"Solar reference raster could not be read as image: {display_name}"
+        )
+        return None
+
+    if image.hasAlphaChannel():
+        has_visible_pixels = False
+
+        for x in range(image.width()):
+            for y in range(image.height()):
+                if image.pixelColor(x, y).alpha() > 0:
+                    has_visible_pixels = True
+                    break
+            if has_visible_pixels:
+                break
+
+        if not has_visible_pixels:
+            log_warning(
+                f"Solar reference raster is fully transparent and will be skipped: {display_name}"
+            )
+            return None
+
     layer = QgsRasterLayer(str(raster_file), display_name)
 
     if not layer.isValid():
@@ -241,6 +308,44 @@ def apply_symbol(layer: QgsVectorLayer, symbol: QgsFillSymbol | QgsLineSymbol) -
     renderer.setSymbol(symbol)
 
 
+def color_from_rgba_string(rgba: str) -> QColor:
+    """Convert a QGIS-style RGBA string into a QColor."""
+
+    red, green, blue, alpha = [int(value) for value in rgba.split(",")]
+    return QColor(red, green, blue, alpha)
+
+
+def build_hatched_fill_symbol(
+    outline_rgba: str,
+    hatch_rgba: str,
+    *,
+    outline_width: float,
+    hatch_width: float,
+    hatch_distance: float,
+    hatch_angle: float = 45.0,
+) -> QgsFillSymbol:
+    """Build a polygon symbol with outline plus one-direction line hatch."""
+
+    base_fill = QgsSimpleFillSymbolLayer.create(
+        {
+            "color": "255,255,255,0",
+            "outline_color": outline_rgba,
+            "outline_width": str(outline_width),
+        }
+    )
+
+    hatch_fill = QgsLinePatternFillSymbolLayer()
+    hatch_fill.setColor(color_from_rgba_string(hatch_rgba))
+    hatch_fill.setLineWidth(hatch_width)
+    hatch_fill.setDistance(hatch_distance)
+    hatch_fill.setAngle(hatch_angle)
+
+    symbol = QgsFillSymbol()
+    symbol.changeSymbolLayer(0, base_fill)
+    symbol.appendSymbolLayer(hatch_fill)
+    return symbol
+
+
 # =============================================================================
 # General styling
 # =============================================================================
@@ -287,43 +392,40 @@ def style_wind_vorbehalt(layer: QgsVectorLayer) -> None:
 
 
 def style_naturschutz_hart(layer: QgsVectorLayer) -> None:
-    """Style hard protection areas with a red hatch pattern."""
+    """Style hard protection areas with a QGIS-style red line-pattern hatch."""
 
-    symbol = QgsFillSymbol.createSimple(
-        {
-            "color": "255,0,0,255",
-            "outline_color": "255,0,0,255",
-            "outline_width": "0.18",
-            "style": "b_diagonal",
-        }
+    symbol = build_hatched_fill_symbol(
+        "255,0,0,255",
+        "255,0,0,255",
+        outline_width=0.25,
+        hatch_width=0.28,
+        hatch_distance=2.0,
     )
     apply_symbol(layer, symbol)
 
 
 def style_naturschutz_weich(layer: QgsVectorLayer) -> None:
-    """Style soft protection areas so they stay visible on top of the basemap."""
+    """Style soft protection areas as a subtle transparent yellow context fill."""
 
     symbol = QgsFillSymbol.createSimple(
         {
-            "color": "230,155,52,255",
-            "outline_color": "190,120,20,255",
-            "outline_width": "0.16",
-            "style": "f_diagonal",
+            "color": "245,210,80,55",
+            "outline_color": "196,150,35,150",
+            "outline_width": "0.10",
         }
     )
     apply_symbol(layer, symbol)
 
 
 def style_naturschutz_wind(layer: QgsVectorLayer) -> None:
-    """Style wind-specific protection areas with an orange hatch pattern."""
+    """Style wind-specific protection areas with orange-red diagonal stripes."""
 
-    symbol = QgsFillSymbol.createSimple(
-        {
-            "color": "232,136,20,255",
-            "outline_color": "196,108,0,255",
-            "outline_width": "0.14",
-            "style": "f_diagonal",
-        }
+    symbol = build_hatched_fill_symbol(
+        "196,108,0,255",
+        "232,136,20,255",
+        outline_width=0.22,
+        hatch_width=0.24,
+        hatch_distance=2.0,
     )
     apply_symbol(layer, symbol)
 
@@ -423,6 +525,10 @@ def create_wind_map_project(municipality_name: str) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     project = create_empty_project()
 
+    # -------------------------------------------------------------------------
+    # Wind planning layers
+    # Official planning result layers from the regional planning workflow.
+    # -------------------------------------------------------------------------
     vorrang_layer = load_vector_layer(
         wind_file,
         vorrang_layer_name(municipality_name),
@@ -433,6 +539,12 @@ def create_wind_map_project(municipality_name: str) -> None:
         vorbehalt_layer_name(municipality_name),
         f"Wind Vorbehaltsgebiete {municipality_name}",
     )
+
+    # -------------------------------------------------------------------------
+    # General and wind-specific protection layers
+    # These layers summarize hard restrictions, soft conflict areas and
+    # wind-specific bird/sensitivity datasets for map display.
+    # -------------------------------------------------------------------------
     naturschutz_hart_layer = load_optional_vector_layer(
         protection_hard_file,
         naturschutz_hart_layer_name(),
@@ -448,6 +560,30 @@ def create_wind_map_project(municipality_name: str) -> None:
         naturschutz_wind_layer_name(),
         f"Windspezifische Restriktionen {municipality_name}",
     )
+
+    # -------------------------------------------------------------------------
+    # TODO: Future wind exclusion layers
+    # These prepared exclusion layers already exist as processing outputs.
+    # They are intentionally kept commented out until the final exclusion
+    # design for the wind map is fixed and cartographically tested.
+    # -------------------------------------------------------------------------
+    # wind_landuse_file = WIND_DIR / wind_landuse_ausschluss_file_name(municipality_name)
+    # wind_osm_file = OSM_HIGHWAY_DIR / f"{safe_name}_osm_highways.gpkg"
+    # wind_landuse_layer = load_optional_vector_layer(
+    #     wind_landuse_file,
+    #     wind_landuse_ausschluss_layer_name(),
+    #     f"Landnutzung Ausschluss Wind {municipality_name}",
+    # )
+    # wind_osm_layer = load_optional_vector_layer(
+    #     wind_osm_file,
+    #     osm_wind_ausschluss_layer_name(),
+    #     f"OSM Straßen Ausschluss Wind {municipality_name}",
+    # )
+
+    # -------------------------------------------------------------------------
+    # Administrative boundary
+    # The municipality boundary is always added last and moved to the top.
+    # -------------------------------------------------------------------------
     boundary_layer = QgsVectorLayer(str(boundary_file), municipality_name, "ogr")
 
     if not boundary_layer.isValid():
@@ -479,15 +615,15 @@ def create_wind_map_project(municipality_name: str) -> None:
 
     set_project_extent_from_boundary(project, boundary_layer)
 
-    if layer_has_features(naturschutz_hart_layer):
-        move_layer_to_top(project, naturschutz_hart_layer)
     if layer_has_features(naturschutz_weich_layer):
         move_layer_to_top(project, naturschutz_weich_layer)
-    if layer_has_features(naturschutz_wind_layer):
-        move_layer_to_top(project, naturschutz_wind_layer)
     if layer_has_features(vorbehalt_layer):
         move_layer_to_top(project, vorbehalt_layer)
     move_layer_to_top(project, vorrang_layer)
+    if layer_has_features(naturschutz_wind_layer):
+        move_layer_to_top(project, naturschutz_wind_layer)
+    if layer_has_features(naturschutz_hart_layer):
+        move_layer_to_top(project, naturschutz_hart_layer)
     move_layer_to_top(project, boundary_layer)
 
     project.write(str(output_file))
@@ -504,6 +640,8 @@ def create_solar_map_project(municipality_name: str) -> None:
 
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
     solar_file = SOLAR_DIR / f"{safe_name}_solar_layers.gpkg"
+    protection_hard_file = PROTECTION_DIR / naturschutz_hart_file_name(municipality_name)
+    protection_weich_file = PROTECTION_DIR / naturschutz_weich_file_name(municipality_name)
     solar_reference_zoom_1 = (
         SOLAR_REFERENCE_DIR / solar_reference_raster_name(municipality_name, 1)
     )
@@ -521,6 +659,11 @@ def create_solar_map_project(municipality_name: str) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     project = create_empty_project()
 
+    # -------------------------------------------------------------------------
+    # Official solar reference rasters
+    # These locally downloaded WMS images are visual comparison layers from
+    # the Energie-Atlas Bayern and do not replace the vector analysis layers.
+    # -------------------------------------------------------------------------
     # Die amtlichen Solar-Referenzlayer werden als lokale Raster geladen.
     # damit die manuelle Registrierung in QGIS nicht jedes Mal nötig ist.
     solar_wms_zoom_2 = load_optional_raster_layer(
@@ -532,6 +675,11 @@ def create_solar_map_project(municipality_name: str) -> None:
         "PV-Freiflächenkulisse Zoomstufe 1",
     )
 
+    # -------------------------------------------------------------------------
+    # Solar analysis layers
+    # EEG 500 m, BauGB 200 m and the shared transport axis layer from the
+    # solar prepare workflow.
+    # -------------------------------------------------------------------------
     eeg_layer = load_vector_layer(
         solar_file,
         solar_eeg_layer_name(municipality_name),
@@ -547,6 +695,46 @@ def create_solar_map_project(municipality_name: str) -> None:
         solar_transport_axis_layer_name(municipality_name),
         f"Autobahnen und Schienenwege {municipality_name}",
     )
+
+    # -------------------------------------------------------------------------
+    # General protection layers
+    # Shared hard and soft protection areas are reused in the solar map as
+    # contextual restriction layers.
+    # -------------------------------------------------------------------------
+    naturschutz_hart_layer = load_optional_vector_layer(
+        protection_hard_file,
+        naturschutz_hart_layer_name(),
+        f"Harte Naturschutz-Restriktionen {municipality_name}",
+    )
+    naturschutz_weich_layer = load_optional_vector_layer(
+        protection_weich_file,
+        naturschutz_weich_layer_name(),
+        f"Weiche Naturschutz-Konfliktflächen {municipality_name}",
+    )
+
+    # -------------------------------------------------------------------------
+    # TODO: Future solar exclusion layers
+    # These prepared exclusion layers already exist as processing outputs.
+    # They are intentionally kept commented out until the final exclusion
+    # design for the solar map is fixed and cartographically tested.
+    # -------------------------------------------------------------------------
+    # solar_landuse_file = SOLAR_DIR / solar_landuse_ausschluss_file_name(municipality_name)
+    # solar_osm_file = OSM_TRANSPORT_DIR / f"{safe_name}_osm_transport.gpkg"
+    # solar_landuse_layer = load_optional_vector_layer(
+    #     solar_landuse_file,
+    #     solar_landuse_ausschluss_layer_name(),
+    #     f"Landnutzung Ausschluss Solar {municipality_name}",
+    # )
+    # solar_osm_layer = load_optional_vector_layer(
+    #     solar_osm_file,
+    #     osm_solar_ausschluss_layer_name(),
+    #     f"OSM Straßen Ausschluss Solar {municipality_name}",
+    # )
+
+    # -------------------------------------------------------------------------
+    # Administrative boundary
+    # The municipality outline frames all solar reference and analysis layers.
+    # -------------------------------------------------------------------------
     boundary_layer = QgsVectorLayer(str(boundary_file), municipality_name, "ogr")
 
     if not boundary_layer.isValid():
@@ -555,6 +743,14 @@ def create_solar_map_project(municipality_name: str) -> None:
     style_solar_eeg(eeg_layer)
     style_solar_baugb(baugb_layer)
     style_boundary(boundary_layer)
+
+    if layer_has_features(naturschutz_weich_layer):
+        style_naturschutz_weich(naturschutz_weich_layer)
+        project.addMapLayer(naturschutz_weich_layer)
+
+    if layer_has_features(naturschutz_hart_layer):
+        style_naturschutz_hart(naturschutz_hart_layer)
+        project.addMapLayer(naturschutz_hart_layer)
 
     if solar_wms_zoom_2 is not None:
         project.addMapLayer(solar_wms_zoom_2)
@@ -571,6 +767,10 @@ def create_solar_map_project(municipality_name: str) -> None:
 
     set_project_extent_from_boundary(project, boundary_layer)
 
+    if layer_has_features(naturschutz_hart_layer):
+        move_layer_to_top(project, naturschutz_hart_layer)
+    if layer_has_features(naturschutz_weich_layer):
+        move_layer_to_top(project, naturschutz_weich_layer)
     move_layer_to_top(project, eeg_layer)
     move_layer_to_top(project, baugb_layer)
     if layer_has_features(transport_layer):

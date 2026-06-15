@@ -48,6 +48,13 @@ Empfohlener Gesamtworkflow:
 bash run_workflow.sh Drachselsried wind
 ```
 
+Hinweis:
+
+- Der erste vollständige Durchlauf kann deutlich länger dauern.
+- Grund dafür sind mehrere große Bayern-Datensätze.
+- Vor allem die offizielle Landnutzung wird lokal als großer Datensatz
+  vorgehalten und liegt ungefähr im Bereich von 5 bis 6 GB.
+
 ## Hauptskripte
 
 Daten vorbereiten:
@@ -75,7 +82,11 @@ mit diesen Befehlen.
 source .venv-wsl/bin/activate
 python3 scripts/1_prepare_data/1_download_data.py --technology wind
 python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
+python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
+python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
+python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wind
 python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
+python3 scripts/2_1_wind/2_prepare_wind_landuse.py --municipality Drachselsried
 deactivate
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology wind
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology wind
@@ -87,9 +98,13 @@ python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsrie
 source .venv-wsl/bin/activate
 python3 scripts/1_prepare_data/1_download_data.py --technology solar
 python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
-python3 scripts/2_2_solar/1_download_osm_transport_data.py --municipality Drachselsried
-python3 scripts/2_2_solar/3_prepare_solar_layers.py --municipality Drachselsried
+python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
+python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
+python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology solar
+python3 scripts/2_2_solar/2_prepare_solar_layers.py --municipality Drachselsried
+python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
+python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology solar
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology solar
 ```

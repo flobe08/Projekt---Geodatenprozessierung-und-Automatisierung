@@ -17,8 +17,10 @@ Skripte und die manuelle Ausführung.
 ### 2. Technologiespezifische Verarbeitung
 
 - Wind: `scripts/2_1_wind/1_clip_wind_planning_areas.py`
-- Solar: `scripts/2_2_solar/2_download_solar_reference_wms.py`
-- Solar: `scripts/2_2_solar/3_prepare_solar_layers.py`
+- Wind: `scripts/2_1_wind/2_prepare_wind_landuse.py`
+- Solar: `scripts/2_2_solar/1_download_solar_reference_wms.py`
+- Solar: `scripts/2_2_solar/2_prepare_solar_layers.py`
+- Solar: `scripts/2_2_solar/3_prepare_solar_landuse.py`
 - Wasser: noch nicht umgesetzt
 
 ### 3. Kartenerzeugung
@@ -28,6 +30,13 @@ Skripte und die manuelle Ausführung.
 - `scripts/3_generate_map/2_generate_map_pdf.py`
 
 ## Automatischer Workflow
+
+Hinweis vor dem Start:
+
+- Der erste vollständige Durchlauf kann spürbar länger dauern.
+- Im Workflow werden mehrere große Bayern-Datensätze verarbeitet.
+- Vor allem der offizielle Landnutzungsdatensatz ist ungefähr 5 bis 6 GB groß
+  und braucht beim ersten lokalen Download entsprechend länger.
 
 ### Wind
 
@@ -97,16 +106,22 @@ python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Dra
 
 ```bash
 python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
+```
+
+7. Windspezifische Landnutzung ableiten:
+
+```bash
+python3 scripts/2_1_wind/2_prepare_wind_landuse.py --municipality Drachselsried
 deactivate
 ```
 
-7. QGIS-Projekt erzeugen:
+8. QGIS-Projekt erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology wind
 ```
 
-8. PDF-Karte erzeugen:
+9. PDF-Karte erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology wind
@@ -148,8 +163,20 @@ python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Dra
 6. Solarpuffer erzeugen:
 
 ```bash
-python3 scripts/2_2_solar/3_prepare_solar_layers.py --municipality Drachselsried
+python3 scripts/2_2_solar/2_prepare_solar_layers.py --municipality Drachselsried
+```
+
+7. Solarspezifische Landnutzung ableiten:
+
+```bash
+python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
+```
+
+8. Amtliche Solar-WMS-Referenzbilder lokal laden:
+
+```bash
+python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
 ```
 
 Zusätzliche manuelle Referenz in QGIS:
@@ -171,13 +198,13 @@ Hinweis:
 - Im automatisch erzeugten Solar-QGIS-Projekt werden diese beiden
   WMS-Referenzlayer bereits direkt eingebunden.
 
-7. QGIS-Projekt erzeugen:
+9. QGIS-Projekt erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology solar
 ```
 
-8. PDF-Karte erzeugen:
+10. PDF-Karte erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology solar

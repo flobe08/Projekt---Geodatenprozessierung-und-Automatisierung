@@ -66,7 +66,9 @@ Verwendete Datensätze:
 - automatischer Skript-Output:
 
 ```text
-data/processed/schutzgebiete/drachselsried_schutzgebiete.gpkg
+data/processed/schutzgebiete/drachselsried_naturschutz_allgemein_hart.gpkg
+data/processed/schutzgebiete/drachselsried_naturschutz_allgemein_weich.gpkg
+data/processed/schutzgebiete/drachselsried_naturschutz_wind.gpkg
 ```
 
 Vorgehen zur Verifikation:
@@ -76,9 +78,10 @@ Vorgehen zur Verifikation:
 3. Die flächenhaften Datensätze wurden manuell mit der Gemeinde verglichen.
 4. Der automatische Output aus
    `scripts/1_prepare_data/3_build_protection_layers.py` wurde geladen.
-5. Die beiden Ergebnislayer
-   - `naturschutz_allgemein_hart`
-   - `naturschutz_allgemein_weich`
+5. Die zusammengeführten Ergebnislayer
+   - `naturschutz_allgemein_hart_merged`
+   - `naturschutz_allgemein_weich_merged`
+   - `naturschutz_wind_merged`
    wurden mit den Originaldaten visuell überlagert.
 
 Ergebnis:
@@ -224,20 +227,41 @@ Kartenerstellung geeignet.
 
 ## 4. Solar
 
-Noch nicht fachlich vollständig verifiziert.
+### 4.1 Verifikation der OSM-Verkehrsachsen
 
-Geplant ist später die Dokumentation von:
+Verwendete Datensätze:
 
-- Eingabedatensätzen
-- Vergleich Originaldaten vs. Skript-Output
-- Verifikation der Zuschnitte und Kartenlayer
-- Verifikation der 200-m- und 500-m-Zonen gegen den amtlichen WMS
-  `Planungsgrundlagen Solar` des Energie-Atlas Bayern
-- Verifikation der referenzierten WMS-Layer
-  `PV-Freiflächenkulisse - Zoomstufe 1` und
-  `PV-Freiflächenkulisse - Zoomstufe 2`
+- `data/processed/osm_transport/drachselsried_osm_transport.gpkg`
+- amtliche OSM-Basiskarte in QGIS
 
-Manueller QGIS-Weg für die spätere Solar-Verifikation:
+Vorgehen zur Verifikation:
+
+1. Der Analysekontext-Layer wurde geladen.
+2. Die OSM-Verkehrsachsen wurden geladen.
+3. Die geladenen Schienen- und Straßenachsen wurden mit der OSM-Basiskarte
+   visuell abgeglichen.
+4. Geprüft wurde, dass der erweiterte Analysekontext bewusst über die
+   Gemeindegrenze hinausreicht.
+
+Ergebnis:
+
+- Die OSM-Verkehrsachsen sind als technischer Eingangsdatenblock plausibel.
+- Der Analysekontext außerhalb der Gemeinde ist methodisch notwendig, weil
+  spätere 200-m- und 500-m-Puffer in die Gemeinde hineinreichen können.
+
+### 4.2 Verifikation der Solarpuffer und Referenzlayer
+
+Verwendete Datensätze:
+
+- `data/processed/solar/drachselsried_solar_layers.gpkg`
+- amtlicher WMS-Dienst `Planungsgrundlagen Solar`
+- daraus insbesondere:
+  - `PV-Freiflächenkulisse - Zoomstufe 1`
+  - `PV-Freiflächenkulisse - Zoomstufe 2`
+  - `PV-Förderkulisse 500 m Randstreifen (EEG)`
+  - `PV-Privilegierung 200 m Randstreifen (BauGB)`
+
+Manueller QGIS-Weg für die Solar-Verifikation:
 
 1. In QGIS `WMS/WMTS` öffnen.
 2. Den Dienst `Planungsgrundlagen Solar` registrieren:
@@ -250,11 +274,23 @@ https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar
 4. Für die Freiflächenkulisse besonders verwenden:
    - `PV-Freiflächenkulisse - Zoomstufe 1`
    - `PV-Freiflächenkulisse - Zoomstufe 2`
-5. Diese amtlichen WMS-Layer mit
+5. Zusätzlich die amtlichen Randstreifen-Layer
+   - `PV-Förderkulisse 500 m Randstreifen (EEG)`
+   - `PV-Privilegierung 200 m Randstreifen (BauGB)`
+   laden.
+6. Diese amtlichen WMS-Layer mit
    - Gemeindegrenze
    - OSM-Verkehrsachsen
    - 200-m- und 500-m-Pufferzonen
    visuell überlagern.
+
+Ergebnis:
+
+- Die selbst erzeugten 200-m- und 500-m-Puffer können gegen die amtlichen
+  WMS-Darstellungen fachlich plausibilisiert werden.
+- Die amtlichen PV-Freiflächenkulissen dienen zusätzlich als visuelle
+  Referenz für die Einordnung, sind aber selbst kein gut weiterverarbeitbarer
+  Vektor-Eingabedatensatz der Pipeline.
 
 Hinweis zur Methodik:
 
@@ -267,9 +303,8 @@ Historische Notizen:
 
 ```text
 # TODO: nicht mehr verwendet
-Frühere Solar-Notizen und Zwischenstände wurden bewusst nicht gelöscht.
-Sie stehen jetzt getrennt in den Solar-Workflow- und Methoden-Dateien, damit
-keine bereits erarbeitete Begründung verloren geht.
+Frühere Solar-Zwischenstände bleiben bewusst dokumentiert, auch wenn der
+aktuelle Workflow inzwischen über die neuen Skripte und Referenzlayer läuft.
 ```
 
 ## 5. Wasser

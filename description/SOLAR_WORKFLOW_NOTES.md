@@ -18,10 +18,13 @@ Verkehrsachsen und Bufferoperationen.
 
 1. `scripts/1_prepare_data/1_download_data.py`
 2. `scripts/1_prepare_data/2_extract_municipality_boundary.py`
-3. `scripts/1_prepare_data/5_download_osm_network_data.py --technology solar`
-4. `scripts/2_2_solar/3_prepare_solar_layers.py`
-5. `scripts/3_generate_map/1_create_map_qgis_project.py`
-6. `scripts/3_generate_map/2_generate_map_pdf.py`
+3. `scripts/1_prepare_data/3_build_protection_layers.py`
+4. `scripts/1_prepare_data/4_clip_landuse.py`
+5. `scripts/1_prepare_data/5_download_osm_network_data.py --technology solar`
+6. `scripts/2_2_solar/2_prepare_solar_layers.py`
+7. `scripts/2_2_solar/3_prepare_solar_landuse.py`
+8. `scripts/3_generate_map/1_create_map_qgis_project.py`
+9. `scripts/3_generate_map/2_generate_map_pdf.py`
 
 ## Hauptdatensätze
 
@@ -41,6 +44,65 @@ verwendet:
 
 Diese Achsen werden nicht nur für die Gemeinde selbst geladen, sondern für
 einen erweiterten Analysekontext.
+
+Die aktuelle OSM-Ausgabe liegt hier:
+
+- `data/processed/osm_transport/<municipality>_osm_transport.gpkg`
+
+Wichtige Layer:
+
+- `osm_roads_raw`
+- `osm_roads_solar_ausschluss`
+- `osm_autobahnen_<gemeinde>`
+- `osm_schienenwege_<gemeinde>`
+
+Hinweis:
+
+- Der Layer `osm_roads_solar_ausschluss` ist aktuell ein vorbereiteter
+  Arbeitslayer und noch nicht aktiv in die finale Solarkarte eingebunden.
+
+### Amtliche Landnutzung
+
+- Quelle: `data/raw/landuse/landnutzung.gpkg`
+- Gemeindeclip:
+  `data/processed/landuse/landnutzung_<municipality>.gpkg`
+
+Zusätzliche solarspezifische Arbeitslayer:
+
+- `data/processed/solar/<municipality>_landuse_solar_ausschluss.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_potenzial.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_geeignet.gpkg`
+
+Hinweis:
+
+- Diese Landnutzungs-Layer sind aktuell vorbereitet und für Prüfung sowie
+  spätere Eignungslogik gedacht.
+- Sie sind im QGIS-Projektskript bereits als TODO-Stufe vorgesehen, aber noch
+  nicht aktiv in die finale Solarkarte eingebunden.
+
+### Allgemeine Schutzgebiete
+
+Zusätzlich zur Solarlogik werden inzwischen auch die allgemeinen
+Naturschutzlayer erzeugt und in der Solarkarte als Kontext mitgeführt:
+
+- `data/processed/schutzgebiete/<municipality>_naturschutz_allgemein_hart.gpkg`
+- `data/processed/schutzgebiete/<municipality>_naturschutz_allgemein_weich.gpkg`
+
+### Solarspezifische Landnutzung
+
+Zusätzliche Arbeitslayer aus der amtlichen Landnutzung:
+
+- `data/processed/solar/<municipality>_landuse_solar_ausschluss.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_potenzial.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_geeignet.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_unentschlossen.gpkg`
+
+Hinweis:
+
+- Diese Landnutzungs-Layer werden bereits erzeugt.
+- Sie sind aber aktuell noch nicht in die finale Solarkarte eingebunden.
+- Im QGIS-Projektskript sind sie als nächste `TODO`-Stufe bereits
+  vorbereitet.
 
 ### Amtliche Referenz zur Prüfung
 
@@ -71,6 +133,13 @@ https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar
 
 Im aktuellen Projekt werden diese beiden WMS-Referenzlayer zusätzlich direkt
 im automatisch erzeugten Solar-QGIS-Projekt eingebunden.
+
+Zusätzlich werden vor der QGIS-Projekterstellung lokale Referenzbilder mit
+
+- `scripts/2_2_solar/1_download_solar_reference_wms.py`
+
+heruntergeladen, damit die amtliche Referenz auch ohne manuelle
+WMS-Registrierung direkt im Projekt verfügbar ist.
 
 ## Warum der amtliche Solar-Dienst nicht direkt als Pipeline-Input verwendet wird
 
@@ -205,6 +274,27 @@ Damit lässt sich später in QGIS nachvollziehen:
 - welche Achsen für 500 m benutzt wurden
 - welche strengere Teilmenge für 200 m verwendet wurde
 - wie daraus die finalen Puffer entstanden sind
+
+## Aktueller Kartenstand
+
+Die aktuelle Solarkarte bindet bereits ein:
+
+- harte allgemeine Naturschutz-Restriktionen
+- weiche allgemeine Naturschutz-Konfliktflächen
+- `PV-Freiflächenkulisse - Zoomstufe 1`
+- `PV-Freiflächenkulisse - Zoomstufe 2`
+- `pv_förderkulisse_500m_<gemeinde>`
+- `pv_privilegierung_200m_<gemeinde>`
+- `pv_verkehrsachsen_500m_<gemeinde>`
+
+Zusätzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
+
+- `landuse_solar_ausschluss`
+- `osm_roads_solar_ausschluss`
+
+Diese beiden Layer stehen im QGIS-Projektskript bereits als `TODO` bereit und
+werden später zugeschaltet, sobald die endgültige Solar-Eignungslogik
+feststeht.
 
 ## Was wir in der Arbeit sicher behaupten können
 
