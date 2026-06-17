@@ -4,9 +4,9 @@ Script 4: Prepare wind-specific OSM street layers.
 Workflow:
 1. Read the broad OSM street basis from prepare-data script 5.
 2. Filter street classes that are relevant as first wind exclusion context.
-3. Document small or unclear paths as currently unused classes.
-4. Buffer the filtered street classes with first working distances.
-5. Write wind-specific line and buffer GeoPackages for later mapping.
+3. Keep classes with 0 m buffer as line context layers.
+4. Buffer only classes with more than 0 m into polygon exclusion layers.
+5. Write wind-specific line and buffer GeoPackages for validation and mapping.
 """
 
 from pathlib import Path
@@ -173,11 +173,36 @@ def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> N
         log_success(f"Written {layer_name}: {len(data)} features")
 
 
+def split_zero_buffer_lines(
+    streets: gpd.GeoDataFrame,
+    buffer_rules: dict[str, int],
+) -> gpd.GeoDataFrame:
+    """Keep filtered street classes whose configured buffer distance is 0 m."""
+
+    if streets.empty or "highway" not in streets.columns:
+        return empty_lines_gdf()
+
+    zero_buffer_values = {
+        highway_value
+        for highway_value, buffer_distance in buffer_rules.items()
+        if buffer_distance <= 0
+    }
+
+    zero_buffer_lines = streets[streets["highway"].isin(zero_buffer_values)].copy()
+
+    if zero_buffer_lines.empty:
+        return empty_lines_gdf(streets.crs)
+
+    zero_buffer_lines["buffer_m"] = 0
+    zero_buffer_lines["osm_wind_category"] = "context_without_buffer"
+    return zero_buffer_lines
+
+
 def build_street_buffer_layer(
     streets: gpd.GeoDataFrame,
     buffer_rules: dict[str, int],
 ) -> gpd.GeoDataFrame:
-    """Create dissolved street buffers grouped by OSM highway class."""
+    """Create dissolved polygon buffers for street classes with buffer > 0 m."""
 
     if streets.empty or "highway" not in streets.columns:
         return empty_polygons_gdf()
@@ -217,6 +242,12 @@ def wind_street_layer_name() -> str:
     """Return the wind-specific OSM street exclusion layer name."""
 
     return "osm_streets_wind_ausschluss"
+
+
+def wind_street_without_buffer_layer_name() -> str:
+    """Return the wind-specific OSM street line layer for 0 m buffer classes."""
+
+    return "osm_streets_wind_ohne_puffer"
 
 
 def wind_street_buffer_layer_name() -> str:
@@ -270,6 +301,17 @@ def prepare_wind_osm_streets(municipality_name: str) -> None:
         wind_streets["osm_wind_category"] = "ausschluss"
 
     write_layer(output_file, wind_street_layer_name(), wind_streets)
+
+    wind_streets_without_buffer = split_zero_buffer_lines(
+        wind_streets,
+        WIND_OSM_STREET_BUFFER_RULES_METERS,
+    )
+    write_layer(
+        output_file,
+        wind_street_without_buffer_layer_name(),
+        wind_streets_without_buffer,
+    )
+
     wind_street_buffers = build_street_buffer_layer(
         wind_streets,
         WIND_OSM_STREET_BUFFER_RULES_METERS,

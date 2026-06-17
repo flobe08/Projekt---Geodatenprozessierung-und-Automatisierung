@@ -170,6 +170,24 @@ def wind_ausschluss_gesamt_layer_name() -> str:
     return "wind_ausschluss_gesamt"
 
 
+def wind_ausschluss_landuse_layer_name() -> str:
+    """Return the wind exclusion validation layer for landuse buffers."""
+
+    return "wind_ausschluss_landuse_puffer"
+
+
+def wind_ausschluss_osm_buffer_layer_name() -> str:
+    """Return the wind exclusion validation layer for active OSM street buffers."""
+
+    return "wind_ausschluss_osm_streets_puffer"
+
+
+def wind_ausschluss_osm_line_layer_name() -> str:
+    """Return the wind exclusion validation layer for OSM streets without buffer."""
+
+    return "wind_ausschluss_osm_streets_ohne_puffer"
+
+
 def osm_solar_ausschluss_layer_name() -> str:
     """Return the prepared OSM exclusion layer name for solar."""
 
@@ -322,6 +340,28 @@ def set_layer_visibility(
         layer_node.setItemVisibilityChecked(visible)
 
 
+def add_layer_to_group(
+    project: QgsProject,
+    group_name: str,
+    layer: QgsVectorLayer | QgsRasterLayer,
+    *,
+    visible: bool,
+) -> None:
+    """Add a layer to a named QGIS group and set its default visibility."""
+
+    root = project.layerTreeRoot()
+    group = root.findGroup(group_name)
+
+    if group is None:
+        # Put validation groups above the OSM basemap. They are hidden by
+        # default, but appear immediately above the basemap when enabled.
+        group = root.insertGroup(0, group_name)
+
+    project.addMapLayer(layer, False)
+    layer_node = group.addLayer(layer)
+    layer_node.setItemVisibilityChecked(visible)
+
+
 def apply_symbol(layer: QgsVectorLayer, symbol: QgsFillSymbol | QgsLineSymbol) -> None:
     """Apply one symbol safely, even if QGIS did not create a default renderer."""
 
@@ -376,12 +416,12 @@ def build_hatched_fill_symbol(
 # General styling
 # =============================================================================
 def style_boundary(layer: QgsVectorLayer) -> None:
-    """Style the municipality boundary with transparent fill and red outline."""
+    """Style the municipality boundary with transparent fill and dark outline."""
 
     symbol = QgsFillSymbol.createSimple(
         {
-            "color": "255,0,0,0",
-            "outline_color": "255,0,0,255",
+            "color": "40,40,40,0",
+            "outline_color": "45,45,45,255",
             "outline_width": "0.4",
         }
     )
@@ -457,14 +497,26 @@ def style_naturschutz_wind(layer: QgsVectorLayer) -> None:
 
 
 def style_wind_ausschluss_gesamt(layer: QgsVectorLayer) -> None:
-    """Style the combined wind exclusion layer for optional QGIS inspection."""
+    """Style the combined wind exclusion layer as a distinct purple area."""
 
-    symbol = build_hatched_fill_symbol(
-        "120,20,20,255",
-        "120,20,20,255",
-        outline_width=0.25,
-        hatch_width=0.22,
-        hatch_distance=2.0,
+    symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "125,72,165,105",
+            "outline_color": "92,47,128,220",
+            "outline_width": "0.16",
+        }
+    )
+    apply_symbol(layer, symbol)
+
+
+def style_wind_osm_context_lines(layer: QgsVectorLayer) -> None:
+    """Style OSM street lines that have no active wind buffer."""
+
+    symbol = QgsLineSymbol.createSimple(
+        {
+            "color": "95,95,95,210",
+            "width": "0.25",
+        }
     )
     apply_symbol(layer, symbol)
 
@@ -610,7 +662,22 @@ def create_wind_map_project(municipality_name: str) -> None:
     wind_ausschluss_layer = load_optional_vector_layer(
         wind_ausschluss_file,
         wind_ausschluss_gesamt_layer_name(),
-        f"Wind Ausschluss gesamt {municipality_name}",
+        f"Wind Ausschlussflächen gesamt {municipality_name}",
+    )
+    wind_ausschluss_landuse_layer = load_optional_vector_layer(
+        wind_ausschluss_file,
+        wind_ausschluss_landuse_layer_name(),
+        f"{safe_name}_wind_ausschluss_gesamt - wind_ausschluss_landuse_puffer",
+    )
+    wind_ausschluss_osm_buffer_layer = load_optional_vector_layer(
+        wind_ausschluss_file,
+        wind_ausschluss_osm_buffer_layer_name(),
+        f"{safe_name}_wind_ausschluss_gesamt - wind_ausschluss_osm_streets_puffer",
+    )
+    wind_ausschluss_osm_line_layer = load_optional_vector_layer(
+        wind_ausschluss_file,
+        wind_ausschluss_osm_line_layer_name(),
+        f"{safe_name}_wind_ausschluss_gesamt - wind_ausschluss_osm_streets_ohne_puffer",
     )
 
     # -------------------------------------------------------------------------
@@ -659,7 +726,37 @@ def create_wind_map_project(municipality_name: str) -> None:
     if layer_has_features(wind_ausschluss_layer):
         style_wind_ausschluss_gesamt(wind_ausschluss_layer)
         project.addMapLayer(wind_ausschluss_layer)
-        set_layer_visibility(project, wind_ausschluss_layer, False)
+
+    # Validation layers from the same GeoPackage are loaded but hidden by
+    # default. They make the QGIS project explorable without changing the PDF.
+    validation_group_name = "Detail- und Attributlayer Wind-Ausschluss"
+
+    if layer_has_features(wind_ausschluss_landuse_layer):
+        style_wind_ausschluss_gesamt(wind_ausschluss_landuse_layer)
+        add_layer_to_group(
+            project,
+            validation_group_name,
+            wind_ausschluss_landuse_layer,
+            visible=False,
+        )
+
+    if layer_has_features(wind_ausschluss_osm_buffer_layer):
+        style_wind_ausschluss_gesamt(wind_ausschluss_osm_buffer_layer)
+        add_layer_to_group(
+            project,
+            validation_group_name,
+            wind_ausschluss_osm_buffer_layer,
+            visible=False,
+        )
+
+    if layer_has_features(wind_ausschluss_osm_line_layer):
+        style_wind_osm_context_lines(wind_ausschluss_osm_line_layer)
+        add_layer_to_group(
+            project,
+            validation_group_name,
+            wind_ausschluss_osm_line_layer,
+            visible=False,
+        )
 
     # Empty optional layers stay in the GeoPackage for a stable data structure,
     # but are skipped in the QGIS project to avoid visual clutter.
@@ -677,6 +774,8 @@ def create_wind_map_project(municipality_name: str) -> None:
     if layer_has_features(vorbehalt_layer):
         move_layer_to_top(project, vorbehalt_layer)
     move_layer_to_top(project, vorrang_layer)
+    if layer_has_features(wind_ausschluss_layer):
+        move_layer_to_top(project, wind_ausschluss_layer)
     if layer_has_features(naturschutz_wind_layer):
         move_layer_to_top(project, naturschutz_wind_layer)
     if layer_has_features(naturschutz_hart_layer):
