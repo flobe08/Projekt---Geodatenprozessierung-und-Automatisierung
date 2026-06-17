@@ -21,10 +21,11 @@ Verkehrsachsen und Bufferoperationen.
 3. `scripts/1_prepare_data/3_build_protection_layers.py`
 4. `scripts/1_prepare_data/4_clip_landuse.py`
 5. `scripts/1_prepare_data/5_download_osm_network_data.py --technology solar`
-6. `scripts/2_2_solar/2_prepare_solar_layers.py`
-7. `scripts/2_2_solar/3_prepare_solar_landuse.py`
-8. `scripts/3_generate_map/1_create_map_qgis_project.py`
-9. `scripts/3_generate_map/2_generate_map_pdf.py`
+6. `scripts/2_2_solar/4_prepare_solar_osm_streets.py`
+7. `scripts/2_2_solar/2_prepare_solar_corridor_layers.py`
+8. `scripts/2_2_solar/3_prepare_solar_landuse.py`
+9. `scripts/3_generate_map/1_create_map_qgis_project.py`
+10. `scripts/3_generate_map/2_generate_map_pdf.py`
 
 ## Hauptdatensätze
 
@@ -45,20 +46,31 @@ verwendet:
 Diese Achsen werden nicht nur für die Gemeinde selbst geladen, sondern für
 einen erweiterten Analysekontext.
 
-Die aktuelle OSM-Ausgabe liegt hier:
+Die gemeinsame OSM-Straßenbasis liegt hier:
 
-- `data/processed/osm_transport/<municipality>_osm_transport.gpkg`
+- `data/processed/osm_streets/<municipality>_osm_streets.gpkg`
 
 Wichtige Layer:
 
-- `osm_roads_raw`
-- `osm_roads_solar_ausschluss`
-- `osm_autobahnen_<gemeinde>`
-- `osm_schienenwege_<gemeinde>`
+- `osm_streets_raw`
+
+Der allgemeine Solar-Straßenausschluss wird separat gespeichert:
+
+- `data/processed/solar/<municipality>_osm_solar_streets.gpkg`
+- Layer: `osm_streets_solar_ausschluss`
+
+Die Korridorgrundlage für 200-m- und 500-m-Puffer liegt hier:
+
+- `data/processed/solar/<municipality>_solar_corridor_basis.gpkg`
+
+Wichtige Layer:
+
+- `solar_corridor_autobahnen_<gemeinde>`
+- `solar_corridor_schienenwege_<gemeinde>`
 
 Hinweis:
 
-- Der Layer `osm_roads_solar_ausschluss` ist aktuell ein vorbereiteter
+- Der Layer `osm_streets_solar_ausschluss` ist aktuell ein vorbereiteter
   Arbeitslayer und noch nicht aktiv in die finale Solarkarte eingebunden.
 
 ### Amtliche Landnutzung
@@ -72,6 +84,7 @@ Zusätzliche solarspezifische Arbeitslayer:
 - `data/processed/solar/<municipality>_landuse_solar_ausschluss.gpkg`
 - `data/processed/solar/<municipality>_landuse_solar_potenzial.gpkg`
 - `data/processed/solar/<municipality>_landuse_solar_geeignet.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_unused.gpkg`
 
 Hinweis:
 
@@ -95,7 +108,7 @@ Zusätzliche Arbeitslayer aus der amtlichen Landnutzung:
 - `data/processed/solar/<municipality>_landuse_solar_ausschluss.gpkg`
 - `data/processed/solar/<municipality>_landuse_solar_potenzial.gpkg`
 - `data/processed/solar/<municipality>_landuse_solar_geeignet.gpkg`
-- `data/processed/solar/<municipality>_landuse_solar_unentschlossen.gpkg`
+- `data/processed/solar/<municipality>_landuse_solar_unused.gpkg`
 
 Hinweis:
 
@@ -261,8 +274,8 @@ Die Solar-Ausgabe enthält mehrere Layer, damit die Herleitung transparent
 bleibt:
 
 - `analysekontext_<gemeinde>`
-- `osm_autobahnen_<gemeinde>`
-- `osm_schienenwege_<gemeinde>`
+- `solar_corridor_autobahnen_<gemeinde>`
+- `solar_corridor_schienenwege_<gemeinde>`
 - `pv_verkehrsachsen_500m_<gemeinde>`
 - `pv_verkehrsachsen_200m_<gemeinde>`
 - `pv_förderkulisse_500m_<gemeinde>`
@@ -290,7 +303,7 @@ Die aktuelle Solarkarte bindet bereits ein:
 Zusätzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
 
 - `landuse_solar_ausschluss`
-- `osm_roads_solar_ausschluss`
+- `osm_streets_solar_ausschluss`
 
 Diese beiden Layer stehen im QGIS-Projektskript bereits als `TODO` bereit und
 werden später zugeschaltet, sobald die endgültige Solar-Eignungslogik

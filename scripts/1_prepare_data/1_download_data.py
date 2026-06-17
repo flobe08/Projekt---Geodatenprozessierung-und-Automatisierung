@@ -35,7 +35,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # -----------------------------------------------------------------------------
 # Administrative boundaries
 # -----------------------------------------------------------------------------
+# external source
 ALKIS_VERWALTUNG_URL = "https://geodaten.bayern.de/odd/m/4/verwaltung/alkis-verwaltung.zip"
+
+# output
 ALKIS_VERWALTUNG_FILE = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip"
 ALKIS_EXTRACT_DIR = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern"
 
@@ -43,13 +46,17 @@ ALKIS_EXTRACT_DIR = BASE_DIR / "data/raw/Verwaltungsgebiet_Bayern"
 # -----------------------------------------------------------------------------
 # Official landuse
 # -----------------------------------------------------------------------------
+# external source
 LANDUSE_URL = "https://geodaten.bayern.de/odd/m/3/daten/ln/landnutzung.gpkg"
+
+# output
 LANDUSE_FILE = BASE_DIR / "data/raw/landuse/landnutzung.gpkg"
 
 
 # -----------------------------------------------------------------------------
 # Official protection areas
 # -----------------------------------------------------------------------------
+# output root
 SCHUTZGEBIETE_RAW_DIR = BASE_DIR / "data/raw/schutzgebiete"
 
 BIOSPHAERENRESERVATE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/schutzgebiete/biosphaerenreservate_epsg25832_shp.zip"
@@ -111,6 +118,7 @@ SCHUTZGEBIETE_DATASETS = [
 # -----------------------------------------------------------------------------
 # Official Natura 2000 areas
 # -----------------------------------------------------------------------------
+# output root
 NATURA2000_RAW_DIR = SCHUTZGEBIETE_RAW_DIR / "natura2000"
 
 NATURA2000_FFH_URL = "https://www.lfu.bayern.de/gdi/dls/daten/natura2000/ffh_epsg25832_shp.zip"
@@ -129,10 +137,14 @@ NATURA2000_DATASETS = [
 # Wind datasets
 # =============================================================================
 
+# output root
 WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
+
+# output
 WIND_VORRANG_FILE = WIND_RAW_DIR / "wind_vorranggebiete.gpkg"
 WIND_VORBEHALT_FILE = WIND_RAW_DIR / "wind_vorbehaltsgebiete.gpkg"
 
+# external source
 WFS_REGIONALPLANUNG_URL = "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung"
 WFS_VERSION = "2.0.0"
 WFS_OUTPUT_FORMAT = "Geopackage"
@@ -140,9 +152,12 @@ WIND_VORRANG_TYPENAME = "WFS_Regionalplanung:Vorranggebiet_Windenergienutzung"
 WIND_VORBEHALT_TYPENAME = "WFS_Regionalplanung:Vorbehaltsgebiet_Windenergienutzung"
 
 # Wind-specific bird-area dataset used for the naturschutz_wind output.
+# external source
 VOGELKULISSEN_2024_URL = (
     "https://www.lfu.bayern.de/natur/artenhilfsprogramme_voegel/wiesenbrueter/vogelkulissen_2024/doc/vogelkulissen24.zip"
 )
+
+# output
 VOGELKULISSEN_2024_FILE = WIND_RAW_DIR / "vogelkulissen_2024.zip"
 VOGELKULISSEN_2024_EXTRACT_DIR = WIND_RAW_DIR / "vogelkulissen_2024"
 

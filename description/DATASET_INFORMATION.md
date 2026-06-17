@@ -259,7 +259,7 @@ Zusätzliche Arbeitslayer:
 - `data/processed/solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
 - `data/processed/solar/<gemeinde>_landuse_solar_potenzial.gpkg`
 - `data/processed/solar/<gemeinde>_landuse_solar_geeignet.gpkg`
-- `data/processed/solar/<gemeinde>_landuse_solar_unentschlossen.gpkg`
+- `data/processed/solar/<gemeinde>_landuse_solar_unused.gpkg`
 
 ## OSM-Netzdaten als gemeinsamer Eingangsdatenblock
 
@@ -285,8 +285,8 @@ Hinweis:
 
 Typische Output-Dateien:
 
-- `data/processed/osm_highways/<gemeinde>_osm_highways.gpkg`
-- `data/processed/osm_transport/<gemeinde>_osm_transport.gpkg`
+- `data/processed/osm_streets/<gemeinde>_osm_streets.gpkg`
+- `data/processed/solar/<gemeinde>_solar_corridor_basis.gpkg`
 
 ## Wasser
 

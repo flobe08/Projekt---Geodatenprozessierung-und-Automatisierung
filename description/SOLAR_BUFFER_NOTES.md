@@ -137,8 +137,8 @@ Die Solardatei enthält mehrere Layer, damit die Herleitung nachvollziehbar
 bleibt:
 
 - `analysekontext_<gemeinde>`
-- `osm_autobahnen_<gemeinde>`
-- `osm_schienenwege_<gemeinde>`
+- `solar_corridor_autobahnen_<gemeinde>`
+- `solar_corridor_schienenwege_<gemeinde>`
 - `pv_verkehrsachsen_500m_<gemeinde>`
 - `pv_verkehrsachsen_200m_<gemeinde>`
 - `pv_förderkulisse_500m_<gemeinde>`
@@ -158,7 +158,7 @@ Wenn eine Gemeinde selbst keine Autobahn oder Schiene enthält, ist das kein
 Problem. Dann wird nicht die reine Gemeindegeometrie geprüft, sondern:
 
 1. `analysekontext_<gemeinde>`
-2. `osm_autobahnen_<gemeinde>` und `osm_schienenwege_<gemeinde>`
+2. `solar_corridor_autobahnen_<gemeinde>` und `solar_corridor_schienenwege_<gemeinde>`
 3. `pv_förderkulisse_500m_<gemeinde>` und `pv_privilegierung_200m_<gemeinde>`
 
 So lässt sich kontrollieren:

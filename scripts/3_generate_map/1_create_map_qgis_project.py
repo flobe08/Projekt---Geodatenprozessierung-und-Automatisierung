@@ -37,15 +37,16 @@ from utils import ColoredArgumentParser, log_warning
 
 
 # =============================================================================
-# General paths
+# 0. Input and output paths
 # =============================================================================
+# input
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
 WIND_DIR = BASE_DIR / "data/processed/wind"
 PROTECTION_DIR = BASE_DIR / "data/processed/schutzgebiete"
 SOLAR_DIR = BASE_DIR / "data/processed/solar"
 SOLAR_REFERENCE_DIR = BASE_DIR / "data/processed/solar_reference"
-OSM_HIGHWAY_DIR = BASE_DIR / "data/processed/osm_highways"
-OSM_TRANSPORT_DIR = BASE_DIR / "data/processed/osm_transport"
+
+# output
 OUTPUT_DIR = BASE_DIR / "data/processed/qgis_projects"
 
 SOLAR_WMS_ZOOM_1 = "PV-Freiflächenkulisse - Zoomstufe 1"
@@ -154,13 +155,25 @@ def solar_landuse_ausschluss_layer_name() -> str:
 def osm_wind_ausschluss_layer_name() -> str:
     """Return the prepared OSM exclusion layer name for wind."""
 
-    return "osm_roads_wind_ausschluss"
+    return "osm_streets_wind_ausschluss"
+
+
+def wind_ausschluss_gesamt_file_name(municipality_name: str) -> str:
+    """Create the municipality-specific file name for combined wind exclusions."""
+
+    return f"{safe_filename(municipality_name)}_wind_ausschluss_gesamt.gpkg"
+
+
+def wind_ausschluss_gesamt_layer_name() -> str:
+    """Return the combined wind exclusion layer name."""
+
+    return "wind_ausschluss_gesamt"
 
 
 def osm_solar_ausschluss_layer_name() -> str:
     """Return the prepared OSM exclusion layer name for solar."""
 
-    return "osm_roads_solar_ausschluss"
+    return "osm_streets_solar_ausschluss"
 
 
 def qgis_project_file_name(municipality_name: str, technology: str) -> str:
@@ -294,6 +307,19 @@ def move_layer_to_top(project: QgsProject, layer: QgsVectorLayer) -> None:
         parent = layer_node.parent()
         parent.insertChildNode(0, clone)
         parent.removeChildNode(layer_node)
+
+
+def set_layer_visibility(
+    project: QgsProject,
+    layer: QgsVectorLayer | QgsRasterLayer,
+    visible: bool,
+) -> None:
+    """Set layer visibility in the QGIS layer tree."""
+
+    layer_node = project.layerTreeRoot().findLayer(layer.id())
+
+    if isinstance(layer_node, QgsLayerTreeLayer):
+        layer_node.setItemVisibilityChecked(visible)
 
 
 def apply_symbol(layer: QgsVectorLayer, symbol: QgsFillSymbol | QgsLineSymbol) -> None:
@@ -430,6 +456,19 @@ def style_naturschutz_wind(layer: QgsVectorLayer) -> None:
     apply_symbol(layer, symbol)
 
 
+def style_wind_ausschluss_gesamt(layer: QgsVectorLayer) -> None:
+    """Style the combined wind exclusion layer for optional QGIS inspection."""
+
+    symbol = build_hatched_fill_symbol(
+        "120,20,20,255",
+        "120,20,20,255",
+        outline_width=0.25,
+        hatch_width=0.22,
+        hatch_distance=2.0,
+    )
+    apply_symbol(layer, symbol)
+
+
 # =============================================================================
 # Solar styling
 # =============================================================================
@@ -517,6 +556,7 @@ def create_wind_map_project(municipality_name: str) -> None:
     protection_hard_file = PROTECTION_DIR / naturschutz_hart_file_name(municipality_name)
     protection_weich_file = PROTECTION_DIR / naturschutz_weich_file_name(municipality_name)
     protection_wind_file = PROTECTION_DIR / naturschutz_wind_file_name(municipality_name)
+    wind_ausschluss_file = WIND_DIR / wind_ausschluss_gesamt_file_name(municipality_name)
     output_file = OUTPUT_DIR / qgis_project_file_name(municipality_name, "wind")
 
     require_file(boundary_file, "Boundary file not found. Run script 2 first")
@@ -562,13 +602,25 @@ def create_wind_map_project(municipality_name: str) -> None:
     )
 
     # -------------------------------------------------------------------------
+    # Optional combined exclusion layer for QGIS inspection
+    # This layer combines buffered landuse and OSM street exclusions. It is
+    # loaded into the QGIS project but hidden by default, so the PDF map is not
+    # changed until the layer is intentionally enabled.
+    # -------------------------------------------------------------------------
+    wind_ausschluss_layer = load_optional_vector_layer(
+        wind_ausschluss_file,
+        wind_ausschluss_gesamt_layer_name(),
+        f"Wind Ausschluss gesamt {municipality_name}",
+    )
+
+    # -------------------------------------------------------------------------
     # TODO: Future wind exclusion layers
     # These prepared exclusion layers already exist as processing outputs.
     # They are intentionally kept commented out until the final exclusion
     # design for the wind map is fixed and cartographically tested.
     # -------------------------------------------------------------------------
     # wind_landuse_file = WIND_DIR / wind_landuse_ausschluss_file_name(municipality_name)
-    # wind_osm_file = OSM_HIGHWAY_DIR / f"{safe_name}_osm_highways.gpkg"
+    # wind_osm_file = WIND_DIR / f"{safe_name}_osm_wind_streets.gpkg"
     # wind_landuse_layer = load_optional_vector_layer(
     #     wind_landuse_file,
     #     wind_landuse_ausschluss_layer_name(),
@@ -603,6 +655,11 @@ def create_wind_map_project(municipality_name: str) -> None:
     if layer_has_features(naturschutz_wind_layer):
         style_naturschutz_wind(naturschutz_wind_layer)
         project.addMapLayer(naturschutz_wind_layer)
+
+    if layer_has_features(wind_ausschluss_layer):
+        style_wind_ausschluss_gesamt(wind_ausschluss_layer)
+        project.addMapLayer(wind_ausschluss_layer)
+        set_layer_visibility(project, wind_ausschluss_layer, False)
 
     # Empty optional layers stay in the GeoPackage for a stable data structure,
     # but are skipped in the QGIS project to avoid visual clutter.
@@ -719,7 +776,7 @@ def create_solar_map_project(municipality_name: str) -> None:
     # design for the solar map is fixed and cartographically tested.
     # -------------------------------------------------------------------------
     # solar_landuse_file = SOLAR_DIR / solar_landuse_ausschluss_file_name(municipality_name)
-    # solar_osm_file = OSM_TRANSPORT_DIR / f"{safe_name}_osm_transport.gpkg"
+    # solar_osm_file = SOLAR_DIR / f"{safe_name}_osm_solar_streets.gpkg"
     # solar_landuse_layer = load_optional_vector_layer(
     #     solar_landuse_file,
     #     solar_landuse_ausschluss_layer_name(),

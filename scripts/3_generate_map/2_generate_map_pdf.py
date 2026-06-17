@@ -53,11 +53,15 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 # -----------------------------------------------------------------------------
-# 0. Configuration: input and output paths
+# 0. Input and output paths
 # -----------------------------------------------------------------------------
+# input
 PROJECT_DIR = BASE_DIR / "data/processed/qgis_projects"
+
+# output
 OUTPUT_DIR = BASE_DIR / "data/processed/maps"
 
+# input
 NORTH_ARROW_PATH = BASE_DIR / "assets/svg/NorthArrow_11.svg"
 
 

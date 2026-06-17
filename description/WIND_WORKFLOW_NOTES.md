@@ -20,8 +20,11 @@ buffers or landuse proxies.
 5. `scripts/1_prepare_data/5_download_osm_network_data.py --technology wind`
 6. `scripts/2_1_wind/1_clip_wind_planning_areas.py`
 7. `scripts/2_1_wind/2_prepare_wind_landuse.py`
-8. `scripts/3_generate_map/1_create_map_qgis_project.py`
-9. `scripts/3_generate_map/2_generate_map_pdf.py`
+8. `scripts/2_1_wind/3_build_wind_landuse_buffers.py`
+9. `scripts/2_1_wind/4_prepare_wind_osm_streets.py`
+10. `scripts/2_1_wind/5_build_wind_exclusion_layer.py`
+11. `scripts/3_generate_map/1_create_map_qgis_project.py`
+12. `scripts/3_generate_map/2_generate_map_pdf.py`
 
 ## Main datasets
 
@@ -46,7 +49,9 @@ Additional wind-specific working outputs:
 - `data/processed/wind/<municipality>_landuse_wind_ausschluss.gpkg`
 - `data/processed/wind/<municipality>_landuse_wind_potenzial.gpkg`
 - `data/processed/wind/<municipality>_landuse_wind_geeignet.gpkg`
-- `data/processed/wind/<municipality>_landuse_wind_unentschlossen.gpkg`
+- `data/processed/wind/<municipality>_landuse_wind_unused.gpkg`
+- `data/processed/wind/<municipality>_landuse_wind_ausschluss_puffer.gpkg`
+- `data/processed/wind/<municipality>_wind_ausschluss_gesamt.gpkg`
 
 Hinweis:
 
@@ -56,12 +61,14 @@ Hinweis:
 
 ### OSM-Straßendaten
 
-- `data/processed/osm_highways/<municipality>_osm_highways.gpkg`
+- `data/processed/osm_streets/<municipality>_osm_streets.gpkg`
+- `data/processed/wind/<municipality>_osm_wind_streets.gpkg`
+- `data/processed/wind/<municipality>_osm_wind_streets_puffer.gpkg`
 
 Wichtige Layer:
 
-- `osm_roads_raw`
-- `osm_roads_wind_ausschluss`
+- `osm_streets_raw`
+- `osm_streets_wind_ausschluss`
 
 Hinweis:
 
@@ -80,11 +87,17 @@ Die aktuelle Windkarte bindet bereits ein:
 
 Zusätzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
 
-- `landuse_wind_ausschluss`
-- `osm_roads_wind_ausschluss`
+- `landuse_wind_ausschluss_puffer`
+- `osm_streets_wind_ausschluss_puffer`
+- `wind_ausschluss_gesamt`
 
 Diese beiden Layer stehen im QGIS-Projektskript bereits als `TODO` bereit und
 werden später zugeschaltet, sobald die endgültige Ausschlusslogik feststeht.
+
+Aktueller Stand: `wind_ausschluss_gesamt` wird im QGIS-Projekt bereits als
+Prüflayer geladen, ist aber standardmäßig ausgeblendet. Dadurch kann der
+Layer manuell aktiviert und geprüft werden, ohne die automatisch erzeugte
+PDF-Karte direkt zu verändern.
 
 ### General protection datasets
 

@@ -1,8 +1,8 @@
-# Reproduzierbarer Energie-Workflow für eine Gemeinde
+﻿# Reproduzierbarer Energie-Workflow fÃ¼r eine Gemeinde
 
-Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow für eine
-ausgewählte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow**
-durchgängig umgesetzt. Der **Solar-Workflow** wird vorbereitet und basiert auf
+Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow fÃ¼r eine
+ausgewÃ¤hlte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow**
+durchgÃ¤ngig umgesetzt. Der **Solar-Workflow** wird vorbereitet und basiert auf
 OSM-Verkehrsachsen sowie rechtlichen 200-m- und 500-m-Pufferzonen.
 
 ## Setup
@@ -31,7 +31,7 @@ sudo apt update
 sudo apt install python3 python3-venv python3-pip qgis python3-qgis
 ```
 
-Python-Umgebung für die Datenvorbereitung anlegen:
+Python-Umgebung fÃ¼r die Datenvorbereitung anlegen:
 
 ```bash
 python3 -m venv .venv-wsl
@@ -50,10 +50,10 @@ bash run_workflow.sh Drachselsried wind
 
 Hinweis:
 
-- Der erste vollständige Durchlauf kann deutlich länger dauern.
-- Grund dafür sind mehrere große Bayern-Datensätze.
-- Vor allem die offizielle Landnutzung wird lokal als großer Datensatz
-  vorgehalten und liegt ungefähr im Bereich von 5 bis 6 GB.
+- Der erste vollstÃ¤ndige Durchlauf kann deutlich lÃ¤nger dauern.
+- Grund dafÃ¼r sind mehrere groÃŸe Bayern-DatensÃ¤tze.
+- Vor allem die offizielle Landnutzung wird lokal als groÃŸer Datensatz
+  vorgehalten und liegt ungefÃ¤hr im Bereich von 5 bis 6 GB.
 
 ## Hauptskripte
 
@@ -71,7 +71,7 @@ QGIS-Projekt und PDF-Karte erzeugen:
 python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 ```
 
-## Manuelle Ausführung ohne Bash-Skript
+## Manuelle AusfÃ¼hrung ohne Bash-Skript
 
 Wenn du jeden Schritt einzeln starten willst, erreichst du dasselbe Ergebnis
 mit diesen Befehlen.
@@ -85,8 +85,11 @@ python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality
 python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
 python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wind
+python3 scripts/2_1_wind/4_prepare_wind_osm_streets.py --municipality Drachselsried
 python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
 python3 scripts/2_1_wind/2_prepare_wind_landuse.py --municipality Drachselsried
+python3 scripts/2_1_wind/3_build_wind_landuse_buffers.py --municipality Drachselsried
+python3 scripts/2_1_wind/5_build_wind_exclusion_layer.py --municipality Drachselsried
 deactivate
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology wind
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology wind
@@ -101,7 +104,8 @@ python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality
 python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
 python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology solar
-python3 scripts/2_2_solar/2_prepare_solar_layers.py --municipality Drachselsried
+python3 scripts/2_2_solar/4_prepare_solar_osm_streets.py --municipality Drachselsried
+python3 scripts/2_2_solar/2_prepare_solar_corridor_layers.py --municipality Drachselsried
 python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
 python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
@@ -113,9 +117,9 @@ python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsrie
 
 - `.venv-wsl` ist eine **lokale** Umgebung und wird **nicht** in Git
   eingecheckt.
-- Große Roh- und Ergebnisdaten unter `data/` werden ebenfalls nicht normal in
+- GroÃŸe Roh- und Ergebnisdaten unter `data/` werden ebenfalls nicht normal in
   Git versioniert.
-- Die genaue Schritt-für-Schritt-Anleitung steht in
+- Die genaue Schritt-fÃ¼r-Schritt-Anleitung steht in
   [ANLEITUNG.md](ANLEITUNG.md).
-- Die manuelle Datenprüfung und Verifikation steht in
+- Die manuelle DatenprÃ¼fung und Verifikation steht in
   [description/VERIFIKATION.md](description/VERIFIKATION.md).

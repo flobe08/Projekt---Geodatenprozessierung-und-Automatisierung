@@ -35,7 +35,7 @@ Diese Layer werden in `data/raw/landuse/landnutzung.gpkg` erwartet:
 | `ln_ohnenutzung` | Potenzial / Prüfung | Potenzial / Prüfung | Kontext | Kann je nach Lage geeignete Freiflächen enthalten. |
 | `ln_schiffsverkehr` | Ausschluss | Ausschluss | wichtig / Kontext | Verkehrs- und Gewässernutzung. |
 | `ln_sportanlage` | Ausschluss | Ausschluss | Ausschluss | Bestehende Nutzung mit Konfliktpotenzial. |
-| `ln_strassenundwegeverkehr` | Unentschlossen / spätere Prüfung | Ausschluss / Puffer | Kontext | Verkehrsfläche; für Wind im amtlichen Datensatz zu grob, für Solar rechtlich relevanter Nähebezug. |
+| `ln_strassenundwegeverkehr` | unused / spätere Prüfung | Ausschluss / Puffer | Kontext | Verkehrsfläche; für Wind im amtlichen Datensatz zu grob, für Solar rechtlich relevanter Nähebezug. |
 | `ln_versorgungundentsorgung` | Ausschluss | Ausschluss | Kontext | Technische Infrastrukturfläche. |
 | `ln_wasserwirtschaft` | Ausschluss | Ausschluss | wichtig | Für Wasserkraft fachlich besonders relevant, für Wind und Solar ungeeignet. |
 | `ln_wohnnutzung` | Ausschluss / Siedlungspuffer | Ausschluss / Siedlungspuffer | Ausschluss | Wohnnutzung ist für alle drei Technologien konfliktträchtig. |
@@ -75,9 +75,10 @@ Optional nach Einzelfallprüfung:
 - `ln_landwirtschaft`
 - `ln_ohnenutzung`
 
-#### `landuse_wind_unentschlossen`
+#### `landuse_wind_unused`
 
 - `ln_strassenundwegeverkehr`
+- weitere aktuell nicht genutzte Wind-Layer aus dem offiziellen Datensatz
 
 Hinweis:
 
@@ -90,7 +91,7 @@ Hinweis:
   - `data/processed/wind/<gemeinde>_landuse_wind_ausschluss.gpkg`
   - `data/processed/wind/<gemeinde>_landuse_wind_potenzial.gpkg`
   - `data/processed/wind/<gemeinde>_landuse_wind_geeignet.gpkg`
-  - `data/processed/wind/<gemeinde>_landuse_wind_unentschlossen.gpkg`
+  - `data/processed/wind/<gemeinde>_landuse_wind_unused.gpkg`
 
 
 ### Solar
@@ -128,10 +129,11 @@ Optional nach Einzelfallprüfung:
 Hinweis:
 
 - Wald (`ln_forstwirtschaft`) wird für Solar hier als **Ausschluss** behandelt.
-- Die Solar-Landnutzung wird als drei separate Dateien geschrieben:
+- Die Solar-Landnutzung wird als vier separate Dateien geschrieben:
   - `data/processed/solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
   - `data/processed/solar/<gemeinde>_landuse_solar_potenzial.gpkg`
   - `data/processed/solar/<gemeinde>_landuse_solar_geeignet.gpkg`
+  - `data/processed/solar/<gemeinde>_landuse_solar_unused.gpkg`
 - `landuse_solar_potenzial` und `landuse_solar_geeignet` sind aktuell
   Arbeitslayer für Prüfung und Vergleich, werden aber noch nicht direkt in der
   finalen Karte verwendet.
@@ -157,10 +159,11 @@ Hinweis:
 - Für Wasser ist Landnutzung eher **Kontextinformation** als der wichtigste
   Hauptfilter. Die eigentlichen Fachlayer kommen dort eher aus Gewässer- und
   Schutzgebietsdaten.
-- Die Wasser-Landnutzung wird als drei separate Dateien geschrieben:
+- Die Wasser-Landnutzung wird als vier separate Dateien geschrieben:
   - `data/processed/wasser/<gemeinde>_landuse_wasser_ausschluss.gpkg`
   - `data/processed/wasser/<gemeinde>_landuse_wasser_kontext.gpkg`
   - `data/processed/wasser/<gemeinde>_landuse_wasser_geeignet.gpkg`
+  - `data/processed/wasser/<gemeinde>_landuse_wasser_unused.gpkg`
 - `landuse_wasser_kontext` und `landuse_wasser_geeignet` sind aktuell
   Arbeitslayer für Prüfung und Vergleich, werden aber noch nicht direkt in der
   finalen Karte verwendet.

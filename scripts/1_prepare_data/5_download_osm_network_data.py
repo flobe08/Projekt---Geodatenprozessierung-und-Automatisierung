@@ -1,18 +1,18 @@
 """
-Script 5: Download OSM network data with one shared workflow.
+Script 5: Download shared OSM network data.
 
 Workflow:
 1. Read the municipality boundary from script 2.
 2. Build one buffered analysis context around the municipality.
-3. Request technology-specific OSM road and optional railway data from Overpass.
-4. Clip the OSM lines to the analysis context, not directly to the municipality.
-5. Write the clipped network layers to a GeoPackage for later processing.
+3. Download a broad OSM street basis for later technology-specific filtering.
+4. For solar, additionally write a corridor basis with motorways and railways.
+5. Clip all downloaded OSM lines to the analysis context, not directly to the
+   municipality boundary.
 
-Hinweis:
-Dieses Skript ist bewusst allgemein gehalten. Es lädt je nach Technologie
-unterschiedliche OSM-Netzklassen, damit dieselbe technische Basis für Wind,
-Solar und später auch Wasser genutzt werden kann. Aus dem breiten Rohdownload
-wird zusätzlich ein kleiner technologiespezifischer Ausschlusslayer abgeleitet.
+Note:
+This script only downloads and stores OSM basis data. Technology-specific
+exclusion layers, buffers and final interpretation are created in the wind,
+solar and water folders.
 """
 
 from pathlib import Path
@@ -35,18 +35,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # =============================================================================
 # 0. Input and output paths
 # =============================================================================
+# input
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
-OSM_HIGHWAY_DIR = BASE_DIR / "data/processed/osm_highways"
-OSM_TRANSPORT_DIR = BASE_DIR / "data/processed/osm_transport"
 
+# output
+OSM_STREETS_DIR = BASE_DIR / "data/processed/osm_streets"
+SOLAR_OUTPUT_DIR = BASE_DIR / "data/processed/solar"
+
+# external source
 OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
 ]
 
-# Allgemeiner Analysekontext für OSM-Daten:
-# Wenn später Buffer oder Distanzanalysen berechnet werden, darf das OSM-Netz
-# nicht schon an der Gemeindegrenze enden.
+# General analysis context for OSM data:
+# if later buffers or distance analyses are calculated, the OSM network must
+# not end directly at the municipality boundary.
 ANALYSIS_CONTEXT_BUFFER_METERS = 1000
 
 GENERAL_HIGHWAY_VALUES = [
@@ -68,58 +72,6 @@ GENERAL_HIGHWAY_VALUES = [
     "road",
 ]
 
-# Diese Listen definieren je Technologie, welche Straßenklassen später als
-# Ausschluss- oder Konfliktlayer nach außen ausgegeben werden sollen.
-# Kleinere Wege wie service, track und road bleiben im Rohdownload erhalten,
-# werden aber zunächst nicht automatisch als Ausschluss behandelt.
-TECH_HIGHWAY_EXCLUSION_VALUES = {
-    "wind": {
-        "motorway",
-        "motorway_link",
-        "trunk",
-        "trunk_link",
-        "primary",
-        "primary_link",
-        "secondary",
-        "secondary_link",
-        "tertiary",
-        "tertiary_link",
-        "unclassified",
-        "residential",
-        "living_street",
-    },
-    "solar": {
-        "motorway",
-        "motorway_link",
-        "trunk",
-        "trunk_link",
-        "primary",
-        "primary_link",
-        "secondary",
-        "secondary_link",
-        "tertiary",
-        "tertiary_link",
-        "unclassified",
-        "residential",
-        "living_street",
-    },
-    "wasser": {
-        "motorway",
-        "motorway_link",
-        "trunk",
-        "trunk_link",
-        "primary",
-        "primary_link",
-        "secondary",
-        "secondary_link",
-        "tertiary",
-        "tertiary_link",
-        "unclassified",
-        "residential",
-        "living_street",
-    },
-}
-
 MOTORWAY_VALUES = {"motorway", "motorway_link"}
 RAILWAY_VALUES = {"rail"}
 
@@ -129,25 +81,16 @@ RAILWAY_VALUES = {"rail"}
 # =============================================================================
 TECH_CONFIG = {
     "wind": {
-        "output_dir": OSM_HIGHWAY_DIR,
-        "file_suffix": "osm_highways",
-        "download_highways": True,
         "download_railways": False,
-        "description": "OSM highway data",
+        "description": "OSM street basis",
     },
     "solar": {
-        "output_dir": OSM_TRANSPORT_DIR,
-        "file_suffix": "osm_transport",
-        "download_highways": True,
         "download_railways": True,
-        "description": "OSM transport data",
+        "description": "OSM street and solar corridor basis",
     },
     "wasser": {
-        "output_dir": OSM_HIGHWAY_DIR,
-        "file_suffix": "osm_highways",
-        "download_highways": True,
         "download_railways": False,
-        "description": "OSM highway data",
+        "description": "OSM street basis",
     },
 }
 
@@ -232,7 +175,7 @@ def remove_existing_output(output_file: Path) -> None:
         log_info("Close the file in QGIS or remove the layer from the QGIS project.")
         log_info("Then run the script again.")
         raise SystemExit(
-            "Script 5 stopped because the OSM GeoPackage is still open."
+            "Script 5 stopped because an OSM GeoPackage is still open."
         ) from error
 
 
@@ -245,7 +188,7 @@ def build_overpass_query(
 
     highway_regex = "|".join(highway_values)
     highway_block = f'  way["highway"~"^({highway_regex})$"]({overpass_bbox});'
-    railway_block = '  way["railway"="rail"]({});'.format(overpass_bbox)
+    railway_block = f'  way["railway"="rail"]({overpass_bbox});'
 
     query_parts = [highway_block]
     if include_railways:
@@ -338,15 +281,16 @@ def overpass_to_geodataframes(
             railway_properties["source_type"] = "railway"
             railways.append(railway_properties)
 
-    if roads:
-        road_gdf = gpd.GeoDataFrame(roads, geometry="geometry", crs="EPSG:4326")
-    else:
-        road_gdf = empty_lines_gdf()
-
-    if railways:
-        railway_gdf = gpd.GeoDataFrame(railways, geometry="geometry", crs="EPSG:4326")
-    else:
-        railway_gdf = empty_lines_gdf()
+    road_gdf = (
+        gpd.GeoDataFrame(roads, geometry="geometry", crs="EPSG:4326")
+        if roads
+        else empty_lines_gdf()
+    )
+    railway_gdf = (
+        gpd.GeoDataFrame(railways, geometry="geometry", crs="EPSG:4326")
+        if railways
+        else empty_lines_gdf()
+    )
 
     return road_gdf, railway_gdf
 
@@ -364,7 +308,7 @@ def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> N
         log_info("Close the file in QGIS or remove the layer from the QGIS project.")
         log_info("Then run the script again.")
         raise SystemExit(
-            "Script 5 stopped because the OSM GeoPackage could not be written."
+            "Script 5 stopped because an OSM GeoPackage could not be written."
         ) from error
 
     if data.empty:
@@ -373,34 +317,22 @@ def write_layer(output_file: Path, layer_name: str, data: gpd.GeoDataFrame) -> N
         log_success(f"Written {layer_name}: {len(data)} features")
 
 
-def raw_road_layer_name() -> str:
-    """Return the standard raw road layer name."""
+def raw_street_layer_name() -> str:
+    """Return the standard raw street layer name."""
 
-    return "osm_roads_raw"
-
-
-def exclusion_road_layer_name(technology: str) -> str:
-    """Return the technology-specific exclusion road layer name."""
-
-    return f"osm_roads_{technology}_ausschluss"
+    return "osm_streets_raw"
 
 
-def solar_road_layer_name(municipality_name: str) -> str:
-    """Create the municipality-specific layer name for the broader solar road context."""
+def solar_corridor_motorway_layer_name(municipality_name: str) -> str:
+    """Create the municipality-specific layer name for solar corridor motorways."""
 
-    return f"osm_strassen_{safe_filename(municipality_name)}"
-
-
-def motorway_layer_name(municipality_name: str) -> str:
-    """Create the municipality-specific layer name for motorways."""
-
-    return f"osm_autobahnen_{safe_filename(municipality_name)}"
+    return f"solar_corridor_autobahnen_{safe_filename(municipality_name)}"
 
 
-def railway_layer_name(municipality_name: str) -> str:
-    """Create the municipality-specific layer name for railways."""
+def solar_corridor_railway_layer_name(municipality_name: str) -> str:
+    """Create the municipality-specific layer name for solar corridor railways."""
 
-    return f"osm_schienenwege_{safe_filename(municipality_name)}"
+    return f"solar_corridor_schienenwege_{safe_filename(municipality_name)}"
 
 
 def analysis_context_layer_name(municipality_name: str) -> str:
@@ -419,25 +351,11 @@ def split_motorways(roads: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return roads[motorway_mask].copy()
 
 
-def build_exclusion_roads(
-    roads: gpd.GeoDataFrame,
-    technology: str,
-) -> gpd.GeoDataFrame:
-    """Filter one broader road dataset down to the technology exclusion classes."""
-
-    if roads.empty or "highway" not in roads.columns:
-        return empty_lines_gdf(crs=roads.crs if not roads.empty else "EPSG:25832")
-
-    exclusion_values = TECH_HIGHWAY_EXCLUSION_VALUES[technology]
-    mask = roads["highway"].isin(exclusion_values)
-    return roads[mask].copy()
-
-
 # =============================================================================
 # 3. Download OSM network data for one municipality
 # =============================================================================
 def download_osm_network_data(municipality_name: str, technology: str) -> None:
-    """Download technology-specific OSM network data with a buffered context."""
+    """Download shared OSM network data with a buffered context."""
 
     if technology not in TECH_CONFIG:
         raise ValueError(f"Unknown technology: {technology}")
@@ -451,12 +369,26 @@ def download_osm_network_data(municipality_name: str, technology: str) -> None:
         )
 
     config = TECH_CONFIG[technology]
-    output_dir = config["output_dir"]
-    output_file = output_dir / f"{safe_name}_{config['file_suffix']}.gpkg"
-    raw_file = output_dir / f"{safe_name}_{config['file_suffix']}_raw.json"
+    streets_output_file = OSM_STREETS_DIR / f"{safe_name}_osm_streets.gpkg"
+    streets_raw_file = OSM_STREETS_DIR / f"{safe_name}_osm_streets_raw.json"
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    remove_existing_output(output_file)
+    solar_corridor_file = (
+        SOLAR_OUTPUT_DIR / f"{safe_name}_solar_corridor_basis.gpkg"
+        if technology == "solar"
+        else None
+    )
+    solar_corridor_raw_file = (
+        SOLAR_OUTPUT_DIR / f"{safe_name}_solar_corridor_basis_raw.json"
+        if technology == "solar"
+        else None
+    )
+
+    OSM_STREETS_DIR.mkdir(parents=True, exist_ok=True)
+    remove_existing_output(streets_output_file)
+
+    if solar_corridor_file is not None:
+        SOLAR_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        remove_existing_output(solar_corridor_file)
 
     boundary = gpd.read_file(boundary_file).to_crs(epsg=25832)
     analysis_context_area = build_analysis_context(
@@ -466,7 +398,9 @@ def download_osm_network_data(municipality_name: str, technology: str) -> None:
 
     log_info(f"Downloading {config['description']} for: {municipality_name}")
     log_info(f"Boundary: {display_path(boundary_file)}")
-    log_info(f"Output: {display_path(output_file)}")
+    log_info(f"Street output: {display_path(streets_output_file)}")
+    if solar_corridor_file is not None:
+        log_info(f"Solar corridor output: {display_path(solar_corridor_file)}")
     log_info(f"Analysekontext-Buffer: {ANALYSIS_CONTEXT_BUFFER_METERS} m")
 
     overpass_bbox = area_to_overpass_bbox(analysis_context_area)
@@ -477,8 +411,12 @@ def download_osm_network_data(municipality_name: str, technology: str) -> None:
     )
     overpass_data = request_overpass(query, config["description"])
 
-    with open(raw_file, "w", encoding="utf-8") as file:
+    with open(streets_raw_file, "w", encoding="utf-8") as file:
         json.dump(overpass_data, file, ensure_ascii=False)
+
+    if solar_corridor_raw_file is not None:
+        with open(solar_corridor_raw_file, "w", encoding="utf-8") as file:
+            json.dump(overpass_data, file, ensure_ascii=False)
 
     roads, railways = overpass_to_geodataframes(
         overpass_data,
@@ -491,31 +429,29 @@ def download_osm_network_data(municipality_name: str, technology: str) -> None:
     if not railways.empty:
         railways = gpd.clip(railways.to_crs(epsg=25832), analysis_context_area)
 
-    exclusion_roads = build_exclusion_roads(roads, technology)
-
     write_layer(
-        output_file,
+        streets_output_file,
         analysis_context_layer_name(municipality_name),
         analysis_context_area,
     )
+    write_layer(streets_output_file, raw_street_layer_name(), roads)
 
-    if technology == "solar":
+    if solar_corridor_file is not None:
         motorways = split_motorways(roads)
-        write_layer(output_file, raw_road_layer_name(), roads)
         write_layer(
-            output_file,
-            exclusion_road_layer_name(technology),
-            exclusion_roads,
+            solar_corridor_file,
+            analysis_context_layer_name(municipality_name),
+            analysis_context_area,
         )
-        write_layer(output_file, solar_road_layer_name(municipality_name), roads)
-        write_layer(output_file, motorway_layer_name(municipality_name), motorways)
-        write_layer(output_file, railway_layer_name(municipality_name), railways)
-    else:
-        write_layer(output_file, raw_road_layer_name(), roads)
         write_layer(
-            output_file,
-            exclusion_road_layer_name(technology),
-            exclusion_roads,
+            solar_corridor_file,
+            solar_corridor_motorway_layer_name(municipality_name),
+            motorways,
+        )
+        write_layer(
+            solar_corridor_file,
+            solar_corridor_railway_layer_name(municipality_name),
+            railways,
         )
 
     log_success("OSM network download finished.")
@@ -525,7 +461,7 @@ def main() -> None:
     """Run the OSM network download for one municipality and technology."""
 
     parser = ColoredArgumentParser(
-        description="Download technology-specific OSM road and railway data."
+        description="Download shared OSM street data and optional solar corridor data."
     )
     parser.add_argument(
         "--municipality",
@@ -536,7 +472,7 @@ def main() -> None:
         "--technology",
         required=True,
         choices=["wind", "solar", "wasser"],
-        help="Technology that defines the OSM filter.",
+        help="Technology that defines whether additional railway data is needed.",
     )
 
     args = parser.parse_args()

@@ -26,12 +26,17 @@ from utils import ColoredArgumentParser, log_error, log_info, log_success, log_w
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# -----------------------------------------------------------------------------
+# 0. Input and output paths
+# -----------------------------------------------------------------------------
+# input
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
 WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
-WIND_PROCESSED_DIR = BASE_DIR / "data/processed/wind"
-
 WIND_VORRANG_FILE = WIND_RAW_DIR / "wind_vorranggebiete.gpkg"
 WIND_VORBEHALT_FILE = WIND_RAW_DIR / "wind_vorbehaltsgebiete.gpkg"
+
+# output
+WIND_PROCESSED_DIR = BASE_DIR / "data/processed/wind"
 
 
 def safe_filename(name: str) -> str:

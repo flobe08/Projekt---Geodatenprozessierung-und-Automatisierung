@@ -28,7 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # =============================================================================
 # 0. Input and output paths
 # =============================================================================
+# input
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+
+# output
 OUTPUT_DIR = BASE_DIR / "data/processed/solar_reference"
 
 WMS_BASE_URL = "https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar"

@@ -19,11 +19,18 @@ from landuse_utils import (
     load_official_landuse,
     remove_existing_output,
     safe_filename,
+    validate_landuse_group_assignment,
     write_layer,
 )
 from utils import ColoredArgumentParser, log_detail, log_info, log_success
 
 
+# -----------------------------------------------------------------------------
+# 0. Input and output paths
+# -----------------------------------------------------------------------------
+# input is resolved in landuse_utils.load_official_landuse()
+
+# output
 OUTPUT_DIR = BASE_DIR / "data/processed/wind"
 
 
@@ -31,49 +38,50 @@ OUTPUT_DIR = BASE_DIR / "data/processed/wind"
 # 1. Wind landuse groups
 # =============================================================================
 # Ausschluss:
-# Wohnen, sensible Einrichtungen, Freizeitnutzungen und wasserbezogene
-# Nutzungen sollen in der ersten Windanalyse direkt ausgeschlossen werden.
+# Residential areas, sensitive uses, recreation and water-related landuse
+# classes are excluded in the first wind analysis.
 WIND_AUSSCHLUSS = {
-    "ln_wohnnutzung",
-    "ln_bestattung",
-    "ln_oeffentlicheeinrichtungen",
-    "ln_sportanlage",
-    "ln_freizeitanlage",
-    "ln_freiluftundnaherholung",
-    "ln_bahnverkehr",
-    "ln_flugverkehr",
-    "ln_schiffsverkehr",
-    "ln_wasserwirtschaft",
     "ln_aquakulturundfischereiwirtschaft",
+    "ln_bahnverkehr",
+    "ln_bestattung",
+    "ln_flugverkehr",
+    "ln_freiluftundnaherholung",
+    "ln_freizeitanlage",
+    "ln_gewerblichedienstleistungen",
+    "ln_industrieundverarbeitendesgewerbe",
+    "ln_kulturundunterhaltung",
+    "ln_oeffentlicheeinrichtungen",
+    "ln_schiffsverkehr",
+    "ln_sportanlage",
+    "ln_versorgungundentsorgung",
+    "ln_wasserwirtschaft",
+    "ln_wohnnutzung",
 }
 
-# Potenzial:
-# Hier werden sowohl die klaren Suchraumklassen als auch Einzelfallflächen
-# gesammelt, die später noch weiter geprüft werden können.
+# Potential:
+# This group contains broad search-space classes and case-by-case classes
+# that can be checked more closely in later processing steps.
 WIND_POTENZIAL = {
+    "ln_abbau", # only case-by-case; active extraction sites are not directly suitable
+    "ln_forstwirtschaft",
+    "ln_lagerung",
     "ln_landwirtschaft",
     "ln_ohnenutzung",
-    "ln_abbau",
-    "ln_lagerung",
-    "ln_forstwirtschaft",
 }
 
 # Geeignet:
-# Diese kleinere Teilmenge beschreibt die fachlich klarsten Kernflächen, zum
-# Beispiel Landwirtschaft und nutzungsarme Freiflächen.
+# This smaller subset contains the clearest core areas, for example
+# agricultural land and land with little current use.
 WIND_GEEIGNET = {
     "ln_landwirtschaft",
     "ln_ohnenutzung",
 }
 
-# Unentschlossen:
-# Verkehrsflächen aus dem offiziellen Landnutzungsdatensatz werden bewusst
-# separat gehalten. Die Klasse ``ln_strassenundwegeverkehr`` ist für die erste
-# Windbewertung zu grob, weil sie neben größeren Straßen auch kleinere Wege
-# enthalten kann. Der Layer geht dadurch nicht verloren, wird aktuell aber noch
-# nicht pauschal ausgeschlossen. Später kann er gezielt mit OSM-Straßenklassen
-# oder fachlich begründeten Puffern weiter verfeinert werden.
-WIND_UNENTSCHLOSSEN = {
+# Unused:
+# Remaining class for layers that are currently not actively used.
+# Roads and paths are kept separate because they can later be checked more
+# precisely with OSM classes and method-specific buffers.
+WIND_UNUSED = {
     "ln_strassenundwegeverkehr",
 }
 
@@ -92,18 +100,18 @@ def prepare_wind_landuse(municipality_name: str) -> None:
 
     safe_name = safe_filename(municipality_name)
     ausschluss_file = OUTPUT_DIR / f"{safe_name}_landuse_wind_ausschluss.gpkg"
-    # Output aktuell nicht direkt in der finalen Karte verwendet.
+    # Output is currently not used directly in the final map.
     potenzial_file = OUTPUT_DIR / f"{safe_name}_landuse_wind_potenzial.gpkg"
-    # Output aktuell nicht direkt in der finalen Karte verwendet.
+    # Output is currently not used directly in the final map.
     geeignet_file = OUTPUT_DIR / f"{safe_name}_landuse_wind_geeignet.gpkg"
-    # Output aktuell nicht direkt in der finalen Karte verwendet.
-    unentschlossen_file = OUTPUT_DIR / f"{safe_name}_landuse_wind_unentschlossen.gpkg"
+    # Output is currently not used directly in the final map.
+    unused_file = OUTPUT_DIR / f"{safe_name}_landuse_wind_unused.gpkg"
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     remove_existing_output(ausschluss_file)
     remove_existing_output(potenzial_file)
     remove_existing_output(geeignet_file)
-    remove_existing_output(unentschlossen_file)
+    remove_existing_output(unused_file)
 
     landuse = load_official_landuse(municipality_name)
 
@@ -112,12 +120,19 @@ def prepare_wind_landuse(municipality_name: str) -> None:
     log_info(f"Output 1: {display_path(ausschluss_file)}")
     log_info(f"Output 2: {display_path(potenzial_file)}")
     log_info(f"Output 3: {display_path(geeignet_file)}")
-    log_info(f"Output 4: {display_path(unentschlossen_file)}")
+    log_info(f"Output 4: {display_path(unused_file)}")
     log_detail(f"Ausschluss layers: {format_source_layers(WIND_AUSSCHLUSS)}")
     log_detail(f"Potenzial layers: {format_source_layers(WIND_POTENZIAL)}")
     log_detail(f"Geeignet layers: {format_source_layers(WIND_GEEIGNET)}")
-    log_detail(
-        f"Unentschlossen layers: {format_source_layers(WIND_UNENTSCHLOSSEN)}"
+    log_detail(f"Unused layers: {format_source_layers(WIND_UNUSED)}")
+    validate_landuse_group_assignment(
+        "Wind",
+        {
+            "ausschluss": WIND_AUSSCHLUSS,
+            "potenzial": WIND_POTENZIAL,
+            "geeignet": WIND_GEEIGNET,
+            "unused": WIND_UNUSED,
+        },
     )
 
     wind_ausschluss = filter_landuse_by_source_layers(
@@ -135,19 +150,19 @@ def prepare_wind_landuse(municipality_name: str) -> None:
         WIND_GEEIGNET,
         "wind_geeignet",
     )
-    wind_unentschlossen = filter_landuse_by_source_layers(
+    wind_unused = filter_landuse_by_source_layers(
         landuse,
-        WIND_UNENTSCHLOSSEN,
-        "wind_unentschlossen",
+        WIND_UNUSED,
+        "wind_unused",
     )
 
     write_layer(ausschluss_file, "landuse_wind_ausschluss", wind_ausschluss)
     write_layer(potenzial_file, "landuse_wind_potenzial", wind_potenzial)
     write_layer(geeignet_file, "landuse_wind_geeignet", wind_geeignet)
     write_layer(
-        unentschlossen_file,
-        "landuse_wind_unentschlossen",
-        wind_unentschlossen,
+        unused_file,
+        "landuse_wind_unused",
+        wind_unused,
     )
 
     log_success("Wind landuse preparation finished.")

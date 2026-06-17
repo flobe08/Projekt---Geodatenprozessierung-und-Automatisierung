@@ -182,45 +182,159 @@ Aktuelle Referenz:
 scripts/2_1_wind/1_clip_wind_planning_areas.py
 ```
 
-### 3.3 Verifikation der optionalen OSM-Kontextdaten
+### 3.3 Verifikation der Wind-Landnutzungslayer
+
+Verwendete Datensätze:
+
+- offizieller Landnutzungsdatensatz Bayern
+- zugeschnittener Gemeinde-Landnutzungsdatensatz
+- windbezogene Landnutzungsausgaben
+
+Automatische Outputs:
+
+```text
+data/processed/landuse/landnutzung_drachselsried.gpkg
+data/processed/wind/drachselsried_landuse_wind_ausschluss.gpkg
+data/processed/wind/drachselsried_landuse_wind_potenzial.gpkg
+data/processed/wind/drachselsried_landuse_wind_geeignet.gpkg
+data/processed/wind/drachselsried_landuse_wind_unused.gpkg
+```
+
+Relevante Layer:
+
+- `landuse_wind_ausschluss`
+- `landuse_wind_potenzial`
+- `landuse_wind_geeignet`
+- `landuse_wind_unused`
+
+Vorgehen zur Verifikation:
+
+1. Der originale Datensatz `landnutzung.gpkg` wurde in QGIS geladen.
+2. Die einzeln enthaltenen `ln_*`-Layer wurden mit dem automatisch
+   zugeschnittenen Gemeinde-Output verglichen.
+3. Die Datei `landnutzung_drachselsried.gpkg` wurde geprüft, ob die
+   erwarteten Nutzungs-Layer für Drachselsried enthalten sind.
+4. Die vier windbezogenen Ergebnisdateien wurden in QGIS geladen.
+5. Die Attributspalte `source_layer` wurde geprüft, um nachzuvollziehen,
+   aus welchen offiziellen Nutzungs-Layern die Wind-Gruppen erzeugt wurden.
+
+Ergebnis:
+
+- Die Wind-Landnutzungslayer sind als Arbeits- und Prüflayer vorhanden.
+- `landuse_wind_ausschluss` enthält die aktuell als kritisch eingestuften
+  Nutzungen.
+- `landuse_wind_potenzial` und `landuse_wind_geeignet` dienen als
+  nachvollziehbare Suchraum- und Prüflayer.
+- `landuse_wind_unused` enthält alle offiziellen Landnutzungs-Layer, die im
+  aktuellen Wind-Landuse-Schritt noch keiner methodischen Kategorie zugeordnet
+  sind. Dazu gehört auch `ln_strassenundwegeverkehr`, weil dieser amtliche
+  Layer für Wind zu grob ist und später besser über OSM-Straßenklassen oder
+  begründete Puffer bewertet werden soll.
+- Die Landnutzungslayer sind aktuell vorbereitet, aber bewusst noch nicht in
+  die finale Windkarte eingebunden.
+
+Aktuelle Referenz:
+
+```text
+scripts/2_1_wind/2_prepare_wind_landuse.py
+```
+
+### 3.4 Verifikation der OSM-Highway-Daten für Wind
 
 Verwendeter Datensatz:
 
 ```text
-data/processed/osm_context/drachselsried_osm_context.gpkg
+data/processed/osm_streets/drachselsried_osm_streets.gpkg
+data/processed/wind/drachselsried_osm_wind_streets.gpkg
 ```
+
+Relevante Layer:
+
+- `osm_streets_raw`
+- `osm_streets_wind_ausschluss`
 
 Vorgehen zur Verifikation:
 
-1. Der Layer `osm_context_roads` wurde in QGIS geladen.
+1. Der Layer `osm_streets_raw` wurde in QGIS geladen.
 2. Eine OpenStreetMap-Basiskarte wurde ergänzt.
 3. Die Straßen wurden visuell mit der Basiskarte verglichen.
 4. Die Attribute wurden stichprobenartig geprüft, insbesondere das Feld
    `highway`.
+5. Der Layer `osm_streets_wind_ausschluss` wurde zusätzlich geprüft, weil er die
+   für Wind relevanten größeren Straßenklassen zusammenfasst.
 
 Ergebnis:
 
-- Die OSM-Kontextdaten liegen räumlich plausibel innerhalb der Gemeinde.
-- Die Straßenklassen sind nachvollziehbar.
-- Die OSM-Daten eignen sich als Kontextlayer, nicht als offizielle
-  Planungsgrundlage.
+- Die OSM-Straßendaten liegen räumlich plausibel im Analysekontext der
+  Gemeinde.
+- Die Straßenklassen sind nachvollziehbar und können über `highway`
+  kontrolliert werden.
+- `service`, `track` und `road` werden nicht pauschal als
+  Wind-Ausschlussstraßen behandelt, weil sie für Erschließung wichtig sein
+  können und fachlich anders bewertet werden müssen als größere Straßen.
+- Der OSM-Ausschlusslayer ist aktuell vorbereitet, aber noch nicht in die
+  finale Windkarte eingebunden.
 
 Hinweis:
 
 ```text
-# TODO: nicht mehr verwendet
-Die optionalen OSM-Kontextdaten sind aktuell nicht mehr Teil des aktiven
-Wind-Workflows, sollen aber als frühere Arbeitsschritte dokumentiert bleiben.
+OSM ist keine amtliche Planungsgrundlage. Die Daten werden als zusätzlicher
+Kontext- und Prüflayer verwendet.
 ```
 
-### 3.4 Zusammenfassung Wind
+Aktuelle Referenz:
+
+```text
+scripts/1_prepare_data/5_download_osm_network_data.py --technology wind
+```
+
+### 3.5 Verifikation der finalen Windkarte
+
+Automatische Outputs:
+
+```text
+data/processed/qgis_projects/drachselsried_map_wind.qgz
+data/processed/maps/drachselsried_map_wind.pdf
+```
+
+In der finalen Windkarte aktiv dargestellte Layer:
+
+- Gemeindegrenze
+- Wind-Vorranggebiete
+- Wind-Vorbehaltsgebiete, falls innerhalb der Gemeinde vorhanden
+- harte allgemeine Naturschutz-Restriktionen
+- weiche allgemeine Naturschutz-Konfliktflächen
+- windspezifische Naturschutz-Restriktionen
+- OpenStreetMap als Hintergrundkarte
+
+Vorbereitet, aber aktuell nicht aktiv dargestellt:
+
+- `landuse_wind_ausschluss`
+- `landuse_wind_potenzial`
+- `landuse_wind_geeignet`
+- `landuse_wind_unused`
+- `osm_streets_raw`
+- `osm_streets_wind_ausschluss`
+
+Ergebnis:
+
+- Die finale Windkarte fokussiert bewusst auf die amtlichen Windflächen und
+  die wichtigsten Restriktionslayer.
+- Zusätzliche Landnutzungs- und OSM-Layer bleiben für Prüfung und spätere
+  methodische Erweiterung verfügbar, werden aber aus Gründen der Lesbarkeit
+  nicht automatisch in der finalen Karte angezeigt.
+
+### 3.6 Zusammenfassung Wind
 
 Für den Wind-Workflow wurden die zentralen Schritte verifiziert:
 
 - Gemeindegrenze aus offiziellem Verwaltungsdatensatz
 - Windflächen aus offiziellem WFS
 - Clip der Windflächen auf die Gemeinde
-- optionale OSM-Kontextdaten aus einem früheren Workflow-Schritt
+- allgemeine und windspezifische Naturschutzlayer
+- windbezogene Landnutzungslayer als vorbereitete Arbeitslayer
+- OSM-Highway-Daten als vorbereitete Kontext- und Ausschlusslayer
+- QGIS-Projekt und PDF-Karte
 
 Damit ist der aktuelle Wind-Workflow fachlich plausibel und für die weitere
 Kartenerstellung geeignet.
@@ -231,7 +345,9 @@ Kartenerstellung geeignet.
 
 Verwendete Datensätze:
 
-- `data/processed/osm_transport/drachselsried_osm_transport.gpkg`
+- `data/processed/osm_streets/drachselsried_osm_streets.gpkg`
+- `data/processed/solar/drachselsried_solar_corridor_basis.gpkg`
+- `data/processed/solar/drachselsried_osm_solar_streets.gpkg`
 - amtliche OSM-Basiskarte in QGIS
 
 Vorgehen zur Verifikation:

@@ -19,6 +19,11 @@ from utils import log_error, log_info, log_success, log_warning
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# -----------------------------------------------------------------------------
+# 0. Input paths
+# -----------------------------------------------------------------------------
+# input
 LANDUSE_DIR = BASE_DIR / "data/processed/landuse"
 EXPECTED_LANDUSE_LAYERS = {
     "ln_abbau",
@@ -43,6 +48,35 @@ EXPECTED_LANDUSE_LAYERS = {
     "ln_wasserwirtschaft",
     "ln_wohnnutzung",
 }
+
+
+def validate_landuse_group_assignment(
+    technology_name: str,
+    groups: dict[str, set[str]],
+) -> None:
+    """Check whether every expected landuse layer is assigned to a group."""
+
+    assigned_layers = set().union(*groups.values()) if groups else set()
+    missing_layers = EXPECTED_LANDUSE_LAYERS - assigned_layers
+    unknown_layers = assigned_layers - EXPECTED_LANDUSE_LAYERS
+
+    if not missing_layers and not unknown_layers:
+        log_success(
+            f"{technology_name}: all expected landuse layers are assigned."
+        )
+        return
+
+    if missing_layers:
+        log_warning(
+            f"{technology_name}: missing landuse assignment: "
+            f"{', '.join(sorted(missing_layers))}"
+        )
+
+    if unknown_layers:
+        log_warning(
+            f"{technology_name}: unknown landuse layers in groups: "
+            f"{', '.join(sorted(unknown_layers))}"
+        )
 
 
 def safe_filename(name: str) -> str:

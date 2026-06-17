@@ -11,6 +11,10 @@ import argparse
 import subprocess
 import sys
 
+# -----------------------------------------------------------------------------
+# 0. Script paths
+# -----------------------------------------------------------------------------
+# input
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
 sys.path.append(str(SCRIPTS_DIR / "utils"))

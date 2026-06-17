@@ -18,10 +18,15 @@ Skripte und die manuelle Ausführung.
 
 - Wind: `scripts/2_1_wind/1_clip_wind_planning_areas.py`
 - Wind: `scripts/2_1_wind/2_prepare_wind_landuse.py`
+- Wind: `scripts/2_1_wind/3_build_wind_landuse_buffers.py`
+- Wind: `scripts/2_1_wind/4_prepare_wind_osm_streets.py`
+- Wind: `scripts/2_1_wind/5_build_wind_exclusion_layer.py`
 - Solar: `scripts/2_2_solar/1_download_solar_reference_wms.py`
-- Solar: `scripts/2_2_solar/2_prepare_solar_layers.py`
+- Solar: `scripts/2_2_solar/2_prepare_solar_corridor_layers.py`
 - Solar: `scripts/2_2_solar/3_prepare_solar_landuse.py`
-- Wasser: noch nicht umgesetzt
+- Solar: `scripts/2_2_solar/4_prepare_solar_osm_streets.py`
+- Wasser: `scripts/2_3_wasser/1_prepare_water_landuse.py`
+- Wasser: `scripts/2_3_wasser/2_prepare_water_osm_streets.py`
 
 ### 3. Kartenerzeugung
 
@@ -102,26 +107,44 @@ python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wind
 ```
 
-6. Windflächen clippen:
+6. OSM-Straßen für Wind filtern:
+
+```bash
+python3 scripts/2_1_wind/4_prepare_wind_osm_streets.py --municipality Drachselsried
+```
+
+7. Windflächen clippen:
 
 ```bash
 python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
 ```
 
-7. Windspezifische Landnutzung ableiten:
+8. Windspezifische Landnutzung ableiten:
 
 ```bash
 python3 scripts/2_1_wind/2_prepare_wind_landuse.py --municipality Drachselsried
+```
+
+9. Windspezifische Landnutzungspuffer erzeugen:
+
+```bash
+python3 scripts/2_1_wind/3_build_wind_landuse_buffers.py --municipality Drachselsried
+```
+
+10. Gesamten Wind-Ausschlusslayer aus Landnutzungspuffer und OSM-Puffer bauen:
+
+```bash
+python3 scripts/2_1_wind/5_build_wind_exclusion_layer.py --municipality Drachselsried
 deactivate
 ```
 
-8. QGIS-Projekt erzeugen:
+11. QGIS-Projekt erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology wind
 ```
 
-9. PDF-Karte erzeugen:
+12. PDF-Karte erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology wind
@@ -160,20 +183,26 @@ python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology solar
 ```
 
-6. Solarpuffer erzeugen:
+6. OSM-Straßen für Solar filtern:
 
 ```bash
-python3 scripts/2_2_solar/2_prepare_solar_layers.py --municipality Drachselsried
+python3 scripts/2_2_solar/4_prepare_solar_osm_streets.py --municipality Drachselsried
 ```
 
-7. Solarspezifische Landnutzung ableiten:
+7. Solarpuffer erzeugen:
+
+```bash
+python3 scripts/2_2_solar/2_prepare_solar_corridor_layers.py --municipality Drachselsried
+```
+
+8. Solarspezifische Landnutzung ableiten:
 
 ```bash
 python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
 ```
 
-8. Amtliche Solar-WMS-Referenzbilder lokal laden:
+9. Amtliche Solar-WMS-Referenzbilder lokal laden:
 
 ```bash
 python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
@@ -198,13 +227,13 @@ Hinweis:
 - Im automatisch erzeugten Solar-QGIS-Projekt werden diese beiden
   WMS-Referenzlayer bereits direkt eingebunden.
 
-9. QGIS-Projekt erzeugen:
+10. QGIS-Projekt erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology solar
 ```
 
-10. PDF-Karte erzeugen:
+11. PDF-Karte erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology solar
@@ -289,10 +318,10 @@ separate GeoPackages, zum Beispiel für Wind:
 data/processed/wind/<gemeinde>_landuse_wind_ausschluss.gpkg
 data/processed/wind/<gemeinde>_landuse_wind_potenzial.gpkg
 data/processed/wind/<gemeinde>_landuse_wind_geeignet.gpkg
-data/processed/wind/<gemeinde>_landuse_wind_unentschlossen.gpkg
+data/processed/wind/<gemeinde>_landuse_wind_unused.gpkg
 ```
 
-Hinweis zur Wind-Klasse `unentschlossen`:
+Hinweis zur Wind-Klasse `unused`:
 
 - `ln_strassenundwegeverkehr` wird bewusst nicht mehr pauschal als Ausschluss
   behandelt.
@@ -325,37 +354,81 @@ Der Download arbeitet mit einem gemeinsamen Analysekontext:
 Dadurch werden Straßen oder Schienen knapp außerhalb der Gemeinde nicht zu
 früh abgeschnitten.
 
-Je nach Technologie entstehen unterschiedliche Outputs:
+Zuerst entsteht immer ein gemeinsamer OSM-Straßenbasisdatensatz:
+
+```text
+data/processed/osm_streets/<gemeinde>_osm_streets.gpkg
+data/processed/osm_streets/<gemeinde>_osm_streets_raw.json
+```
+
+Layer:
+
+```text
+analysekontext_<gemeinde>
+osm_streets_raw
+```
+
+Dieser Datensatz enthält die breit geladenen Straßenklassen. Die eigentliche
+fachliche Auswahl erfolgt danach in den Technologieordnern.
 
 ### Wind
 
 ```text
-data/processed/osm_highways/<gemeinde>_osm_highways.gpkg
+data/processed/wind/<gemeinde>_osm_wind_streets.gpkg
+data/processed/wind/<gemeinde>_osm_wind_streets_puffer.gpkg
 ```
 
 Layer:
 
 ```text
-analysekontext_<gemeinde>
-osm_roads_raw
-osm_roads_wind_ausschluss
+osm_streets_wind_ausschluss
+osm_streets_wind_ausschluss_puffer
 ```
 
 ### Solar
 
+Für die allgemeinen Solar-Straßenausschlüsse:
+
 ```text
-data/processed/osm_transport/<gemeinde>_osm_transport.gpkg
+data/processed/solar/<gemeinde>_osm_solar_streets.gpkg
+data/processed/solar/<gemeinde>_osm_solar_streets_puffer.gpkg
+```
+
+Layer:
+
+```text
+osm_streets_solar_ausschluss
+osm_streets_solar_ausschluss_puffer
+```
+
+Für die 200-m- und 500-m-Solarpuffer entsteht zusätzlich eine eigene
+Korridorgrundlage:
+
+```text
+data/processed/solar/<gemeinde>_solar_corridor_basis.gpkg
+data/processed/solar/<gemeinde>_solar_corridor_basis_raw.json
 ```
 
 Layer:
 
 ```text
 analysekontext_<gemeinde>
-osm_roads_raw
-osm_roads_solar_ausschluss
-osm_strassen_<gemeinde>
-osm_autobahnen_<gemeinde>
-osm_schienenwege_<gemeinde>
+solar_corridor_autobahnen_<gemeinde>
+solar_corridor_schienenwege_<gemeinde>
+```
+
+### Wasser
+
+```text
+data/processed/wasser/<gemeinde>_osm_wasser_streets.gpkg
+data/processed/wasser/<gemeinde>_osm_wasser_streets_puffer.gpkg
+```
+
+Layer:
+
+```text
+osm_streets_wasser_ausschluss
+osm_streets_wasser_ausschluss_puffer
 ```
 
 ## Fachliche Logik der Solarpuffer

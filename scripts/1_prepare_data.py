@@ -10,6 +10,10 @@ import argparse
 import subprocess
 import sys
 
+# -----------------------------------------------------------------------------
+# 0. Script paths
+# -----------------------------------------------------------------------------
+# input
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
 sys.path.append(str(SCRIPTS_DIR / "utils"))
@@ -107,8 +111,32 @@ def prepare_data(
             )
 
             run_script(
-                "Step 6: Clip wind datasets to the municipality",
+                "Step 6: Prepare wind OSM street layers",
+                "2_1_wind/4_prepare_wind_osm_streets.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 7: Clip wind datasets to the municipality",
                 "2_1_wind/1_clip_wind_planning_areas.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 8: Prepare wind landuse layers",
+                "2_1_wind/2_prepare_wind_landuse.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 9: Build wind landuse buffer layers",
+                "2_1_wind/3_build_wind_landuse_buffers.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 10: Build combined wind exclusion layer",
+                "2_1_wind/5_build_wind_exclusion_layer.py",
                 ["--municipality", municipality],
             )
 
@@ -120,8 +148,20 @@ def prepare_data(
             )
 
             run_script(
-                "Step 6: Prepare solar buffer layers",
-                "2_2_solar/2_prepare_solar_layers.py",
+                "Step 6: Prepare solar OSM street layers",
+                "2_2_solar/4_prepare_solar_osm_streets.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 7: Prepare solar corridor layers",
+                "2_2_solar/2_prepare_solar_corridor_layers.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 8: Prepare solar landuse layers",
+                "2_2_solar/3_prepare_solar_landuse.py",
                 ["--municipality", municipality],
             )
 
@@ -130,6 +170,18 @@ def prepare_data(
                 "Step 5: Download OSM network data",
                 "1_prepare_data/5_download_osm_network_data.py",
                 ["--municipality", municipality, "--technology", technology],
+            )
+
+            run_script(
+                "Step 6: Prepare water OSM street layers",
+                "2_3_wasser/2_prepare_water_osm_streets.py",
+                ["--municipality", municipality],
+            )
+
+            run_script(
+                "Step 7: Prepare water landuse layers",
+                "2_3_wasser/1_prepare_water_landuse.py",
+                ["--municipality", municipality],
             )
         case _:
             raise ValueError(f"Unknown technology: {technology}")

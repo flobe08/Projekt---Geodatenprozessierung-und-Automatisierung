@@ -38,10 +38,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # -----------------------------------------------------------------------------
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
+# input
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
 SCHUTZGEBIETE_RAW_DIR = BASE_DIR / "data/raw/schutzgebiete"
 NATURA2000_RAW_DIR = SCHUTZGEBIETE_RAW_DIR / "natura2000"
 WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
+
+# output
 OUTPUT_DIR = BASE_DIR / "data/processed/schutzgebiete"
 
 HARD_DATASET_DIRS = {

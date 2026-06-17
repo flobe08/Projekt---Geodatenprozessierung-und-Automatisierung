@@ -1,15 +1,13 @@
 # Highway-Klassen
 
-Diese Datei dokumentiert die gemeinsame Verwendung von OpenStreetMap-Daten in
-der Pipeline.
+Diese Datei dokumentiert, wie OpenStreetMap-Verkehrsdaten in der Pipeline
+verwendet werden.
 
-Gemeint sind hier vor allem:
+Gemeint sind vor allem:
 
 - `highway=*` für Straßen und Wege
 - `railway=*` für Schienenwege
 - später bei Bedarf auch `waterway=*` für Wasser
-
-Die Einordnung orientiert sich am OpenStreetMap-Wiki.
 
 Quellen:
 
@@ -20,95 +18,64 @@ https://wiki.openstreetmap.org/wiki/DE:Key:railway
 https://wiki.openstreetmap.org/wiki/Key:railway
 ```
 
+## 1. Allgemein
 
-## Allgemein
-
-### Warum OSM im Projekt verwendet wird
-
-OSM wird in der Pipeline genutzt, weil viele Verkehrs- und Infrastrukturobjekte
-dort als Linien mit Attributen vorliegen. Genau diese Linienstruktur ist für
-Abstandspuffer, Erschließungsfragen und räumliche Näherungen hilfreich.
+OSM wird in der Pipeline genutzt, weil Verkehrsobjekte dort als Linien mit
+Attributen vorliegen. Diese Linienstruktur ist für Abstandspuffer,
+Erschließungsfragen und räumliche Näherungen besser geeignet als reine
+Flächeninformationen.
 
 Der offizielle Landnutzungsdatensatz enthält zwar ebenfalls Verkehrsflächen,
-beschreibt diese aber vor allem als Flächenobjekte. Für einige Analyseschritte
-ist OSM deshalb die flexiblere Ergänzung.
+beschreibt diese aber als Flächen. OSM ergänzt diesen Datensatz deshalb, ersetzt
+ihn aber nicht vollständig.
 
-### Unterschied zwischen `highway=*` und `railway=*`
+Wichtig:
 
-- `highway=*` beschreibt Straßen, Wege und andere Landverkehrswege
-- `railway=*` beschreibt Schienenwege und Bahn-Infrastruktur
+- OSM ist kein amtlicher Rechtsdatensatz.
+- OSM dient hier als räumliche Näherung.
+- Amtliche Planungs- und Schutzdatensätze bleiben die wichtigere Grundlage.
 
-Für Solar sind beide relevant.
-Für Wind spielen vor allem Straßen- und Wegeklassen eine Rolle.
+## 2. Gemeinsamer OSM-Rohdownload
 
-### OSM ist eine fachliche Näherung
-
-Wichtig für die Doku:
-
-- OSM ist **kein amtlicher Rechtsdatensatz**
-- OSM dient in diesem Projekt als **räumliche Näherung**
-- amtliche Planungs- und Schutzdatensätze bleiben die wichtigere
-  Entscheidungsgrundlage
-
-Das gilt besonders bei Solar:
-
-- `200 m` nach BauGB
-- `500 m` nach EEG
-
-Diese Flächen werden technisch aus OSM-Achsen angenähert, ersetzen aber keine
-rechtsverbindliche Einzelfallprüfung.
-
-### Gemeinsames OSM-Skript
-
-Der allgemeine OSM-Download läuft aktuell über:
+Der allgemeine OSM-Download läuft über:
 
 ```text
 scripts/1_prepare_data/5_download_osm_network_data.py
 ```
 
-Das Skript arbeitet mit einem Technologie-Parameter:
-
-- `--technology wind`
-- `--technology solar`
-- `--technology wasser`
-
-Der Download erfolgt bewusst nicht direkt nur auf die Gemeindegrenze, sondern
-mit einem erweiterten Analysekontext.
-
-Aktuell:
+Das Skript lädt für alle Technologien zuerst einen gemeinsamen
+Straßenbasisdatensatz:
 
 ```text
-1000 m Analysekontext-Buffer
+data/processed/osm_streets/<gemeinde>_osm_streets.gpkg
+data/processed/osm_streets/<gemeinde>_osm_streets_raw.json
 ```
 
-Dadurch gehen Verkehrsachsen knapp außerhalb der Gemeinde nicht verloren, wenn
-ihre Puffer später innerhalb der Gemeinde wirksam werden.
+Layer:
 
+```text
+analysekontext_<gemeinde>
+osm_streets_raw
+```
 
-## Wind
+Der Download erfolgt nicht direkt nur auf die Gemeindegrenze, sondern mit einem
+erweiterten Analysekontext:
 
-### Warum Straßenklassen bei Wind relevant sind
+```text
+1000 m Buffer um die Gemeinde
+```
 
-Für den Wind-Workflow sind OSM-Straßen vor allem für diese Fragen interessant:
+Dadurch gehen Straßen oder Schienen knapp außerhalb der Gemeinde nicht verloren,
+wenn ihre späteren Puffer oder Wirkbereiche innerhalb der Gemeinde liegen.
 
-- Erschließung
-- Straßenpuffer
-- Kontext großer Verkehrsachsen
-- spätere Unterscheidung zwischen wichtigen Straßen und kleinen Wegen
+### Geladene allgemeine Straßenklassen
 
-Gerade deshalb wird `ln_strassenundwegeverkehr` aus der amtlichen Landnutzung
-nicht einfach pauschal als Ausschluss behandelt. OSM ist hier feiner, weil
-wichtige Straßenklassen getrennt von kleineren Wegen betrachtet werden können.
+Diese Klassen werden im Rohlayer `osm_streets_raw` mitgeführt:
 
-### Verwendete Straßenklassen für Wind
-
-Aktuell lädt das gemeinsame OSM-Skript für Wind breit alle allgemeinen
-Straßen- und Wegeklassen als Rohlayer.
-
-| OSM-Wert | Bedeutung im Wind-Workflow |
+| OSM-Wert | Einordnung |
 | --- | --- |
-| `motorway` | sehr wichtige Straßeninfrastruktur |
-| `motorway_link` | Anschluss an sehr wichtige Straßen |
+| `motorway` | Autobahn |
+| `motorway_link` | Autobahnanschluss |
 | `trunk` | wichtige überregionale Straße |
 | `trunk_link` | Anschluss an trunk |
 | `primary` | wichtige regionale Straße |
@@ -124,215 +91,169 @@ Straßen- und Wegeklassen als Rohlayer.
 | `track` | land- oder forstwirtschaftlicher Weg |
 | `road` | Straße mit unklarer Klassifikation |
 
-### Welche Klassen im Wind-Ausschlusslayer landen
+## 3. Wind
 
-Für den späteren Wind-Ausschlusslayer werden aktuell vor allem diese größeren
-oder fachlich stärkeren Straßenklassen verwendet:
-
-- `motorway`
-- `motorway_link`
-- `trunk`
-- `trunk_link`
-- `primary`
-- `primary_link`
-- `secondary`
-- `secondary_link`
-- `tertiary`
-- `tertiary_link`
-- `unclassified`
-- `residential`
-- `living_street`
-
-Nicht automatisch im Ausschlusslayer:
-
-- `service`
-- `track`
-- `road`
-
-Diese Klassen bleiben im Rohlayer erhalten, werden aber zunächst nur als
-Prüf- oder Kontextinformation verstanden.
-
-### Output für Wind
+Für Wind wird aus dem gemeinsamen Rohlayer ein eigener Ausschluss- bzw.
+Kontextlayer abgeleitet:
 
 ```text
-data/processed/osm_highways/<gemeinde>_osm_highways.gpkg
+scripts/2_1_wind/4_prepare_wind_osm_streets.py
 ```
-
-Layer:
-
-```text
-analysekontext_<gemeinde>
-osm_roads_raw
-osm_roads_wind_ausschluss
-```
-
-
-## Solar
-
-### Warum Straßen und Schienen bei Solar relevant sind
-
-Für die Solarpipeline gibt es zwei zentrale räumliche Näherungen:
-
-1. `PV-Förderkulisse 500 m`
-   - EEG 2023
-   - § 37 Abs. 1 Nr. 2 Buchstabe c
-
-2. `PV-Privilegierung 200 m`
-   - BauGB
-   - § 35 Abs. 1 Nr. 8 Buchstabe b
-
-Beide beziehen sich auf Flächen entlang von:
-
-- Autobahnen
-- Schienenwegen
-
-Zusätzlich werden aber auch weitere Straßenklassen mitgeladen, weil sie für
-spätere Sperr- oder Kontextlogik nützlich sein können. Die rechtliche
-Pufferlogik nutzt aktuell trotzdem vor allem Autobahnen und Schienen.
-
-### Verwendete Klassen für Solar
-
-Der gemeinsame OSM-Download lädt für Solar ebenfalls breit einen Rohlayer und
-zusätzlich die Solar-spezifisch wichtigen Teilmengen.
-
-#### Straßen
-
-- `motorway`
-- `motorway_link`
-- `trunk`
-- `trunk_link`
-- `primary`
-- `primary_link`
-- `secondary`
-- `secondary_link`
-- `tertiary`
-- `tertiary_link`
-- `unclassified`
-- `residential`
-- `living_street`
-- `service`
-- `track`
-- `road`
-
-#### Schiene
-
-- `railway = rail`
-
-### Fachliche Solar-Logik
-
-Für die eigentliche Solar-Pufferlogik sind aktuell besonders wichtig:
-
-- `motorway`
-- `motorway_link`
-- `railway = rail`
-
-Für einen zusätzlichen Solar-Straßen-Ausschlusslayer werden aktuell vor allem
-diese Straßenklassen verwendet:
-
-- `motorway`
-- `motorway_link`
-- `trunk`
-- `trunk_link`
-- `primary`
-- `primary_link`
-- `secondary`
-- `secondary_link`
-- `tertiary`
-- `tertiary_link`
-- `unclassified`
-- `residential`
-- `living_street`
-
-Nicht automatisch im Solar-Ausschlusslayer:
-
-- `service`
-- `track`
-- `road`
-
-Bezug:
-
-- `500 m` Förderkulisse nach EEG
-- `200 m` Privilegierung nach BauGB
-
-Zusätzlich wird im BauGB-Teil später mit dem Attribut `tracks` gearbeitet, um
-die strengere Näherung `tracks >= 2` für Schienenwege zu prüfen.
-
-### Wichtiger Hinweis für die Doku
-
-Die Solar-Buffer sind:
-
-- eine **automatisierte räumliche Näherung**
-- keine rechtsverbindliche Einzelfallprüfung
-
-### Output für Solar
-
-```text
-data/processed/osm_transport/<gemeinde>_osm_transport.gpkg
-```
-
-Layer:
-
-```text
-analysekontext_<gemeinde>
-osm_roads_raw
-osm_roads_solar_ausschluss
-osm_strassen_<gemeinde>
-osm_autobahnen_<gemeinde>
-osm_schienenwege_<gemeinde>
-```
-
-Hinweis:
-
-- `osm_roads_raw` ist der breite gemeinsame Rohlayer.
-- `osm_roads_solar_ausschluss` ist der kleinere technologiebezogene
-  Straßen-Ausschlusslayer.
-- `osm_strassen_<gemeinde>` ist aktuell vor allem ein zusätzlicher
-  Kontext- und Prüflayer.
-- Die eigentliche 200-m- und 500-m-Logik arbeitet in der Solarpipeline
-  gezielt mit `osm_autobahnen_<gemeinde>` und `osm_schienenwege_<gemeinde>`.
-
-
-## Wasser
-
-### Aktueller Stand
-
-Für Wasser ist OSM derzeit noch nicht der wichtigste Fachdatenblock.
-
-Später könnten interessant werden:
-
-- Straßen für Erschließung und Zugang
-- Brücken
-- wasserbezogene Infrastruktur
-- eventuell `waterway=*`
-
-Aktuell wird das gemeinsame OSM-Skript für Wasser vor allem als vorbereitender
-Kontextlayer verstanden.
 
 Output:
 
 ```text
-analysekontext_<gemeinde>
-osm_roads_raw
-osm_roads_wasser_ausschluss
+data/processed/wind/<gemeinde>_osm_wind_streets.gpkg
+data/processed/wind/<gemeinde>_osm_wind_streets_puffer.gpkg
 ```
 
+Layer:
 
-## Prüfung in QGIS
+```text
+osm_streets_wind_ausschluss
+osm_streets_wind_ausschluss_puffer
+```
+
+Aktuell werden dafür diese Klassen verwendet:
+
+```text
+motorway, motorway_link, trunk, trunk_link,
+primary, primary_link, secondary, secondary_link,
+tertiary, tertiary_link, unclassified,
+residential, living_street
+```
+
+Nicht automatisch im Ausschlusslayer:
+
+```text
+service, track, road
+```
+
+Diese kleineren oder unklaren Wege bleiben im Rohlayer erhalten und können
+später manuell geprüft oder mit eigenen Puffern verarbeitet werden.
+
+Zus�tzlich wird aus dem gefilterten Linienlayer ein erster Pufferlayer
+erzeugt. Die Pufferdistanz steht im Feld `buffer_m`. Die Werte sind
+Arbeitsannahmen f�r eine erste Ausschluss- bzw. Konfliktfl�che und k�nnen
+sp�ter fachlich angepasst werden.
+
+## 4. Solar
+
+Für Solar gibt es zwei getrennte OSM-Verwendungen.
+
+### 4.1 Solar-Straßenausschluss
+
+Aus dem gemeinsamen Rohlayer wird ein Solar-Straßenlayer abgeleitet:
+
+```text
+scripts/2_2_solar/4_prepare_solar_osm_streets.py
+```
+
+Output:
+
+```text
+data/processed/solar/<gemeinde>_osm_solar_streets.gpkg
+data/processed/solar/<gemeinde>_osm_solar_streets_puffer.gpkg
+```
+
+Layer:
+
+```text
+osm_streets_solar_ausschluss
+osm_streets_solar_ausschluss_puffer
+```
+
+Die verwendeten Klassen entsprechen aktuell der Wind-Auswahl:
+
+```text
+motorway, motorway_link, trunk, trunk_link,
+primary, primary_link, secondary, secondary_link,
+tertiary, tertiary_link, unclassified,
+residential, living_street
+```
+
+Auch hier bleiben `service`, `track` und `road` zunächst nur im Rohlayer.
+
+Zus�tzlich wird ein Solar-Stra�enpuffer erzeugt. Dieser ist vom
+EEG-/BauGB-Korridor zu unterscheiden: Die 200-m- und 500-m-Solarkorridore
+werden aus Autobahnen und Schienenwegen abgeleitet, w�hrend der
+Stra�enpuffer ein separater Kontext- bzw. Ausschlusslayer ist.
+
+### 4.2 Solar-Korridorbasis für EEG und BauGB
+
+Zusätzlich erzeugt Script 5 für Solar eine eigene Korridorgrundlage:
+
+```text
+data/processed/solar/<gemeinde>_solar_corridor_basis.gpkg
+data/processed/solar/<gemeinde>_solar_corridor_basis_raw.json
+```
+
+Layer:
+
+```text
+analysekontext_<gemeinde>
+solar_corridor_autobahnen_<gemeinde>
+solar_corridor_schienenwege_<gemeinde>
+```
+
+Diese Korridorbasis wird von folgendem Skript weiterverarbeitet:
+
+```text
+scripts/2_2_solar/2_prepare_solar_corridor_layers.py
+```
+
+Fachlicher Bezug:
+
+- `PV-Förderkulisse 500 m`: EEG 2023, § 37 Abs. 1 Nr. 2 Buchstabe c
+- `PV-Privilegierung 200 m`: BauGB, § 35 Abs. 1 Nr. 8 Buchstabe b
+
+Für den 500-m-Buffer werden Autobahnen und `railway=rail` verwendet. Für den
+200-m-Buffer werden Autobahnen und Schienenwege mit `tracks >= 2` als
+vereinfachte OSM-Näherung verwendet.
+
+Diese Buffer sind keine rechtsverbindliche Einzelfallprüfung.
+
+## 5. Wasser
+
+Für Wasser ist OSM aktuell nur als vorbereitender Kontextlayer vorgesehen.
+
+Script:
+
+```text
+scripts/2_3_wasser/2_prepare_water_osm_streets.py
+```
+
+Output:
+
+```text
+data/processed/wasser/<gemeinde>_osm_wasser_streets.gpkg
+data/processed/wasser/<gemeinde>_osm_wasser_streets_puffer.gpkg
+```
+
+Layer:
+
+```text
+osm_streets_wasser_ausschluss
+osm_streets_wasser_ausschluss_puffer
+```
+
+Später können für Wasser zusätzlich `waterway=*`, Brücken, Zugänge oder
+wasserbezogene Infrastruktur berücksichtigt werden.
+
+## 6. Prüfung in QGIS
 
 Allgemeine Sichtprüfung:
 
-1. OSM-Layer laden
-2. OpenStreetMap-Basiskarte hinzufügen
-3. Gemeindegrenze laden
-4. auf die Gemeinde zoomen
-5. prüfen, ob die Linien zur Basiskarte passen
-6. prüfen, ob der Analysekontext fachlich sinnvoll gewählt ist
+1. `osm_streets_raw` in QGIS laden.
+2. OpenStreetMap-Basiskarte hinzufügen.
+3. Gemeindegrenze laden.
+4. Auf die Gemeinde und den Analysekontext zoomen.
+5. Prüfen, ob die Linien zur Basiskarte passen.
+6. Prüfen, ob der Analysekontext fachlich sinnvoll gewählt ist.
 
 Attributprüfung:
 
-1. Attributtabelle öffnen
-2. Felder wie `highway`, `railway`, `tracks`, `name` prüfen
-3. nach Klassen filtern oder kategorisieren
-
-So wird sichtbar, ob die wichtigen OSM-Klassen korrekt geladen wurden und ob
-sie fachlich zur jeweiligen Technologie passen.
+1. Attributtabelle öffnen.
+2. Felder wie `highway`, `railway`, `tracks` und `name` prüfen.
+3. Nach Klassen filtern oder kategorisieren.
+4. Danach die technologiespezifischen Layer mit dem Rohlayer vergleichen.

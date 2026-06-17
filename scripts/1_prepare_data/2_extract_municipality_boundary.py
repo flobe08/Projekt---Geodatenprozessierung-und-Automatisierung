@@ -18,10 +18,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # -----------------------------------------------------------------------------
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
+# input
 INPUT_FILE = (
     BASE_DIR
     / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
 )
+
+# output
 OUTPUT_DIR = BASE_DIR / "data/processed/boundaries"
 
 

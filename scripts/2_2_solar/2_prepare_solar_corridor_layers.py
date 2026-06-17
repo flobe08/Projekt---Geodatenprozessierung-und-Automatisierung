@@ -1,9 +1,9 @@
 """
-Script 2: Prepare solar buffer layers.
+Script 2: Prepare solar corridor layers.
 
 Workflow:
 1. Read the municipality boundary from script 2.
-2. Read the OSM motorway and railway layers from prepare-data script 5.
+2. Read the solar corridor basis from prepare-data script 5.
 3. Build one broad 500 m EEG transport basis.
 4. Build one stricter 200 m BauGB transport basis.
 5. Clip both buffer layers exactly to the municipality.
@@ -26,8 +26,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # =============================================================================
 # 0. Input and output paths
 # =============================================================================
+# input
 BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
-OSM_DIR = BASE_DIR / "data/processed/osm_transport"
+
+# input/output
 OUTPUT_DIR = BASE_DIR / "data/processed/solar"
 
 
@@ -50,15 +52,15 @@ def display_path(path: Path) -> str:
 
 
 def motorway_layer_name(municipality_name: str) -> str:
-    """Create the municipality-specific layer name for motorways."""
+    """Create the municipality-specific layer name for solar corridor motorways."""
 
-    return f"osm_autobahnen_{safe_filename(municipality_name)}"
+    return f"solar_corridor_autobahnen_{safe_filename(municipality_name)}"
 
 
 def railway_layer_name(municipality_name: str) -> str:
-    """Create the municipality-specific layer name for railways."""
+    """Create the municipality-specific layer name for solar corridor railways."""
 
-    return f"osm_schienenwege_{safe_filename(municipality_name)}"
+    return f"solar_corridor_schienenwege_{safe_filename(municipality_name)}"
 
 
 def eeg_transport_layer_name(municipality_name: str) -> str:
@@ -274,14 +276,14 @@ def clip_buffer_to_boundary(
 
 
 # =============================================================================
-# 1. Prepare solar transport and buffer layers for one municipality
+# 1. Prepare solar corridor layers for one municipality
 # =============================================================================
-def prepare_solar_layers(municipality_name: str) -> None:
-    """Prepare the OSM-based solar transport and buffer layers."""
+def prepare_solar_corridor_layers(municipality_name: str) -> None:
+    """Prepare the OSM-based solar corridor and buffer layers."""
 
     safe_name = safe_filename(municipality_name)
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
-    osm_file = OSM_DIR / f"{safe_name}_osm_transport.gpkg"
+    osm_file = OUTPUT_DIR / f"{safe_name}_solar_corridor_basis.gpkg"
     output_file = OUTPUT_DIR / f"{safe_name}_solar_layers.gpkg"
 
     if not boundary_file.exists():
@@ -291,7 +293,7 @@ def prepare_solar_layers(municipality_name: str) -> None:
 
     if not osm_file.exists():
         raise FileNotFoundError(
-            f"OSM transport file not found: {osm_file}. Run prepare-data script 5 first."
+            f"Solar corridor basis file not found: {osm_file}. Run prepare-data script 5 first."
         )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -300,9 +302,9 @@ def prepare_solar_layers(municipality_name: str) -> None:
     boundary = gpd.read_file(boundary_file).to_crs(epsg=25832)
     boundary_for_clip = boundary[["geometry"]].dissolve()
 
-    log_info(f"Preparing solar layers for: {municipality_name}")
+    log_info(f"Preparing solar corridor layers for: {municipality_name}")
     log_info(f"Boundary: {display_path(boundary_file)}")
-    log_info(f"OSM transport input: {display_path(osm_file)}")
+    log_info(f"Solar corridor basis input: {display_path(osm_file)}")
     log_info(f"Output: {display_path(output_file)}")
 
     motorways = read_layer(
@@ -362,14 +364,14 @@ def prepare_solar_layers(municipality_name: str) -> None:
     write_layer(output_file, eeg_buffer_layer_name(municipality_name), eeg_buffer)
     write_layer(output_file, baugb_buffer_layer_name(municipality_name), baugb_buffer)
 
-    log_success("Solar layer preparation finished.")
+    log_success("Solar corridor layer preparation finished.")
 
 
 def main() -> None:
-    """Run the solar layer preparation for one municipality."""
+    """Run the solar corridor layer preparation for one municipality."""
 
     parser = ColoredArgumentParser(
-        description="Prepare solar motorway, railway and buffer layers for one municipality."
+        description="Prepare solar corridor, motorway, railway and buffer layers."
     )
     parser.add_argument(
         "--municipality",
@@ -378,7 +380,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    prepare_solar_layers(args.municipality)
+    prepare_solar_corridor_layers(args.municipality)
 
 
 if __name__ == "__main__":
