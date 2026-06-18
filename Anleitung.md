@@ -320,13 +320,14 @@ bleibt.
 Die PDF-Legende enthält für die Windkarte zusätzlich:
 
 - `Straßen`
-- `Ausschlussflächen durch Landnutzung`
+- `Nutzungsausschluss`
 
 Der Nordpfeil wird in der Wind-PDF unten rechts innerhalb der Karte platziert.
 Dadurch bleibt im rechten Layoutbereich mehr Platz für Legende, Maßstab,
-Autor und Datum. Zusätzlich wird eine kleine Übersichtskarte eingebunden, die
-Bayern als Orientierung zeigt und die ausgewählte Gemeinde über den
-Gemeindegrenzenlayer sichtbar macht.
+Autor und Datum. Zusätzlich wird eine kleine Übersichtskarte mit dem Titel
+`Lage in Bayern` eingebunden. Diese Übersichtskarte nutzt einen dezenten
+OSM-Hintergrund, die Bayern-Grenze aus dem amtlichen Verwaltungsdatensatz und
+die ausgewählte Gemeinde als rote Fläche mit zusätzlichem Punktmarker.
 
 ## Landnutzung
 

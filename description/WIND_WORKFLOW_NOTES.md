@@ -160,57 +160,62 @@ The detailed validation steps are documented in:
 
 - [VERIFIKATION.md](VERIFIKATION.md)
 
-## Geplante PDF-Layout-Feinabstimmung
+## PDF-Layout-Feinabstimmung
 
-Für die finale Windkarte soll das PDF-Layout weiter beruhigt werden. Ziel ist,
+Für die finale Windkarte wird das PDF-Layout weiter beruhigt. Ziel ist,
 dass Legende, Maßstab, Nordpfeil und Metadaten sauber lesbar bleiben und sich
 nicht gegenseitig überlagern.
 
-Geplante Anpassungen:
+Aktuelle Layout-Logik:
 
 - Autor und Datum werden etwas weiter nach unten gesetzt, damit mehr Abstand
   zur Maßstabszahl entsteht.
 - Der Nordpfeil bleibt innerhalb der Hauptkarte unten rechts, wird aber näher
   an den Kartenrand gesetzt.
-- Der lange Legendeneintrag `Ausschlussflächen durch Landnutzung` soll in der
-  PDF-Legende auf `Nutzungsausschluss` gekürzt werden.
+- Der lange Legendeneintrag `Ausschlussflächen durch Landnutzung` wird in der
+  PDF-Legende als `Nutzungsausschluss` gekürzt.
 - Der Legendeneintrag `Straßen` soll als einheitliches Symbol dargestellt
   werden: schwarzer Rahmen mit einer horizontalen Linie in der Mitte.
 
 Die roten Layout-Rahmen bleiben aktuell bewusst als Debug-Hilfe sichtbar,
 solange das PDF-Layout noch abgestimmt wird.
 
-## Geplante Übersichtskarte Bayern
+## Übersichtskarte Bayern
 
-Die bisherige kleine Karte im PDF ist eher eine Kontextkarte im Umfeld der
-Gemeinde. Für die finale Version soll sie zu einer echten Übersichtskarte nach
-dem Locator-Map-Prinzip weiterentwickelt werden.
+Die kleine Karte im PDF wird als echte Übersichtskarte nach dem
+Locator-Map-Prinzip aufgebaut. Sie beantwortet nur die Frage, wo die Gemeinde
+innerhalb Bayerns liegt.
 
-Ziel:
+Ziel und Darstellung:
 
 - Bayern wird vollständig dargestellt.
 - Die ausgewählte Gemeinde wird innerhalb Bayerns hervorgehoben.
-- Die Markierung soll eindeutig sichtbar sein, zum Beispiel durch rote
-  Füllung, roten Rahmen oder einen Marker am Gemeinde-Schwerpunkt.
+- Die Markierung erfolgt durch rote Füllung bzw. roten Rahmen und einen
+  zusätzlichen roten Punktmarker auf Basis eines Point-on-Surface.
 - Die Übersichtskarte bleibt oben links in der PDF-Karte.
 - Die Hauptkarte bleibt weiterhin auf die Gemeinde und den Untersuchungsraum
   gezoomt.
+- Als Hintergrund wird ein dezenter OSM-Layer verwendet, damit die Lage der
+  Gemeinde innerhalb Bayerns räumlich leichter einzuordnen ist.
+- Es werden keine weiteren thematischen Analyse-Layer in der Übersichtskarte
+  verwendet.
 
-Bevorzugter technischer Ansatz:
+Technischer Ansatz:
 
-1. Aus dem offiziellen Verwaltungsdatensatz wird eine Bayern-Übersichtsebene
-   genutzt oder abgeleitet.
+1. Aus dem offiziellen Verwaltungsdatensatz wird die Bayern-Übersichtsebene
+   geladen.
 2. Die bereits extrahierte Gemeindegrenze wird zusätzlich als Markierungslayer
    verwendet.
-3. In der PDF-Erzeugung wird ein zweiter Kartenrahmen angelegt.
-4. Dieser zweite Kartenrahmen erhält immer den festen Bayern-Ausschnitt.
-5. Die Zielgemeinde wird darin farblich oder durch einen Rahmen hervorgehoben.
+3. Der vorhandene OSM-Basislayer wird als Hintergrund ergänzt.
+4. In der PDF-Erzeugung wird ein zweiter Kartenrahmen mit eigener Layerliste
+   angelegt.
+5. Dieser zweite Kartenrahmen erhält immer den festen Bayern-Ausschnitt.
+6. Die Zielgemeinde wird darin farblich und durch einen zusätzlichen Marker
+   hervorgehoben.
 
-Dieser Ansatz ist stabiler als eine reine OSM-Übersicht, weil er auf den
-gleichen amtlichen Verwaltungsdaten basiert wie die Gemeindegrenze im
-Hauptworkflow. Falls die Gemeinde im Bayern-Maßstab zu klein sichtbar ist,
-kann zusätzlich ein Marker am repräsentativen Punkt der Gemeinde gesetzt
-werden.
+Dieser Ansatz kombiniert die amtliche Gemeindegeometrie mit einem ruhigen
+OSM-Hintergrund. Falls die Gemeinde im Bayern-Maßstab zu klein sichtbar ist,
+bleibt der zusätzliche Punktmarker sichtbar.
 
 ## Detail- und Attributlayer im QGIS-Projekt
 

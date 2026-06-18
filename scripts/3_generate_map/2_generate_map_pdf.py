@@ -11,6 +11,7 @@ Workflow:
 
 from pathlib import Path
 import argparse
+import math
 import textwrap
 import sys
 import warnings
@@ -36,6 +37,7 @@ from qgis.core import (
     QgsProject,
     QgsRectangle,
     QgsSimpleFillSymbolLayer,
+    QgsSingleSymbolRenderer,
     QgsUnitTypes,
     QgsVectorLayer,
 )
@@ -59,6 +61,10 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # -----------------------------------------------------------------------------
 # input
 PROJECT_DIR = BASE_DIR / "data/processed/qgis_projects"
+ADMIN_BOUNDARY_FILE = (
+    BASE_DIR
+    / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
+)
 
 # output
 OUTPUT_DIR = BASE_DIR / "data/processed/maps"
@@ -189,6 +195,15 @@ def scale_map_extent(extent, layout_config: dict) -> None:
         extent.scale(float(scale_setting))
 
 
+def round_scale_up(scale: float, step: int) -> int:
+    """Round a map scale denominator up to a clean configured step."""
+
+    if step <= 0:
+        return round(scale)
+
+    return int(math.ceil(scale / step) * step)
+
+
 def add_label(
     layout: QgsPrintLayout,
     text: str,
@@ -273,7 +288,7 @@ def add_hatched_box(
         {
             "color": "255,255,255,255",
             "outline_color": outline_color,
-            "outline_width": "0.25",
+            "outline_width": "0.3",
         }
     )
 
@@ -338,13 +353,23 @@ def add_legend_row(
     symbol_y = y + 1.2
 
     if symbol == "line":
-        # Roads are represented as a simple line symbol, not as a filled area.
+        # Roads are represented as a framed line symbol, not as a filled area.
         add_box(
             layout,
             x,
-            symbol_y + 1.7,
+            symbol_y,
             symbol_width,
-            0.5,
+            symbol_height,
+            "255,255,255,255",
+            "0,0,0,255",
+            "0.3",
+        )
+        add_box(
+            layout,
+            x + 1,
+            symbol_y + (symbol_height / 2) - 0.15,
+            symbol_width - 2,
+            0.3,
             color,
             color,
             "0",
@@ -368,10 +393,10 @@ def add_legend_row(
             symbol_height,
             color,
             outline_color,
-            "0.25",
+            "0.3",
         )
 
-    add_label(layout, label, x + 12, y + 1.1, 8) # Align legend text vertically with the symbol.
+    add_label(layout, label, x + 12, y + 1.1, 8)  # Align legend text vertically with the symbol.
 
 def add_scale_bar_block(
     layout: QgsPrintLayout,
@@ -458,6 +483,112 @@ def add_north_arrow(
     north_arrow.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
 
 
+def apply_layer_symbol(layer: QgsVectorLayer, symbol) -> None:
+    """Apply a symbol to a temporary overview-map layer."""
+
+    renderer = layer.renderer()
+
+    if renderer is None:
+        layer.setRenderer(QgsSingleSymbolRenderer(symbol))
+        return
+
+    renderer.setSymbol(symbol)
+
+
+def find_osm_base_layer(project: QgsProject):
+    """Return the OSM basemap layer used as background for the locator map."""
+
+    fallback_layer = None
+
+    for layer in project.mapLayers().values():
+        layer_name = layer.name().lower()
+
+        if "osm standard" in layer_name or "openstreetmap" in layer_name:
+            return layer
+
+        if "osm" in layer_name and not any(
+            excluded in layer_name
+            for excluded in ["straße", "strasse", "street", "transport", "context"]
+        ):
+            fallback_layer = layer
+
+    return fallback_layer
+
+
+def create_overview_layers(
+    project: QgsProject,
+    boundary_layer: QgsVectorLayer,
+    municipality_name: str,
+) -> tuple[list, QgsRectangle] | None:
+    """Create a Bavaria locator map with OSM context and highlighted municipality (for overview map)."""
+
+    if not ADMIN_BOUNDARY_FILE.exists():
+        log_info(
+            "Bavaria overview map skipped because administrative source is missing: "
+            f"{display_path(ADMIN_BOUNDARY_FILE)}"
+        )
+        return None
+
+    # Base geometry for the locator map: full Bavaria extent from the same
+    # official administrative source that is also used for municipality borders.
+    bavaria_layer = QgsVectorLayer(
+        str(ADMIN_BOUNDARY_FILE),
+        "Bayern",
+        "ogr",
+    )
+
+    if not bavaria_layer.isValid():
+        log_info("Bavaria overview map skipped because the ALKIS layer is invalid.")
+        return None
+
+    # Target geometry: the selected municipality is shown as a small red area.
+    municipality_layer = QgsVectorLayer(
+        boundary_layer.source(),
+        f"{municipality_name} Lage in Bayern",
+        "ogr",
+    )
+
+    if not municipality_layer.isValid():
+        log_info("Bavaria overview map skipped because the municipality layer is invalid.")
+        return None
+
+    bavaria_symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "245,245,245,0",
+            "outline_color": "100,100,100,210",
+            "outline_width": "0.08",
+        }
+    )
+    municipality_symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "255,0,0,210",
+            "outline_color": "255,0,0,255",
+            "outline_width": "0.65",
+        }
+    )
+
+    apply_layer_symbol(bavaria_layer, bavaria_symbol)
+    apply_layer_symbol(municipality_layer, municipality_symbol)
+
+    overview_extent = bavaria_layer.extent()
+    overview_extent.scale(1.05)
+
+    osm_layer = find_osm_base_layer(project)
+
+    # Layer order for this inset map only.
+    # QgsLayoutItemMap renders the first layer on top. The municipality polygon
+    # is kept above the Bavaria outline and OSM base.
+    overview_layers = [municipality_layer, bavaria_layer]
+
+    if osm_layer is not None:
+        overview_layers.append(osm_layer)
+
+    for layer in [bavaria_layer, municipality_layer]:
+        project.addMapLayer(layer, False)
+
+    return overview_layers, overview_extent
+
+
 def add_overview_map(
     layout: QgsPrintLayout,
     project: QgsProject,
@@ -468,7 +599,7 @@ def add_overview_map(
     width: float,
     height: float,
 ) -> None:
-    """Add a small overview map with a wider municipality context."""
+    """Add the small Bavaria locator map to the PDF layout."""
 
     overview_map = QgsLayoutItemMap(layout)
     overview_map.setLayers(layers)
@@ -480,7 +611,33 @@ def add_overview_map(
 
     layout.addLayoutItem(overview_map)
     overview_map.refresh()
-    add_debug_frame(layout, x, y, width, height)  # todo: keep while tuning layout
+
+    title_width = 24
+    title_height = 4.5
+    title_x = x + width - title_width - 1
+    title_y = y + 1
+
+    add_box(
+        layout,
+        title_x,
+        title_y,
+        title_width,
+        title_height,
+        "255,255,255,145",
+        "255,255,255,0",
+        "0",
+    )
+    title_label = add_label(
+        layout,
+        "Lage in Bayern",
+        title_x,
+        title_y + 0.6,
+        7,
+        True,
+        title_width,
+        title_height,
+    )
+    title_label.setHAlign(Qt.AlignCenter)
 
 
 # -----------------------------------------------------------------------------
@@ -504,8 +661,6 @@ def create_pdf_layout(
 
     boundary_layer = find_boundary_layer(project, municipality_name)
     main_extent = boundary_layer.extent()
-    overview_extent = boundary_layer.extent()
-    overview_extent.scale(3.2)
     map_config = get_map_config(technology)
     layout_config = map_config["layout"]
     scale_map_extent(main_extent, layout_config)
@@ -548,13 +703,16 @@ def create_pdf_layout(
     scale_text_y = layout_config["scale_text_y"]
 
     panel_height = (map_y + map_height) - panel_y
-    panel_bottom = panel_y + panel_height
 
-    # Metadata labels are anchored from the panel bottom instead of using only
-    # fixed absolute Y values. Otherwise the text can visually extend below the
-    # red helper frame although its top position still looks valid.
-    date_y = panel_bottom - 4.5
-    author_y = date_y - 3.7
+    # Author and date get their own footer block on the right. This keeps the
+    # metadata separate from the scale bar and aligned with the data-source
+    # footer below the main map.
+    metadata_box_x = panel_x
+    metadata_box_y = footer_y
+    metadata_box_width = panel_width
+    metadata_box_height = layout_config["footer_height"]
+    author_y = metadata_box_y + 2.0
+    date_y = author_y + 4.2
 
     # -------------------------------------------------------------------------
     # 2.2 Add centered map title
@@ -590,6 +748,12 @@ def create_pdf_layout(
     # zoomToExtent is used here instead of setExtent because it respects the
     # configured layout item size more reliably in standalone PyQGIS scripts.
     map_item.zoomToExtent(main_extent)
+    map_item.setScale(
+        round_scale_up(
+            map_item.scale(),
+            layout_config.get("main_scale_step", 500),
+        )
+    )
     map_item.setFrameEnabled(True)
 
     layout.addLayoutItem(map_item)
@@ -656,10 +820,19 @@ def create_pdf_layout(
     # 2.6 Add north arrow and scale components
     # -------------------------------------------------------------------------
     if layout_config.get("overview_map_enabled", False):
+        overview = create_overview_layers(project, boundary_layer, municipality_name)
+
+        if overview is None:
+            overview_layers = visible_layers
+            overview_extent = boundary_layer.extent()
+            overview_extent.scale(3.2)
+        else:
+            overview_layers, overview_extent = overview
+
         add_overview_map(
             layout,
             project,
-            visible_layers,
+            overview_layers,
             overview_extent,
             map_x,
             map_y,
@@ -670,7 +843,7 @@ def create_pdf_layout(
     north_arrow_x = panel_x
 
     if layout_config.get("north_arrow_inside_map", False):
-        north_arrow_x = map_x + map_width - layout_config["north_arrow_width"] - 3
+        north_arrow_x = map_x + map_width - layout_config["north_arrow_width"] - 2.2
         north_arrow_y = map_y + map_height - layout_config["north_arrow_height"] - 3
 
     add_north_arrow(
@@ -702,7 +875,7 @@ def create_pdf_layout(
     add_label(
         layout,
         f"1:{scale_denominator:,}".replace(",", "."),
-        panel_x,
+        panel_x + 2,
         scale_text_y,
         8,
     )
@@ -710,17 +883,35 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.7 Add metadata block
     # -------------------------------------------------------------------------
+    add_box(
+        layout,
+        metadata_box_x,
+        metadata_box_y,
+        metadata_box_width,
+        metadata_box_height,
+        "255,255,255,255",
+        "80,80,80,255",
+        "0.2",
+    )
+    add_debug_frame(
+        layout,
+        metadata_box_x,
+        metadata_box_y,
+        metadata_box_width,
+        metadata_box_height,
+    )  # todo: keep while tuning layout
+
     add_label(
         layout,
         "Autor: Elena Geiger, Florian Höpfl",
-        panel_x,
+        metadata_box_x + 2,
         author_y,
         layout_config["metadata_font_size"],
     )
     add_label(
         layout,
         f"Datum: {date.today().strftime('%d.%m.%Y')}",
-        panel_x,
+        metadata_box_x + 2,
         date_y,
         layout_config["metadata_font_size"],
     )
@@ -732,7 +923,7 @@ def create_pdf_layout(
         layout,
         (
             "Datenquellen: "
-            f"{textwrap.fill(map_config['sources'], width=layout_config['footer_wrap_width'])}\n"
+            f"{map_config['sources']}\n"
             "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
         ),
         map_x,

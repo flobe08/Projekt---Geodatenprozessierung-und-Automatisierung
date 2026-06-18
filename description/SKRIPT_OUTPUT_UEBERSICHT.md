@@ -84,8 +84,8 @@ Für die Wind-PDF ist zusätzlich eine Layout-Feinabstimmung dokumentiert:
   finalen PDF auf `Nutzungsausschluss` gekürzt werden
 - der Straßeneintrag soll als Legendenkasten mit horizontaler Linie
   dargestellt werden
-- die Übersichtskarte soll langfristig Bayern vollständig zeigen und die
-  gewählte Gemeinde markieren
+- die Übersichtskarte zeigt Bayern mit dezentem OSM-Hintergrund und markiert
+  die gewählte Gemeinde mit roter Fläche und Punktmarker
 
 Die genauere Beschreibung steht in
 [WIND_WORKFLOW_NOTES.md](WIND_WORKFLOW_NOTES.md).

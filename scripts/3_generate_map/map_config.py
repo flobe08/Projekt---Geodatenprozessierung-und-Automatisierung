@@ -16,24 +16,31 @@ PLACEHOLDER_TEXT = (
 # Shared static PDF layout template
 # -----------------------------------------------------------------------------
 LAYOUT_TEMPLATE = {
+    # Main map frame.
     "map_x": 12,
     "map_y": 18,
     "map_width": 210,
     "map_height": 175,
     "map_extent_scale": "auto",
+    "main_scale_step": 500,
+    # Centered map title.
     "title_y": 7,
     "title_font_size": 14,
     "title_width": 210,
     "title_height": 8,
+    # Data source footer below the map.
     "footer_y": 194.5,
     "footer_height": 12,
+    # Right information panel with description, legend, scale and metadata.
     "panel_x": 232,
     "panel_y": 18,
     "panel_width": 58,
+    # Description text at the top of the right panel.
     "description_y": 18,
     "description_font_size": 8,
     "description_height": 34,
-    "description_wrap_width": 34,
+    "description_wrap_width": 38,
+    # Legend block in the right panel.
     "legend_y": 72,
     "legend_width": 58,
     "legend_height": 60,
@@ -41,15 +48,19 @@ LAYOUT_TEMPLATE = {
     "legend_section_y": 83,
     "legend_row_start_y": 89,
     "legend_row_gap": 8,
+    # Grid legend row.
     "grid_title_y": 120,
     "grid_row_y": 125,
+    # North arrow. It can either live in the panel or inside the main map.
     "north_arrow_y": 147,
     "north_arrow_width": 15,
     "north_arrow_height": 15,
     "north_arrow_inside_map": False,
+    # Optional overview map / locator map.
     "overview_map_enabled": False,
     "overview_map_width": 32,
     "overview_map_height": 32,
+    # Scale bar and metadata.
     "scale_bar_y": 165,
     "scale_text_y": 181,
     "author_y": 188,
@@ -66,18 +77,22 @@ TECHNOLOGY_CONFIG = {
         "description": (
             "Die Karte zeigt offizielle Vorrang- und Vorbehaltsgebiete für "
             "Windenergienutzung innerhalb der Gemeinde {municipality}. "
-            "Zusätzlich werden harte Naturschutz-Restriktionen und weiche "
-            "Konfliktflächen zusammengefasst dargestellt. Die Flächen stammen "
-            "aus offiziellen Planungs- und Schutzgebietsdaten und wurden mit "
-            "der amtlichen Gemeindegrenze verschnitten."
+            "Zusätzlich werden harte und windspezifische Naturschutz-"
+            "Restriktionen, weiche Konfliktflächen sowie Nutzungsausschlüsse "
+            "aus Landnutzung und Straßen dargestellt. Die Layer wurden aus "
+            "offiziellen Planungs-, Schutzgebiets- und Landnutzungsdaten sowie "
+            "OSM-Straßendaten abgeleitet und mit der amtlichen Gemeindegrenze "
+            "verschnitten."
         ),
         "sources": (
             "Windflächen: Regionalplanung Bayern, WFS Regionalplanung "
             "(Vorranggebiet und Vorbehaltsgebiet Windenergienutzung), "
-            "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung. "
+            "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung.\n"
             "Naturschutz: Bayerisches Landesamt für Umwelt, Schutzgebiete und "
-            "Natura-2000-Daten. Gemeindegrenze: ALKIS Bayern, Bayerische "
-            "Vermessungsverwaltung, https://geodaten.bayern.de. "
+            "Natura-2000-Daten. Landnutzung: Amtliche tatsächliche Nutzung Bayern. "
+            "Straßen: OpenStreetMap über Overpass.\n"
+            "Gemeindegrenze: ALKIS Bayern, Bayerische Vermessungsverwaltung, "
+            "https://geodaten.bayern.de. "
             "Hintergrundkarte: OpenStreetMap."
         ),
         "legend_section": "Standortinformationen",
@@ -85,7 +100,7 @@ TECHNOLOGY_CONFIG = {
             {
                 "label": "Gemeindegrenze",
                 "color": "255,255,255,255",
-                "outline_color": "255,0,0,255",
+                "outline_color": "0,0,0,255",
             },
             {
                 "label": "Vorranggebiete Wind",
@@ -94,8 +109,8 @@ TECHNOLOGY_CONFIG = {
             },
             {
                 "label": "Vorbehaltsgebiete Wind",
-                "color": "142,108,185,255",
-                "outline_color": "94,64,140,255",
+                "color": "45,150,155,255",
+                "outline_color": "24,110,115,255",
             },
             {
                 "label": "Harte Naturschutz-Restriktionen",
@@ -121,7 +136,7 @@ TECHNOLOGY_CONFIG = {
                 "symbol": "line",
             },
             {
-                "label": "Ausschlussflächen durch Landnutzung",
+                "label": "Nutzungsausschluss",
                 "color": "125,72,165,160",
                 "outline_color": "92,47,128,255",
             },
@@ -133,13 +148,13 @@ TECHNOLOGY_CONFIG = {
             "panel_width": 66,
             "legend_width": 66,
             "legend_height": 100,
-            "grid_title_y": 160,
-            "grid_row_y": 165,
+            "grid_title_y": 155,
+            "grid_row_y": 160,
             "north_arrow_inside_map": True,
             "north_arrow_width": 18,
             "north_arrow_height": 18,
             "overview_map_enabled": True,
-            "overview_map_width": 82,
+            "overview_map_width": 72,
             "overview_map_height": 58,
             "scale_bar_y": 176,
             "scale_text_y": 190,
@@ -176,7 +191,7 @@ TECHNOLOGY_CONFIG = {
             {
                 "label": "Gemeindegrenze",
                 "color": "255,255,255,255",
-                "outline_color": "255,0,0,255",
+                "outline_color": "0,0,0,255",
             },
             {
                 "label": "Freiflächenkulisse geeignet",
@@ -238,7 +253,7 @@ TECHNOLOGY_CONFIG = {
             {
                 "label": "Gemeindegrenze",
                 "color": "255,255,255,255",
-                "outline_color": "255,0,0,255",
+                "outline_color": "0,0,0,255",
             },
         ],
         "grid_distance_label": "Abstand: 500 m",
