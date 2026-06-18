@@ -4,7 +4,8 @@ Script 2: Generate a map PDF from the QGIS project.
 Workflow:
 1. Open the QGIS project created by map script 1.
 2. Create one A4 landscape print layout.
-3. Add one main map, a compact information panel, a north arrow and a scale bar.
+3. Add one main map, a compact information panel, optional overview map,
+   north arrow and a scale bar.
 4. Export the layout as PDF.
 """
 
@@ -33,6 +34,7 @@ from qgis.core import (
     QgsLayoutSize,
     QgsPrintLayout,
     QgsProject,
+    QgsRectangle,
     QgsSimpleFillSymbolLayer,
     QgsUnitTypes,
     QgsVectorLayer,
@@ -144,7 +146,7 @@ def find_boundary_layer(
 
 
 def ordered_project_layers(project: QgsProject) -> list:
-    """Return project layers in the same order as the layer tree."""
+    """Return visible project layers in the same order as the layer tree."""
 
     layers = []
     root = project.layerTreeRoot()
@@ -153,7 +155,7 @@ def ordered_project_layers(project: QgsProject) -> list:
         if isinstance(node, QgsLayerTreeLayer):
             layer = node.layer()
 
-            if layer is not None:
+            if layer is not None and node.isVisible():
                 layers.append(layer)
 
     return layers
@@ -336,23 +338,12 @@ def add_legend_row(
     symbol_y = y + 1.2
 
     if symbol == "line":
-        # Roads are shown as a road-like symbol: white fill, yellow edge,
-        # and a yellow center line.
+        # Roads are represented as a simple line symbol, not as a filled area.
         add_box(
             layout,
             x,
-            symbol_y,
+            symbol_y + 1.7,
             symbol_width,
-            symbol_height,
-            "255,255,255,255",
-            "0,0,0,255",
-            "0.25",
-        )
-        add_box(
-            layout,
-            x + 1.1,
-            symbol_y + 1.55,
-            symbol_width - 2.2,
             0.5,
             color,
             color,
@@ -467,6 +458,31 @@ def add_north_arrow(
     north_arrow.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
 
 
+def add_overview_map(
+    layout: QgsPrintLayout,
+    project: QgsProject,
+    layers: list,
+    extent,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+) -> None:
+    """Add a small overview map with a wider municipality context."""
+
+    overview_map = QgsLayoutItemMap(layout)
+    overview_map.setLayers(layers)
+    overview_map.attemptMove(QgsLayoutPoint(x, y, QgsUnitTypes.LayoutMillimeters))
+    overview_map.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
+
+    overview_map.zoomToExtent(extent)
+    overview_map.setFrameEnabled(True)
+
+    layout.addLayoutItem(overview_map)
+    overview_map.refresh()
+    add_debug_frame(layout, x, y, width, height)  # todo: keep while tuning layout
+
+
 # -----------------------------------------------------------------------------
 # 2. Create the PDF layout
 # -----------------------------------------------------------------------------
@@ -475,7 +491,7 @@ def create_pdf_layout(
     municipality_name: str,
     technology: str,
 ) -> QgsPrintLayout:
-    """Create an A4 landscape map layout without an inset map."""
+    """Create an A4 landscape map layout with optional overview map."""
 
     layout = QgsPrintLayout(project)
     layout.initializeDefaults()
@@ -488,6 +504,8 @@ def create_pdf_layout(
 
     boundary_layer = find_boundary_layer(project, municipality_name)
     main_extent = boundary_layer.extent()
+    overview_extent = boundary_layer.extent()
+    overview_extent.scale(3.2)
     map_config = get_map_config(technology)
     layout_config = map_config["layout"]
     scale_map_extent(main_extent, layout_config)
@@ -559,7 +577,8 @@ def create_pdf_layout(
     # The map item is configured before it is added to the layout. This follows
     # the QGIS print layout documentation and avoids unwanted square map items.
     map_item = QgsLayoutItemMap(layout)
-    map_item.setLayers(ordered_project_layers(project))
+    visible_layers = ordered_project_layers(project)
+    map_item.setLayers(visible_layers)
 
     map_item.attemptMove(
         QgsLayoutPoint(map_x, map_y, QgsUnitTypes.LayoutMillimeters)
@@ -577,7 +596,7 @@ def create_pdf_layout(
 
     add_map_grid(map_item)
     map_item.refresh()
-    add_debug_frame(layout, map_x, map_y, map_width, map_height)  # todo: delete this line
+    add_debug_frame(layout, map_x, map_y, map_width, map_height)  # todo: keep while tuning layout
 
     # -------------------------------------------------------------------------
     # 2.4 Add right-side description
@@ -607,7 +626,7 @@ def create_pdf_layout(
         legend_height,
         "255,255,255,235",
     )
-    add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)  # todo: delete this line
+    add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)  # todo: keep while tuning layout
 
     add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
     add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y + 1, 9, True)
@@ -636,9 +655,27 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.6 Add north arrow and scale components
     # -------------------------------------------------------------------------
+    if layout_config.get("overview_map_enabled", False):
+        add_overview_map(
+            layout,
+            project,
+            visible_layers,
+            overview_extent,
+            map_x,
+            map_y,
+            layout_config["overview_map_width"],
+            layout_config["overview_map_height"],
+        )
+
+    north_arrow_x = panel_x
+
+    if layout_config.get("north_arrow_inside_map", False):
+        north_arrow_x = map_x + map_width - layout_config["north_arrow_width"] - 3
+        north_arrow_y = map_y + map_height - layout_config["north_arrow_height"] - 3
+
     add_north_arrow(
         layout,
-        panel_x,
+        north_arrow_x,
         north_arrow_y,
         layout_config["north_arrow_width"],
         layout_config["north_arrow_height"],
@@ -658,7 +695,7 @@ def create_pdf_layout(
         panel_y,
         panel_width,
         panel_height,
-    )  # todo:delete this line
+    )  # todo: keep while tuning layout
 
     scale_denominator = round(map_item.scale())
 
@@ -711,8 +748,7 @@ def create_pdf_layout(
         footer_y,
         map_width,
         layout_config["footer_height"],
-    )  # todo:delete this line
-
+    )  # todo: keep while tuning layout
     return layout
 
 

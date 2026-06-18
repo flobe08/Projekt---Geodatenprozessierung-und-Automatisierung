@@ -15,6 +15,7 @@ import sys
 # -----------------------------------------------------------------------------
 # input
 SCRIPTS_DIR = Path(__file__).resolve().parent
+BASE_DIR = SCRIPTS_DIR.parent
 
 sys.path.append(str(SCRIPTS_DIR / "utils"))
 from utils import ColoredArgumentParser, log_info, log_section, log_success
@@ -42,6 +43,23 @@ def run_script(
     subprocess.run(command, check=True)
 
 
+def safe_filename(name: str) -> str:
+    """Create the same filename format as the processing scripts."""
+
+    return name.lower().replace(" ", "_")
+
+
+def skip_existing_step(step_name: str, output_file: Path, skip_existing: bool) -> bool:
+    """Return True when an existing output should be reused."""
+
+    if not skip_existing or not output_file.exists():
+        return False
+
+    log_section(step_name)
+    log_info(f"Output already exists, step skipped: {output_file}")
+    return True
+
+
 def parse_arguments() -> argparse.Namespace:
     """Read command line arguments for data preparation."""
 
@@ -59,6 +77,11 @@ def parse_arguments() -> argparse.Namespace:
         choices=["wind", "solar", "wasser"],
         help="Energy technology to prepare data for.",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Reuse existing processed outputs where possible.",
+    )
 
     return parser.parse_args()
 
@@ -66,8 +89,11 @@ def parse_arguments() -> argparse.Namespace:
 def prepare_data(
     municipality: str,
     technology: str,
+    skip_existing: bool = False,
 ) -> None:
     """Run all data preparation steps for one municipality and technology."""
+
+    safe_name = safe_filename(municipality)
 
     log_info(
         "Hinweis: Der allgemeine Download-Workflow kann länger dauern, "
@@ -79,107 +105,112 @@ def prepare_data(
     )
 
     run_script(
-        "Step 1: Download raw datasets",
+        "Step 1.1: Download raw datasets",
         "1_prepare_data/1_download_data.py",
         ["--technology", technology],
     )
 
     run_script(
-        "Step 2: Extract municipality boundary",
+        "Step 1.2: Extract municipality boundary",
         "1_prepare_data/2_extract_municipality_boundary.py",
         ["--municipality", municipality],
     )
 
     run_script(
-        "Step 3: Build general protection layers",
+        "Step 1.3: Build general protection layers",
         "1_prepare_data/3_build_protection_layers.py",
         ["--municipality", municipality],
     )
 
-    run_script(
-        "Step 4: Clip official landuse",
-        "1_prepare_data/4_clip_landuse.py",
-        ["--municipality", municipality],
-    )
+    if not skip_existing_step(
+        "Step 1.4: Clip official landuse",
+        BASE_DIR / "data/processed/landuse" / f"landnutzung_{safe_name}.gpkg",
+        skip_existing,
+    ):
+        run_script(
+            "Step 1.4: Clip official landuse",
+            "1_prepare_data/4_clip_landuse.py",
+            ["--municipality", municipality],
+        )
 
     match technology:
         case "wind":
             run_script(
-                "Step 5: Download OSM network data",
+                "Step 1.5: Download OSM network data",
                 "1_prepare_data/5_download_osm_network_data.py",
                 ["--municipality", municipality, "--technology", technology],
             )
 
             run_script(
-                "Step 6: Prepare wind OSM street layers",
+                "Step 2.1: Prepare wind OSM street layers",
                 "2_1_wind/4_prepare_wind_osm_streets.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 7: Clip wind datasets to the municipality",
+                "Step 2.2: Clip wind datasets to the municipality",
                 "2_1_wind/1_clip_wind_planning_areas.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 8: Prepare wind landuse layers",
+                "Step 2.3: Prepare wind landuse layers",
                 "2_1_wind/2_prepare_wind_landuse.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 9: Build wind landuse buffer layers",
+                "Step 2.4: Build wind landuse buffer layers",
                 "2_1_wind/3_build_wind_landuse_buffers.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 10: Build combined wind exclusion layer",
+                "Step 2.5: Build combined wind exclusion layer",
                 "2_1_wind/5_build_wind_exclusion_layer.py",
                 ["--municipality", municipality],
             )
 
         case "solar":
             run_script(
-                "Step 5: Download OSM network data",
+                "Step 1.5: Download OSM network data",
                 "1_prepare_data/5_download_osm_network_data.py",
                 ["--municipality", municipality, "--technology", technology],
             )
 
             run_script(
-                "Step 6: Prepare solar OSM street layers",
+                "Step 2.1: Prepare solar OSM street layers",
                 "2_2_solar/4_prepare_solar_osm_streets.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 7: Prepare solar corridor layers",
+                "Step 2.2: Prepare solar corridor layers",
                 "2_2_solar/2_prepare_solar_corridor_layers.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 8: Prepare solar landuse layers",
+                "Step 2.3: Prepare solar landuse layers",
                 "2_2_solar/3_prepare_solar_landuse.py",
                 ["--municipality", municipality],
             )
 
         case "wasser":
             run_script(
-                "Step 5: Download OSM network data",
+                "Step 1.5: Download OSM network data",
                 "1_prepare_data/5_download_osm_network_data.py",
                 ["--municipality", municipality, "--technology", technology],
             )
 
             run_script(
-                "Step 6: Prepare water OSM street layers",
+                "Step 2.1: Prepare water OSM street layers",
                 "2_3_wasser/2_prepare_water_osm_streets.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 7: Prepare water landuse layers",
+                "Step 2.2: Prepare water landuse layers",
                 "2_3_wasser/1_prepare_water_landuse.py",
                 ["--municipality", municipality],
             )
@@ -191,7 +222,7 @@ def main() -> None:
     """Run the complete data preparation workflow."""
 
     args = parse_arguments()
-    prepare_data(args.municipality, args.technology)
+    prepare_data(args.municipality, args.technology, args.skip_existing)
     log_success("\nData preparation finished successfully.")
 
 

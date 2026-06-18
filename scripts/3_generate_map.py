@@ -106,19 +106,24 @@ def generate_map(municipality: str, technology: str) -> None:
 
     if technology == "solar":
         run_script(
-            "Step 7: Download solar WMS reference rasters",
+            "Step 3.1: Download solar WMS reference rasters",
             "2_2_solar/1_download_solar_reference_wms.py",
             ["--municipality", municipality],
         )
+        create_project_step = "Step 3.2: Create QGIS map project"
+        generate_pdf_step = "Step 3.3: Generate map PDF"
+    else:
+        create_project_step = "Step 3.1: Create QGIS map project"
+        generate_pdf_step = "Step 3.2: Generate map PDF"
 
     run_script(
-        "Step 8: Create QGIS map project",
+        create_project_step,
         "1_create_map_qgis_project.py",
         ["--municipality", municipality, "--technology", technology],
     )
 
     run_script(
-        "Step 9: Generate map PDF",
+        generate_pdf_step,
         "2_generate_map_pdf.py",
         ["--municipality", municipality, "--technology", technology],
     )

@@ -159,3 +159,78 @@ The wind workflow was checked manually in QGIS:
 The detailed validation steps are documented in:
 
 - [VERIFIKATION.md](VERIFIKATION.md)
+
+## Geplante PDF-Layout-Feinabstimmung
+
+Für die finale Windkarte soll das PDF-Layout weiter beruhigt werden. Ziel ist,
+dass Legende, Maßstab, Nordpfeil und Metadaten sauber lesbar bleiben und sich
+nicht gegenseitig überlagern.
+
+Geplante Anpassungen:
+
+- Autor und Datum werden etwas weiter nach unten gesetzt, damit mehr Abstand
+  zur Maßstabszahl entsteht.
+- Der Nordpfeil bleibt innerhalb der Hauptkarte unten rechts, wird aber näher
+  an den Kartenrand gesetzt.
+- Der lange Legendeneintrag `Ausschlussflächen durch Landnutzung` soll in der
+  PDF-Legende auf `Nutzungsausschluss` gekürzt werden.
+- Der Legendeneintrag `Straßen` soll als einheitliches Symbol dargestellt
+  werden: schwarzer Rahmen mit einer horizontalen Linie in der Mitte.
+
+Die roten Layout-Rahmen bleiben aktuell bewusst als Debug-Hilfe sichtbar,
+solange das PDF-Layout noch abgestimmt wird.
+
+## Geplante Übersichtskarte Bayern
+
+Die bisherige kleine Karte im PDF ist eher eine Kontextkarte im Umfeld der
+Gemeinde. Für die finale Version soll sie zu einer echten Übersichtskarte nach
+dem Locator-Map-Prinzip weiterentwickelt werden.
+
+Ziel:
+
+- Bayern wird vollständig dargestellt.
+- Die ausgewählte Gemeinde wird innerhalb Bayerns hervorgehoben.
+- Die Markierung soll eindeutig sichtbar sein, zum Beispiel durch rote
+  Füllung, roten Rahmen oder einen Marker am Gemeinde-Schwerpunkt.
+- Die Übersichtskarte bleibt oben links in der PDF-Karte.
+- Die Hauptkarte bleibt weiterhin auf die Gemeinde und den Untersuchungsraum
+  gezoomt.
+
+Bevorzugter technischer Ansatz:
+
+1. Aus dem offiziellen Verwaltungsdatensatz wird eine Bayern-Übersichtsebene
+   genutzt oder abgeleitet.
+2. Die bereits extrahierte Gemeindegrenze wird zusätzlich als Markierungslayer
+   verwendet.
+3. In der PDF-Erzeugung wird ein zweiter Kartenrahmen angelegt.
+4. Dieser zweite Kartenrahmen erhält immer den festen Bayern-Ausschnitt.
+5. Die Zielgemeinde wird darin farblich oder durch einen Rahmen hervorgehoben.
+
+Dieser Ansatz ist stabiler als eine reine OSM-Übersicht, weil er auf den
+gleichen amtlichen Verwaltungsdaten basiert wie die Gemeindegrenze im
+Hauptworkflow. Falls die Gemeinde im Bayern-Maßstab zu klein sichtbar ist,
+kann zusätzlich ein Marker am repräsentativen Punkt der Gemeinde gesetzt
+werden.
+
+## Detail- und Attributlayer im QGIS-Projekt
+
+Für die finale PDF-Karte werden bewusst aggregierte Kartenlayer verwendet,
+damit die Darstellung lesbar bleibt. Im QGIS-Projekt sollen parallel dazu
+Detail- und Attributlayer verfügbar bleiben. Diese dienen der Analyse,
+Nachvollziehbarkeit und Attributprüfung.
+
+Für Naturschutz sind drei Detailgruppen vorgesehen:
+
+- `Detail- und Attributlayer Naturschutz hart`
+- `Detail- und Attributlayer Naturschutz weich`
+- `Detail- und Attributlayer Naturschutz Wind`
+
+Die sichtbaren Kartenlayer bleiben dagegen zusammengefasst:
+
+- `Harte Naturschutz-Restriktionen`
+- `Weiche Naturschutz-Konfliktflächen`
+- `Windspezifische Restriktionen`
+
+Für den Nutzungsausschluss gilt dieselbe Logik: Die PDF zeigt einen kompakten
+Sammellayer, während das QGIS-Projekt die Detail- und Attributlayer zur
+Kontrolle enthält.

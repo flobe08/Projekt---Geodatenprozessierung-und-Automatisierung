@@ -110,6 +110,32 @@ def naturschutz_wind_layer_name() -> str:
     return "naturschutz_wind_merged"
 
 
+NATURSCHUTZ_HART_DETAIL_LAYERS = [
+    "naturschutzgebiete",
+    "nationalparke",
+    "nationale_naturmonumente",
+    "naturdenkmale_flaechen",
+    "geschuetzte_landschaftsbestandteile_flaechen",
+    "ramsar_gebiete",
+    "natura2000_ffh",
+    "natura2000_vogelschutz",
+    "naturdenkmale_punkte",
+    "geschuetzte_landschaftsbestandteile_punkte",
+]
+
+
+NATURSCHUTZ_WEICH_DETAIL_LAYERS = [
+    "biosphaerenreservate",
+    "landschaftsschutzgebiete",
+    "naturparke",
+]
+
+
+NATURSCHUTZ_WIND_DETAIL_LAYERS = [
+    "vogelkulissen_2024",
+]
+
+
 def solar_transport_axis_layer_name(municipality_name: str) -> str:
     """Create the municipality-specific layer name for the 500 m solar transport basis."""
 
@@ -360,6 +386,37 @@ def add_layer_to_group(
     project.addMapLayer(layer, False)
     layer_node = group.addLayer(layer)
     layer_node.setItemVisibilityChecked(visible)
+
+
+def add_optional_layers_to_group(
+    project: QgsProject,
+    group_name: str,
+    source_file: Path,
+    layer_names: list[str],
+    municipality_name: str,
+) -> None:
+    """Add optional source layers to a hidden detail and attribute group.
+
+    Detail and attribute layers are loaded when the GeoPackage layer exists,
+    even if it currently has zero features for the municipality. This keeps the
+    QGIS project structure complete and makes it clear which source datasets
+    were checked.
+    """
+
+    for layer_name in layer_names:
+        detail_layer = load_optional_vector_layer(
+            source_file,
+            layer_name,
+            f"{safe_filename(municipality_name)} - {layer_name}",
+        )
+
+        if detail_layer is not None:
+            add_layer_to_group(
+                project,
+                group_name,
+                detail_layer,
+                visible=False,
+            )
 
 
 def apply_symbol(layer: QgsVectorLayer, symbol: QgsFillSymbol | QgsLineSymbol) -> None:
@@ -758,6 +815,44 @@ def create_wind_map_project(municipality_name: str) -> None:
             visible=False,
         )
 
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz hart",
+        protection_hard_file,
+        NATURSCHUTZ_HART_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz weich",
+        protection_weich_file,
+        NATURSCHUTZ_WEICH_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz Wind",
+        protection_wind_file,
+        NATURSCHUTZ_WIND_DETAIL_LAYERS,
+        municipality_name,
+    )
+
+    wind_osm_context_file = WIND_DIR / f"{safe_name}_osm_wind_streets.gpkg"
+    wind_osm_context_layer = load_optional_vector_layer(
+        wind_osm_context_file,
+        osm_wind_ausschluss_layer_name(),
+        f"OSM Straßen Wind {municipality_name}",
+    )
+
+    if layer_has_features(wind_osm_context_layer):
+        style_wind_osm_context_lines(wind_osm_context_layer)
+        add_layer_to_group(
+            project,
+            "Detail- und Attributlayer OSM",
+            wind_osm_context_layer,
+            visible=False,
+        )
+
     # Empty optional layers stay in the GeoPackage for a stable data structure,
     # but are skipped in the QGIS project to avoid visual clutter.
     if layer_has_features(vorbehalt_layer):
@@ -907,6 +1002,21 @@ def create_solar_map_project(municipality_name: str) -> None:
     if layer_has_features(naturschutz_hart_layer):
         style_naturschutz_hart(naturschutz_hart_layer)
         project.addMapLayer(naturschutz_hart_layer)
+
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz hart",
+        protection_hard_file,
+        NATURSCHUTZ_HART_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz weich",
+        protection_weich_file,
+        NATURSCHUTZ_WEICH_DETAIL_LAYERS,
+        municipality_name,
+    )
 
     if solar_wms_zoom_2 is not None:
         project.addMapLayer(solar_wms_zoom_2)

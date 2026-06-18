@@ -51,9 +51,9 @@ Platzhalter:
 
 | Skriptname | Inputfiles | Outputfiles |
 | --- | --- | --- |
-| `scripts/3_generate_map/1_create_map_qgis_project.py --technology wind` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/wind/<gemeinde>_wind_layers.gpkg`, `data/processed/wind/<gemeinde>_wind_ausschluss_gesamt.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` |
+| `scripts/3_generate_map/1_create_map_qgis_project.py --technology wind` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/wind/<gemeinde>_wind_layers.gpkg`, `data/processed/wind/<gemeinde>_wind_ausschluss_gesamt.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` mit sichtbaren Sammellayern und ausgeblendeten Detail- und Attributlayern |
 | `scripts/3_generate_map/1_create_map_qgis_project.py --technology solar` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/solar/<gemeinde>_solar_layers.gpkg`, `data/processed/solar_reference/`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_solar.qgz` |
-| `scripts/3_generate_map/2_generate_map_pdf.py --technology wind` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` | `data/processed/maps/<gemeinde>_map_wind.pdf` |
+| `scripts/3_generate_map/2_generate_map_pdf.py --technology wind` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` | `data/processed/maps/<gemeinde>_map_wind.pdf` mit erweiterter Legende, Nordpfeil in der Karte und kleiner Übersichtskarte |
 | `scripts/3_generate_map/2_generate_map_pdf.py --technology solar` | `data/processed/qgis_projects/<gemeinde>_map_solar.qgz` | `data/processed/maps/<gemeinde>_map_solar.pdf` |
 
 ## Hinweis zu OSM
@@ -63,3 +63,29 @@ Das OSM-Skript schreibt zuerst immer den gemeinsamen Rohdatensatz
 Technologieordnern. Für Solar wird zusätzlich `solar_corridor_basis`
 geschrieben, weil die 200-m- und 500-m-Puffer Autobahnen und Schienenwege als
 eigene Grundlage brauchen.
+
+## Hinweis zu QGIS-Projekt und PDF
+
+Die QGIS-Projekte enthalten bewusst mehr Layer als die PDF-Karten zeigen. Die
+sichtbaren Kartenlayer bleiben zusammengefasst, damit die Karte lesbar bleibt.
+Zusätzlich werden ausgeblendete Detail- und Attributlayer geladen. Diese
+dienen der Analyse, Attributprüfung und Dokumentation, zum Beispiel für:
+
+- einzelne Naturschutz-Ursprungslayer
+- einzelne Landnutzungs- und OSM-Ausschlusslayer
+- technische Zwischenlayer vor der finalen Aggregation
+
+Die PDF-Karte verwendet nur die sichtbaren Layer des QGIS-Projekts. Dadurch
+bleiben Detaildaten im Projekt verfügbar, ohne die finale Karte zu überladen.
+
+Für die Wind-PDF ist zusätzlich eine Layout-Feinabstimmung dokumentiert:
+
+- der Legendeneintrag `Ausschlussflächen durch Landnutzung` soll in der
+  finalen PDF auf `Nutzungsausschluss` gekürzt werden
+- der Straßeneintrag soll als Legendenkasten mit horizontaler Linie
+  dargestellt werden
+- die Übersichtskarte soll langfristig Bayern vollständig zeigen und die
+  gewählte Gemeinde markieren
+
+Die genauere Beschreibung steht in
+[WIND_WORKFLOW_NOTES.md](WIND_WORKFLOW_NOTES.md).

@@ -52,6 +52,20 @@ deactivate
 python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 ```
 
+Wenn die Zwischenergebnisse bereits erzeugt wurden, kann der erneute Lauf
+beschleunigt werden:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind --skip-existing
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
+
+`--skip-existing` überspringt aktuell insbesondere den bereits vorhandenen
+zugeschnittenen Landnutzungsdatensatz. Das ist sinnvoll, wenn nur die Karte,
+das QGIS-Projekt oder spätere Folgeschritte erneut getestet werden sollen.
+
 ### Solar
 
 ```bash
@@ -71,6 +85,10 @@ Der Workflow ruft intern diese beiden Einstiegsskripte auf:
 
 - `scripts/1_prepare_data.py`
 - `scripts/3_generate_map.py`
+
+Die Mermaid-Diagramme mit den exakten Log-Step-Namen stehen in:
+
+- `description/WORKFLOW_DIAGRAMME.md`
 
 ## Manuelle Ausführung Schritt für Schritt
 
@@ -272,6 +290,43 @@ Hinweis:
 - Sie werden aktuell aber noch nicht in den zusammengeführten harten
   Flächenausschlusslayer `naturschutz_allgemein_hart_merged` übernommen, weil
   dafür erst eine fachlich begründete Pufferregel festgelegt werden müsste.
+
+## QGIS-Projekt, Detail- und Attributlayer
+
+Das automatisch erzeugte QGIS-Projekt enthält zwei Ebenen:
+
+1. sichtbare Kartenlayer für die eigentliche Karte
+2. ausgeblendete Detail- und Attributlayer für Kontrolle und Dokumentation
+
+Die sichtbaren Naturschutzlayer bleiben bewusst zusammengefasst:
+
+- `Harte Naturschutz-Restriktionen`
+- `Weiche Naturschutz-Konfliktflächen`
+- `Windspezifische Restriktionen`
+
+Zusätzlich werden im QGIS-Projekt ausgeblendete Gruppen angelegt:
+
+- `Detail- und Attributlayer Naturschutz hart`
+- `Detail- und Attributlayer Naturschutz weich`
+- `Detail- und Attributlayer Naturschutz Wind`
+- `Detail- und Attributlayer Wind-Ausschluss`
+- `Detail- und Attributlayer OSM`
+
+Diese Detail- und Attributlayer dienen dazu, einzelne Ursprungslayer und ihre
+Attribute nachvollziehen zu können. Sie werden nicht automatisch als
+zusätzliche Hauptlayer in der PDF-Karte dargestellt, damit die Karte lesbar
+bleibt.
+
+Die PDF-Legende enthält für die Windkarte zusätzlich:
+
+- `Straßen`
+- `Ausschlussflächen durch Landnutzung`
+
+Der Nordpfeil wird in der Wind-PDF unten rechts innerhalb der Karte platziert.
+Dadurch bleibt im rechten Layoutbereich mehr Platz für Legende, Maßstab,
+Autor und Datum. Zusätzlich wird eine kleine Übersichtskarte eingebunden, die
+Bayern als Orientierung zeigt und die ausgewählte Gemeinde über den
+Gemeindegrenzenlayer sichtbar macht.
 
 ## Landnutzung
 

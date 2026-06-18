@@ -123,3 +123,5 @@ python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsrie
   [ANLEITUNG.md](ANLEITUNG.md).
 - Die manuelle DatenprÃ¼fung und Verifikation steht in
   [description/VERIFIKATION.md](description/VERIFIKATION.md).
+- Die Workflow-Diagramme mit den Log-Step-Namen stehen in
+  [description/WORKFLOW_DIAGRAMME.md](description/WORKFLOW_DIAGRAMME.md).
