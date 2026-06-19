@@ -1,19 +1,19 @@
-# Skript-Output-Übersicht
+﻿# Skript-Output-Ãœbersicht
 
 Diese Datei ordnet die wichtigsten Skripte ihren Eingabe- und Ausgabedaten zu.
-Damit kann später jeder erzeugte Output wieder dem passenden Verarbeitungsschritt
+Damit kann spÃ¤ter jeder erzeugte Output wieder dem passenden Verarbeitungsschritt
 zugeordnet werden.
 
 Platzhalter:
 
-- `<gemeinde>` steht z. B. für `drachselsried`
-- `<technologie>` steht z. B. für `wind` oder `solar`
+- `<gemeinde>` steht z. B. fÃ¼r `drachselsried`
+- `<technologie>` steht z. B. fÃ¼r `wind` oder `solar`
 
 ## 1. Gemeinsame Datenvorbereitung
 
 | Skriptname | Inputfiles / Quellen | Outputfiles |
 | --- | --- | --- |
-| `scripts/1_prepare_data/1_download_data.py` | Offizielle Downloadquellen für Verwaltungsgrenzen, Landnutzung, Schutzgebiete, Natura-2000-Daten und technologieabhängige Rohdaten | `data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip`, `data/raw/Verwaltungsgebiet_Bayern/`, `data/raw/landuse/landnutzung.gpkg`, `data/raw/schutzgebiete/`, `data/raw/wind/` |
+| `scripts/1_prepare_data/1_download_data.py` | Offizielle Downloadquellen fÃ¼r Verwaltungsgrenzen, Landnutzung, Schutzgebiete, Natura-2000-Daten und technologieabhÃ¤ngige Rohdaten | `data/raw/Verwaltungsgebiet_Bayern/alkis_verwaltungsgebiete.zip`, `data/raw/Verwaltungsgebiet_Bayern/`, `data/raw/landuse/landnutzung.gpkg`, `data/raw/schutzgebiete/`, `data/raw/wind/` |
 | `scripts/1_prepare_data/2_extract_municipality_boundary.py` | `data/raw/Verwaltungsgebiet_Bayern/` | `data/processed/boundaries/<gemeinde>_boundary.gpkg` |
 | `scripts/1_prepare_data/3_build_protection_layers.py` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/raw/schutzgebiete/`, `data/raw/wind/vogelkulissen_2024/` | `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg` |
 | `scripts/1_prepare_data/4_clip_landuse.py` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/raw/landuse/landnutzung.gpkg` | `data/processed/landuse/landnutzung_<gemeinde>.gpkg` |
@@ -51,16 +51,16 @@ Platzhalter:
 
 | Skriptname | Inputfiles | Outputfiles |
 | --- | --- | --- |
-| `scripts/3_generate_map/1_create_map_qgis_project.py --technology wind` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/wind/<gemeinde>_wind_layers.gpkg`, `data/processed/wind/<gemeinde>_wind_ausschluss_gesamt.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` mit sichtbaren Sammellayern und ausgeblendeten Detail- und Attributlayern |
-| `scripts/3_generate_map/1_create_map_qgis_project.py --technology solar` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/solar/<gemeinde>_solar_layers.gpkg`, `data/processed/solar_reference/`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_solar.qgz` |
-| `scripts/3_generate_map/2_generate_map_pdf.py --technology wind` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` | `data/processed/maps/<gemeinde>_map_wind.pdf` mit erweiterter Legende, Nordpfeil in der Karte und kleiner Übersichtskarte |
-| `scripts/3_generate_map/2_generate_map_pdf.py --technology solar` | `data/processed/qgis_projects/<gemeinde>_map_solar.qgz` | `data/processed/maps/<gemeinde>_map_solar.pdf` |
-
+| `scripts/3_generate_map/1_prepare_overview_layers.py` | `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp`, `data/processed/boundaries/<gemeinde>_boundary.gpkg` | `data/processed/overview/bayern_outline.gpkg`, `data/processed/overview/<gemeinde>_overview.gpkg` |
+| `scripts/3_generate_map/2_create_map_qgis_project.py --technology wind` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/wind/<gemeinde>_wind_layers.gpkg`, `data/processed/wind/<gemeinde>_wind_ausschluss_gesamt.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz` mit sichtbaren Sammellayern und ausgeblendeten Detail- und Attributlayern |
+| `scripts/3_generate_map/2_create_map_qgis_project.py --technology solar` | `data/processed/boundaries/<gemeinde>_boundary.gpkg`, `data/processed/solar/<gemeinde>_solar_layers.gpkg`, `data/processed/solar_reference/`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg` | `data/processed/qgis_projects/<gemeinde>_map_solar.qgz` |
+| `scripts/3_generate_map/3_generate_map_pdf.py --technology wind` | `data/processed/qgis_projects/<gemeinde>_map_wind.qgz`, `data/processed/overview/bayern_outline.gpkg`, `data/processed/overview/<gemeinde>_overview.gpkg` | `data/processed/maps/<gemeinde>_map_wind.pdf` mit erweiterter Legende, Nordpfeil in der Karte und kleiner Übersichtskarte |
+| `scripts/3_generate_map/3_generate_map_pdf.py --technology solar` | `data/processed/qgis_projects/<gemeinde>_map_solar.qgz`, `data/processed/overview/bayern_outline.gpkg`, `data/processed/overview/<gemeinde>_overview.gpkg` | `data/processed/maps/<gemeinde>_map_solar.pdf` |
 ## Hinweis zu OSM
 
 Das OSM-Skript schreibt zuerst immer den gemeinsamen Rohdatensatz
 `osm_streets`. Die fachliche Filterung passiert danach in den
-Technologieordnern. Für Solar wird zusätzlich `solar_corridor_basis`
+Technologieordnern. FÃ¼r Solar wird zusÃ¤tzlich `solar_corridor_basis`
 geschrieben, weil die 200-m- und 500-m-Puffer Autobahnen und Schienenwege als
 eigene Grundlage brauchen.
 
@@ -68,15 +68,15 @@ eigene Grundlage brauchen.
 
 Die QGIS-Projekte enthalten bewusst mehr Layer als die PDF-Karten zeigen. Die
 sichtbaren Kartenlayer bleiben zusammengefasst, damit die Karte lesbar bleibt.
-Zusätzlich werden ausgeblendete Detail- und Attributlayer geladen. Diese
-dienen der Analyse, Attributprüfung und Dokumentation, zum Beispiel für:
+ZusÃ¤tzlich werden ausgeblendete Detail- und Attributlayer geladen. Diese
+dienen der Analyse, AttributprÃ¼fung und Dokumentation, zum Beispiel fÃ¼r:
 
 - einzelne Naturschutz-Ursprungslayer
 - einzelne Landnutzungs- und OSM-Ausschlusslayer
 - technische Zwischenlayer vor der finalen Aggregation
 
 Die PDF-Karte verwendet nur die sichtbaren Layer des QGIS-Projekts. Dadurch
-bleiben Detaildaten im Projekt verfügbar, ohne die finale Karte zu überladen.
+bleiben Detaildaten im Projekt verfÃ¼gbar, ohne die finale Karte zu Ã¼berladen.
 
 Für die Wind-PDF ist zusätzlich eine Layout-Feinabstimmung dokumentiert:
 
@@ -84,8 +84,10 @@ Für die Wind-PDF ist zusätzlich eine Layout-Feinabstimmung dokumentiert:
   finalen PDF auf `Nutzungsausschluss` gekürzt werden
 - der Straßeneintrag soll als Legendenkasten mit horizontaler Linie
   dargestellt werden
-- die Übersichtskarte zeigt Bayern mit dezentem OSM-Hintergrund und markiert
-  die gewählte Gemeinde mit roter Fläche und Punktmarker
+- die Übersichtskarte nutzt vorbereitete Locator-Layer aus `data/processed/overview/`
+- der Bayern-Außenumriss wird einmalig erzeugt und danach wiederverwendet
+- die gewählte Gemeinde wird in der Übersichtskarte mit roter Fläche, Suchfenster und Punktmarker markiert
 
 Die genauere Beschreibung steht in
 [WIND_WORKFLOW_NOTES.md](WIND_WORKFLOW_NOTES.md).
+

@@ -5,6 +5,34 @@ ausgewÃ¤hlte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow**
 durchgÃ¤ngig umgesetzt. Der **Solar-Workflow** wird vorbereitet und basiert auf
 OSM-Verkehrsachsen sowie rechtlichen 200-m- und 500-m-Pufferzonen.
 
+## Zentrale Fragestellung
+
+Welche rÃ¤umlichen Potenzial- und KonfliktflÃ¤chen fÃ¼r erneuerbare Energien
+lassen sich fÃ¼r eine Gemeinde automatisiert aus offenen Geodaten ableiten und
+kartografisch darstellen?
+
+Das Projekt beantwortet damit nicht die Frage, wo eine Anlage rechtsverbindlich
+genehmigt werden darf. Ziel ist eine reproduzierbare Pipeline, die fÃ¼r eine
+ausgewÃ¤hlte bayerische Gemeinde relevante offene Geodaten automatisch sammelt,
+harmonisiert, zuschneidet und kartografisch ausgibt.
+
+Die Karten zeigen, welche FlÃ¤chen aus Sicht von Raumplanung,
+Energieinfrastruktur, Landnutzung und Naturschutz fÃ¼r Windenergie,
+FreiflÃ¤chen-Photovoltaik und wasserbezogene Planung besonders relevant oder
+konfliktbehaftet sind.
+
+Die einzelnen Karten beantworten dabei:
+
+- **Windkarte:** Wo liegen offizielle regionalplanerische
+  WindenergieflÃ¤chen innerhalb der Gemeinde und welche allgemeinen bzw.
+  windspezifischen RestriktionsflÃ¤chen Ã¼berschneiden oder begrenzen diese?
+- **Solarkarte:** Wo liegen potenziell relevante
+  FreiflÃ¤chen-Photovoltaikbereiche in der Gemeinde und wie verhalten sie sich
+  zu 200-m-/500-m-Randstreifen sowie Naturschutz-KonfliktflÃ¤chen?
+- **Wasserkarte:** Welche wasserbezogenen Infrastruktur-, Schutz- und
+  KonfliktflÃ¤chen liegen innerhalb der Gemeinde und welche Bereiche sind fÃ¼r
+  eine weitere wasserbezogene Energie- oder Planungsanalyse relevant?
+
 ## Setup
 
 Empfohlenes System:
@@ -91,8 +119,9 @@ python3 scripts/2_1_wind/2_prepare_wind_landuse.py --municipality Drachselsried
 python3 scripts/2_1_wind/3_build_wind_landuse_buffers.py --municipality Drachselsried
 python3 scripts/2_1_wind/5_build_wind_exclusion_layer.py --municipality Drachselsried
 deactivate
-python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology wind
-python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology wind
+python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
+python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology wind
+python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology wind
 ```
 
 ### Solar
@@ -109,8 +138,9 @@ python3 scripts/2_2_solar/2_prepare_solar_corridor_layers.py --municipality Drac
 python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
 python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
-python3 scripts/3_generate_map/1_create_map_qgis_project.py --municipality Drachselsried --technology solar
-python3 scripts/3_generate_map/2_generate_map_pdf.py --municipality Drachselsried --technology solar
+python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
+python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology solar
+python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology solar
 ```
 
 ## Wichtige Hinweise

@@ -1,4 +1,4 @@
-# Wind Workflow Notes
+﻿# Wind Workflow Notes
 
 ## Core idea
 
@@ -23,8 +23,9 @@ buffers or landuse proxies.
 8. `scripts/2_1_wind/3_build_wind_landuse_buffers.py`
 9. `scripts/2_1_wind/4_prepare_wind_osm_streets.py`
 10. `scripts/2_1_wind/5_build_wind_exclusion_layer.py`
-11. `scripts/3_generate_map/1_create_map_qgis_project.py`
-12. `scripts/3_generate_map/2_generate_map_pdf.py`
+11. `scripts/3_generate_map/1_prepare_overview_layers.py`
+12. `scripts/3_generate_map/2_create_map_qgis_project.py`
+13. `scripts/3_generate_map/3_generate_map_pdf.py`
 
 ## Main datasets
 
@@ -55,11 +56,11 @@ Additional wind-specific working outputs:
 
 Hinweis:
 
-- Die Landnutzungs-Outputs sind aktuell Arbeits- und Prüflayer.
+- Die Landnutzungs-Outputs sind aktuell Arbeits- und PrÃ¼flayer.
 - Sie sind im QGIS-Projektskript bereits als nächste TODO-Stufe vorbereitet,
   aber noch nicht aktiv in die finale Windkarte eingebunden.
 
-### OSM-Straßendaten
+### OSM-StraÃŸendaten
 
 - `data/processed/osm_streets/<municipality>_osm_streets.gpkg`
 - `data/processed/wind/<municipality>_osm_wind_streets.gpkg`
@@ -82,22 +83,22 @@ Die aktuelle Windkarte bindet bereits ein:
 - offizielle Wind-Vorranggebiete
 - offizielle Wind-Vorbehaltsgebiete
 - harte allgemeine Naturschutz-Restriktionen
-- weiche allgemeine Naturschutz-Konfliktflächen
+- weiche allgemeine Naturschutz-KonfliktflÃ¤chen
 - windspezifische Naturschutz-Restriktionen
 
-Zusätzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
+ZusÃ¤tzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
 
 - `landuse_wind_ausschluss_puffer`
 - `osm_streets_wind_ausschluss_puffer`
 - `wind_ausschluss_gesamt`
 
 Diese beiden Layer stehen im QGIS-Projektskript bereits als `TODO` bereit und
-werden später zugeschaltet, sobald die endgültige Ausschlusslogik feststeht.
+werden spÃ¤ter zugeschaltet, sobald die endgÃ¼ltige Ausschlusslogik feststeht.
 
 Aktueller Stand: `wind_ausschluss_gesamt` wird im QGIS-Projekt bereits als
-Prüflayer geladen, ist aber standardmäßig ausgeblendet. Dadurch kann der
-Layer manuell aktiviert und geprüft werden, ohne die automatisch erzeugte
-PDF-Karte direkt zu verändern.
+PrÃ¼flayer geladen, ist aber standardmÃ¤ÃŸig ausgeblendet. Dadurch kann der
+Layer manuell aktiviert und geprÃ¼ft werden, ohne die automatisch erzeugte
+PDF-Karte direkt zu verÃ¤ndern.
 
 ### General protection datasets
 
@@ -162,69 +163,69 @@ The detailed validation steps are documented in:
 
 ## PDF-Layout-Feinabstimmung
 
-Für die finale Windkarte wird das PDF-Layout weiter beruhigt. Ziel ist,
+FÃ¼r die finale Windkarte wird das PDF-Layout weiter beruhigt. Ziel ist,
 dass Legende, Maßstab, Nordpfeil und Metadaten sauber lesbar bleiben und sich
-nicht gegenseitig überlagern.
+nicht gegenseitig Ã¼berlagern.
 
 Aktuelle Layout-Logik:
 
 - Autor und Datum werden etwas weiter nach unten gesetzt, damit mehr Abstand
-  zur Maßstabszahl entsteht.
+  zur MaÃŸstabszahl entsteht.
 - Der Nordpfeil bleibt innerhalb der Hauptkarte unten rechts, wird aber näher
   an den Kartenrand gesetzt.
 - Der lange Legendeneintrag `Ausschlussflächen durch Landnutzung` wird in der
-  PDF-Legende als `Nutzungsausschluss` gekürzt.
+  PDF-Legende als `Nutzungsausschluss` gekÃ¼rzt.
 - Der Legendeneintrag `Straßen` soll als einheitliches Symbol dargestellt
   werden: schwarzer Rahmen mit einer horizontalen Linie in der Mitte.
 
 Die roten Layout-Rahmen bleiben aktuell bewusst als Debug-Hilfe sichtbar,
 solange das PDF-Layout noch abgestimmt wird.
 
-## Übersichtskarte Bayern
+## Ãœbersichtskarte Bayern
 
-Die kleine Karte im PDF wird als echte Übersichtskarte nach dem
+Die kleine Karte im PDF wird als echte Ãœbersichtskarte nach dem
 Locator-Map-Prinzip aufgebaut. Sie beantwortet nur die Frage, wo die Gemeinde
 innerhalb Bayerns liegt.
 
 Ziel und Darstellung:
 
-- Bayern wird vollständig dargestellt.
-- Die ausgewählte Gemeinde wird innerhalb Bayerns hervorgehoben.
-- Die Markierung erfolgt durch rote Füllung bzw. roten Rahmen und einen
-  zusätzlichen roten Punktmarker auf Basis eines Point-on-Surface.
-- Die Übersichtskarte bleibt oben links in der PDF-Karte.
+- Bayern wird vollstÃ¤ndig dargestellt.
+- Die ausgewÃ¤hlte Gemeinde wird innerhalb Bayerns hervorgehoben.
+- Die Markierung erfolgt durch rote FÃ¼llung bzw. roten Rahmen und einen
+  zusÃ¤tzlichen roten Punktmarker auf Basis eines Point-on-Surface.
+- Die Ãœbersichtskarte bleibt oben links in der PDF-Karte.
 - Die Hauptkarte bleibt weiterhin auf die Gemeinde und den Untersuchungsraum
   gezoomt.
 - Als Hintergrund wird ein dezenter OSM-Layer verwendet, damit die Lage der
-  Gemeinde innerhalb Bayerns räumlich leichter einzuordnen ist.
-- Es werden keine weiteren thematischen Analyse-Layer in der Übersichtskarte
+  Gemeinde innerhalb Bayerns rÃ¤umlich leichter einzuordnen ist.
+- Es werden keine weiteren thematischen Analyse-Layer in der Ãœbersichtskarte
   verwendet.
 
 Technischer Ansatz:
 
-1. Aus dem offiziellen Verwaltungsdatensatz wird die Bayern-Übersichtsebene
+1. Aus dem offiziellen Verwaltungsdatensatz wird die Bayern-Ãœbersichtsebene
    geladen.
-2. Die bereits extrahierte Gemeindegrenze wird zusätzlich als Markierungslayer
+2. Die bereits extrahierte Gemeindegrenze wird zusÃ¤tzlich als Markierungslayer
    verwendet.
-3. Der vorhandene OSM-Basislayer wird als Hintergrund ergänzt.
+3. Der vorhandene OSM-Basislayer wird als Hintergrund ergÃ¤nzt.
 4. In der PDF-Erzeugung wird ein zweiter Kartenrahmen mit eigener Layerliste
    angelegt.
-5. Dieser zweite Kartenrahmen erhält immer den festen Bayern-Ausschnitt.
-6. Die Zielgemeinde wird darin farblich und durch einen zusätzlichen Marker
+5. Dieser zweite Kartenrahmen erhÃ¤lt immer den festen Bayern-Ausschnitt.
+6. Die Zielgemeinde wird darin farblich und durch einen zusÃ¤tzlichen Marker
    hervorgehoben.
 
 Dieser Ansatz kombiniert die amtliche Gemeindegeometrie mit einem ruhigen
-OSM-Hintergrund. Falls die Gemeinde im Bayern-Maßstab zu klein sichtbar ist,
-bleibt der zusätzliche Punktmarker sichtbar.
+OSM-Hintergrund. Falls die Gemeinde im Bayern-MaÃŸstab zu klein sichtbar ist,
+bleibt der zusÃ¤tzliche Punktmarker sichtbar.
 
 ## Detail- und Attributlayer im QGIS-Projekt
 
-Für die finale PDF-Karte werden bewusst aggregierte Kartenlayer verwendet,
+FÃ¼r die finale PDF-Karte werden bewusst aggregierte Kartenlayer verwendet,
 damit die Darstellung lesbar bleibt. Im QGIS-Projekt sollen parallel dazu
-Detail- und Attributlayer verfügbar bleiben. Diese dienen der Analyse,
-Nachvollziehbarkeit und Attributprüfung.
+Detail- und Attributlayer verfÃ¼gbar bleiben. Diese dienen der Analyse,
+Nachvollziehbarkeit und AttributprÃ¼fung.
 
-Für Naturschutz sind drei Detailgruppen vorgesehen:
+FÃ¼r Naturschutz sind drei Detailgruppen vorgesehen:
 
 - `Detail- und Attributlayer Naturschutz hart`
 - `Detail- und Attributlayer Naturschutz weich`
@@ -233,9 +234,9 @@ Für Naturschutz sind drei Detailgruppen vorgesehen:
 Die sichtbaren Kartenlayer bleiben dagegen zusammengefasst:
 
 - `Harte Naturschutz-Restriktionen`
-- `Weiche Naturschutz-Konfliktflächen`
+- `Weiche Naturschutz-KonfliktflÃ¤chen`
 - `Windspezifische Restriktionen`
 
-Für den Nutzungsausschluss gilt dieselbe Logik: Die PDF zeigt einen kompakten
-Sammellayer, während das QGIS-Projekt die Detail- und Attributlayer zur
-Kontrolle enthält.
+FÃ¼r den Nutzungsausschluss gilt dieselbe Logik: Die PDF zeigt einen kompakten
+Sammellayer, wÃ¤hrend das QGIS-Projekt die Detail- und Attributlayer zur
+Kontrolle enthÃ¤lt.

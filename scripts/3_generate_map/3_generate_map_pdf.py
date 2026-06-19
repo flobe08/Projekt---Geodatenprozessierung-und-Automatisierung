@@ -1,5 +1,5 @@
-"""
-Script 2: Generate a map PDF from the QGIS project.
+﻿"""
+Script 3: Generate a map PDF from the QGIS project.
 
 Workflow:
 1. Open the QGIS project created by map script 1.
@@ -61,10 +61,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # -----------------------------------------------------------------------------
 # input
 PROJECT_DIR = BASE_DIR / "data/processed/qgis_projects"
-ADMIN_BOUNDARY_FILE = (
-    BASE_DIR
-    / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
-)
+OVERVIEW_DIR = BASE_DIR / "data/processed/overview"
+BAVARIA_OUTLINE_FILE = OVERVIEW_DIR / "bayern_outline.gpkg"
 
 # output
 OUTPUT_DIR = BASE_DIR / "data/processed/maps"
@@ -517,56 +515,61 @@ def find_osm_base_layer(project: QgsProject):
 
 def create_overview_layers(
     project: QgsProject,
-    boundary_layer: QgsVectorLayer,
     municipality_name: str,
 ) -> tuple[list, QgsRectangle] | None:
-    """Create a Bavaria locator map with OSM context and highlighted municipality (for overview map)."""
+    """Load prepared Bavaria locator-map layers."""
 
-    if not ADMIN_BOUNDARY_FILE.exists():
+    safe_name = safe_filename(municipality_name)
+    municipality_overview_file = OVERVIEW_DIR / f"{safe_name}_overview.gpkg"
+
+    if not BAVARIA_OUTLINE_FILE.exists():
         log_info(
-            "Bavaria overview map skipped because administrative source is missing: "
-            f"{display_path(ADMIN_BOUNDARY_FILE)}"
+            "Bavaria overview map skipped because the prepared outline is missing: "
+            f"{display_path(BAVARIA_OUTLINE_FILE)}"
         )
         return None
 
-    # Base geometry for the locator map: full Bavaria extent from the same
-    # official administrative source that is also used for municipality borders.
-    bavaria_layer = QgsVectorLayer(
-        str(ADMIN_BOUNDARY_FILE),
-        "Bayern",
-        "ogr",
-    )
-
-    if not bavaria_layer.isValid():
-        log_info("Bavaria overview map skipped because the ALKIS layer is invalid.")
+    if not municipality_overview_file.exists():
+        log_info(
+            "Bavaria overview map skipped because the municipality locator file is missing: "
+            f"{display_path(municipality_overview_file)}"
+        )
         return None
 
-    # Target geometry: the selected municipality is shown as a small red area.
-    municipality_layer = QgsVectorLayer(
-        boundary_layer.source(),
-        f"{municipality_name} Lage in Bayern",
+    bavaria_layer = QgsVectorLayer(
+        f"{BAVARIA_OUTLINE_FILE}|layername=bayern_outline",
+        "Bayern Außenumriss",
         "ogr",
     )
-
-    if not municipality_layer.isValid():
-        log_info("Bavaria overview map skipped because the municipality layer is invalid.")
+    municipality_layer = QgsVectorLayer(
+        f"{municipality_overview_file}|layername=overview_municipality",
+        f"{municipality_name} Zielgemeinde",
+        "ogr",
+    )
+    if not all(
+        layer.isValid()
+        for layer in [
+            bavaria_layer,
+            municipality_layer,
+        ]
+    ):
+        log_info("Bavaria overview map skipped because a prepared locator layer is invalid.")
         return None
 
     bavaria_symbol = QgsFillSymbol.createSimple(
         {
-            "color": "245,245,245,0",
-            "outline_color": "100,100,100,210",
-            "outline_width": "0.08",
+            "color": "245,245,245,60",
+            "outline_color": "90,90,90,220",
+            "outline_width": "0.18",
         }
     )
     municipality_symbol = QgsFillSymbol.createSimple(
         {
-            "color": "255,0,0,210",
+            "color": "255,0,0,120",
             "outline_color": "255,0,0,255",
-            "outline_width": "0.65",
+            "outline_width": "0.9",
         }
     )
-
     apply_layer_symbol(bavaria_layer, bavaria_symbol)
     apply_layer_symbol(municipality_layer, municipality_symbol)
 
@@ -575,15 +578,22 @@ def create_overview_layers(
 
     osm_layer = find_osm_base_layer(project)
 
-    # Layer order for this inset map only.
-    # QgsLayoutItemMap renders the first layer on top. The municipality polygon
-    # is kept above the Bavaria outline and OSM base.
-    overview_layers = [municipality_layer, bavaria_layer]
+    # Layer order for this inset map only. QgsLayoutItemMap renders the first
+    # layer on top. The marker layer is still prepared by script 1 but
+    # intentionally not shown in the PDF because the red municipality fill is
+    # calmer.
+    overview_layers = [
+        municipality_layer,
+        bavaria_layer,
+    ]
 
     if osm_layer is not None:
         overview_layers.append(osm_layer)
 
-    for layer in [bavaria_layer, municipality_layer]:
+    for layer in [
+        bavaria_layer,
+        municipality_layer,
+    ]:
         project.addMapLayer(layer, False)
 
     return overview_layers, overview_extent
@@ -599,9 +609,10 @@ def add_overview_map(
     width: float,
     height: float,
 ) -> None:
-    """Add the small Bavaria locator map to the PDF layout."""
+    """Add the small Bavaria locator map with the highlighted municipality."""
 
     overview_map = QgsLayoutItemMap(layout)
+    overview_map.setId("Uebersichtskarte")
     overview_map.setLayers(layers)
     overview_map.attemptMove(QgsLayoutPoint(x, y, QgsUnitTypes.LayoutMillimeters))
     overview_map.attemptResize(QgsLayoutSize(width, height, QgsUnitTypes.LayoutMillimeters))
@@ -610,6 +621,15 @@ def add_overview_map(
     overview_map.setFrameEnabled(True)
 
     layout.addLayoutItem(overview_map)
+
+    # TODO: QGIS-native linked-map overview was tested here, but did not render
+    # reliably in the standalone PyQGIS export used by this project.
+    # Keep the locator map simple for now: Bavaria + highlighted municipality.
+    #
+    # extent_indicator = QgsLayoutItemMapOverview("Ausschnitt Hauptkarte", overview_map)
+    # extent_indicator.setLinkedMap(linked_map)
+    # extent_indicator.setFrameSymbol(...)
+    # overview_map.overviews().addOverview(extent_indicator)
     overview_map.refresh()
 
     title_width = 24
@@ -631,11 +651,11 @@ def add_overview_map(
         layout,
         "Lage in Bayern",
         title_x,
-        title_y + 0.6,
+        title_y + 1.0,
         7,
         True,
         title_width,
-        title_height,
+        title_height - 0.2,
     )
     title_label.setHAlign(Qt.AlignCenter)
 
@@ -735,6 +755,7 @@ def create_pdf_layout(
     # The map item is configured before it is added to the layout. This follows
     # the QGIS print layout documentation and avoids unwanted square map items.
     map_item = QgsLayoutItemMap(layout)
+    map_item.setId("Hauptkarte")
     visible_layers = ordered_project_layers(project)
     map_item.setLayers(visible_layers)
 
@@ -820,7 +841,10 @@ def create_pdf_layout(
     # 2.6 Add north arrow and scale components
     # -------------------------------------------------------------------------
     if layout_config.get("overview_map_enabled", False):
-        overview = create_overview_layers(project, boundary_layer, municipality_name)
+        overview = create_overview_layers(
+            project,
+            municipality_name,
+        )
 
         if overview is None:
             overview_layers = visible_layers
@@ -834,8 +858,8 @@ def create_pdf_layout(
             project,
             overview_layers,
             overview_extent,
-            map_x,
-            map_y,
+            layout_config["overview_map_x"],
+            layout_config["overview_map_y"],
             layout_config["overview_map_width"],
             layout_config["overview_map_height"],
         )
@@ -919,13 +943,19 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.8 Add footer information below map
     # -------------------------------------------------------------------------
+    footer_text = (
+        "Datenquellen: "
+        f"{map_config['sources']}\n"
+        "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
+    )
+    footer_text = "\n".join(
+        textwrap.fill(line, width=layout_config["footer_wrap_width"])
+        for line in footer_text.splitlines()
+    )
+
     add_label(
         layout,
-        (
-            "Datenquellen: "
-            f"{map_config['sources']}\n"
-            "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
-        ),
+        footer_text,
         map_x,
         footer_y,
         layout_config["footer_font_size"],
@@ -1013,3 +1043,4 @@ if __name__ == "__main__":
         main()
     finally:
         qgs.exitQgis()
+

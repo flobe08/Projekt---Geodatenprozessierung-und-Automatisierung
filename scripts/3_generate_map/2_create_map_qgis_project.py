@@ -1,5 +1,5 @@
 """
-Script 1: Create a QGIS map project.
+Script 2: Create a QGIS map project.
 
 Workflow:
 1. Load an OpenStreetMap web basemap.
@@ -206,12 +206,6 @@ def wind_ausschluss_osm_buffer_layer_name() -> str:
     """Return the wind exclusion validation layer for active OSM street buffers."""
 
     return "wind_ausschluss_osm_streets_puffer"
-
-
-def wind_ausschluss_osm_line_layer_name() -> str:
-    """Return the wind exclusion validation layer for OSM streets without buffer."""
-
-    return "wind_ausschluss_osm_streets_ohne_puffer"
 
 
 def osm_solar_ausschluss_layer_name() -> str:
@@ -571,8 +565,8 @@ def style_wind_osm_context_lines(layer: QgsVectorLayer) -> None:
 
     symbol = QgsLineSymbol.createSimple(
         {
-            "color": "95,95,95,210",
-            "width": "0.25",
+            "color": "110,110,110,220",
+            "width": "0.36",
         }
     )
     apply_symbol(layer, symbol)
@@ -731,12 +725,6 @@ def create_wind_map_project(municipality_name: str) -> None:
         wind_ausschluss_osm_buffer_layer_name(),
         f"{safe_name}_wind_ausschluss_gesamt - wind_ausschluss_osm_streets_puffer",
     )
-    wind_ausschluss_osm_line_layer = load_optional_vector_layer(
-        wind_ausschluss_file,
-        wind_ausschluss_osm_line_layer_name(),
-        f"{safe_name}_wind_ausschluss_gesamt - wind_ausschluss_osm_streets_ohne_puffer",
-    )
-
     # -------------------------------------------------------------------------
     # TODO: Future wind exclusion layers
     # These prepared exclusion layers already exist as processing outputs.
@@ -786,6 +774,8 @@ def create_wind_map_project(municipality_name: str) -> None:
 
     # Validation layers from the same GeoPackage are loaded but hidden by
     # default. They make the QGIS project explorable without changing the PDF.
+    # OSM street lines without active buffer are not duplicated here because
+    # they are loaded once as the visible main map layer "Straßen und Wege".
     validation_group_name = "Detail- und Attributlayer Wind-Ausschluss"
 
     if layer_has_features(wind_ausschluss_landuse_layer):
@@ -803,15 +793,6 @@ def create_wind_map_project(municipality_name: str) -> None:
             project,
             validation_group_name,
             wind_ausschluss_osm_buffer_layer,
-            visible=False,
-        )
-
-    if layer_has_features(wind_ausschluss_osm_line_layer):
-        style_wind_osm_context_lines(wind_ausschluss_osm_line_layer)
-        add_layer_to_group(
-            project,
-            validation_group_name,
-            wind_ausschluss_osm_line_layer,
             visible=False,
         )
 
@@ -841,17 +822,12 @@ def create_wind_map_project(municipality_name: str) -> None:
     wind_osm_context_layer = load_optional_vector_layer(
         wind_osm_context_file,
         osm_wind_ausschluss_layer_name(),
-        f"OSM Straßen Wind {municipality_name}",
+        f"Straßen und Wege {municipality_name}",
     )
 
     if layer_has_features(wind_osm_context_layer):
         style_wind_osm_context_lines(wind_osm_context_layer)
-        add_layer_to_group(
-            project,
-            "Detail- und Attributlayer OSM",
-            wind_osm_context_layer,
-            visible=False,
-        )
+        project.addMapLayer(wind_osm_context_layer)
 
     # Empty optional layers stay in the GeoPackage for a stable data structure,
     # but are skipped in the QGIS project to avoid visual clutter.
@@ -871,6 +847,8 @@ def create_wind_map_project(municipality_name: str) -> None:
     move_layer_to_top(project, vorrang_layer)
     if layer_has_features(wind_ausschluss_layer):
         move_layer_to_top(project, wind_ausschluss_layer)
+    if layer_has_features(wind_osm_context_layer):
+        move_layer_to_top(project, wind_osm_context_layer)
     if layer_has_features(naturschutz_wind_layer):
         move_layer_to_top(project, naturschutz_wind_layer)
     if layer_has_features(naturschutz_hart_layer):

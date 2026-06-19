@@ -22,7 +22,7 @@ LAYOUT_TEMPLATE = {
     "map_width": 210,
     "map_height": 175,
     "map_extent_scale": "auto",
-    "main_scale_step": 500,
+    "main_scale_step": 500, # Scale in 500 Step for round scale
     # Centered map title.
     "title_y": 7,
     "title_font_size": 14,
@@ -39,7 +39,7 @@ LAYOUT_TEMPLATE = {
     "description_y": 18,
     "description_font_size": 8,
     "description_height": 34,
-    "description_wrap_width": 38,
+    "description_wrap_width": 42,   # Description width for formating
     # Legend block in the right panel.
     "legend_y": 72,
     "legend_width": 58,
@@ -58,6 +58,8 @@ LAYOUT_TEMPLATE = {
     "north_arrow_inside_map": False,
     # Optional overview map / locator map.
     "overview_map_enabled": False,
+    "overview_map_x": 12,
+    "overview_map_y": 18,
     "overview_map_width": 32,
     "overview_map_height": 32,
     # Scale bar and metadata.
@@ -67,13 +69,13 @@ LAYOUT_TEMPLATE = {
     "date_y": 192,
     "metadata_font_size": 7,
     "footer_font_size": 6,
-    "footer_wrap_width": 350,
+    "footer_wrap_width": 1000,   # Source formating
 }
 
 
 TECHNOLOGY_CONFIG = {
     "wind": {
-        "title": "Potenzielle Standorte für Windkraftanlagen in {municipality}",
+        "title": "Windenergieflächen und Restriktionen in {municipality}",
         "description": (
             "Die Karte zeigt offizielle Vorrang- und Vorbehaltsgebiete für "
             "Windenergienutzung innerhalb der Gemeinde {municipality}. "
@@ -87,7 +89,7 @@ TECHNOLOGY_CONFIG = {
         "sources": (
             "Windflächen: Regionalplanung Bayern, WFS Regionalplanung "
             "(Vorranggebiet und Vorbehaltsgebiet Windenergienutzung), "
-            "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung.\n"
+            "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung.\t"
             "Naturschutz: Bayerisches Landesamt für Umwelt, Schutzgebiete und "
             "Natura-2000-Daten. Landnutzung: Amtliche tatsächliche Nutzung Bayern. "
             "Straßen: OpenStreetMap über Overpass.\n"
@@ -130,9 +132,9 @@ TECHNOLOGY_CONFIG = {
                 "outline_color": "196,150,35,180",
             },
             {
-                "label": "Straßen",
-                "color": "95,95,95,255",
-                "outline_color": "95,95,95,255",
+                "label": "Straßen und Wege",
+                "color": "110,110,110,255",
+                "outline_color": "110,110,110,255",
                 "symbol": "line",
             },
             {
@@ -163,7 +165,10 @@ TECHNOLOGY_CONFIG = {
         },
     },
     "solar": {
-        "title": "Potenzielle Standorte für Freiflächen-Photovoltaik in {municipality}",
+        "title": (
+            "Potenzial- und Planungskulissen für Freiflächen-Photovoltaik "
+            "in {municipality}"
+        ),
         "description": (
             "Die Karte zeigt zwei solarbezogene Randstreifen entlang von "
             "Autobahnen und Schienenwegen in {municipality}. Der 500-m-Bereich "
@@ -234,6 +239,10 @@ TECHNOLOGY_CONFIG = {
         "grid_distance_label": "Abstand: 500 m",
         "scale_units_per_segment": 1000,
         "layout_overrides": {
+            "title_font_size": 12,
+            "overview_map_enabled": True,
+            "overview_map_width": 72,
+            "overview_map_height": 58,
             "legend_height": 92,
             "grid_title_y": 152,
             "grid_row_y": 157,
