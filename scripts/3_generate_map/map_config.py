@@ -1,101 +1,96 @@
 """Technology-specific map text and legend configuration."""
 
-
-PLACEHOLDER_TEXT = (
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed eiusmod "
-    "tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim "
-    "veniam, quis nostrud exercitation ullamco laboris nisi ut aliquid ex ea "
-    "commodi consequat. Quis aute iure reprehenderit in voluptate velit esse "
-    "cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat "
-    "cupiditat non proident, sunt in culpa qui officia deserunt mollit anim "
-    "id est laborum."
-)
-
-
 # -----------------------------------------------------------------------------
 # Shared static PDF layout template
 # -----------------------------------------------------------------------------
 LAYOUT_TEMPLATE = {
     # Main map frame.
-    "map_x": 12,
+    "map_x": 6,
     "map_y": 18,
-    "map_width": 210,
+    "map_width": 216,
     "map_height": 175,
     "map_extent_scale": "auto",
-    "main_scale_step": 500, # Scale in 500 Step for round scale
+    "main_scale_step": 500,  # Scale in 500 steps for stable map scales.
     # Centered map title.
     "title_y": 7,
     "title_font_size": 14,
-    "title_width": 210,
+    "title_width": 216,
     "title_height": 8,
     # Data source footer below the map.
     "footer_y": 194.5,
     "footer_height": 12,
+    "footer_line_height": 3.4,
     # Right information panel with description, legend, scale and metadata.
-    "panel_x": 232,
+    "panel_x": 228,
     "panel_y": 18,
-    "panel_width": 58,
+    "panel_width": 63,
     # Description text at the top of the right panel.
     "description_y": 18,
     "description_font_size": 8,
     "description_height": 34,
-    "description_wrap_width": 42,   # Description width for formating
     # Legend block in the right panel.
     "legend_y": 72,
-    "legend_width": 58,
-    "legend_height": 60,
-    "legend_title_y": 75,
-    "legend_section_y": 83,
-    "legend_row_start_y": 89,
+    "legend_width": 63,
+    "legend_height": 95,
+    "legend_title_offset": 2,
+    "legend_section_offset": 9,
+    "legend_section_font_size": 9,
+    "legend_row_start_offset": 16,
     "legend_row_gap": 8,
     # Grid legend row.
-    "grid_title_y": 120,
-    "grid_row_y": 125,
+    "grid_title_gap_after_last_row": 10,
+    "grid_row_offset": 5,
     # North arrow. It can either live in the panel or inside the main map.
     "north_arrow_y": 147,
-    "north_arrow_width": 15,
-    "north_arrow_height": 15,
-    "north_arrow_inside_map": False,
+    "north_arrow_width": 18,
+    "north_arrow_height": 18,
+    "north_arrow_inside_map": True,
+    "north_arrow_map_margin": 3,
     # Optional overview map / locator map.
-    "overview_map_enabled": False,
-    "overview_map_x": 12,
+    "overview_map_enabled": True,
+    "overview_map_x": 6,
     "overview_map_y": 18,
-    "overview_map_width": 32,
-    "overview_map_height": 32,
+    "overview_map_width": 72,
+    "overview_map_height": 58,
     # Scale bar and metadata.
-    "scale_bar_y": 165,
-    "scale_text_y": 181,
-    "author_y": 188,
-    "date_y": 192,
+    "scale_bar_y": 176,
+    "scale_text_y": 190,
+    "author_y": 204,
+    "date_y": 208,
     "metadata_font_size": 7,
     "footer_font_size": 6,
-    "footer_wrap_width": 1000,   # Source formating
+    "debug_frames": False,
 }
-
 
 TECHNOLOGY_CONFIG = {
     "wind": {
         "title": "Windenergieflächen und Restriktionen in {municipality}",
         "description": (
-            "Die Karte zeigt offizielle Vorrang- und Vorbehaltsgebiete für "
-            "Windenergienutzung innerhalb der Gemeinde {municipality}. "
-            "Zusätzlich werden harte und windspezifische Naturschutz-"
-            "Restriktionen, weiche Konfliktflächen sowie Nutzungsausschlüsse "
-            "aus Landnutzung und Straßen dargestellt. Die Layer wurden aus "
-            "offiziellen Planungs-, Schutzgebiets- und Landnutzungsdaten sowie "
-            "OSM-Straßendaten abgeleitet und mit der amtlichen Gemeindegrenze "
+            "Die Karte zeigt offizielle Vorrang- und\n"
+            "Vorbehaltsgebiete für Windenergienutzung\n"
+            "innerhalb der Gemeinde {municipality}.\n\n"
+            "Zusätzlich werden harte und wind-\n"
+            "spezifische Naturschutz-Restriktionen,\n"
+            "weiche Konfliktflächen sowie Nutzungs-\n"
+            "ausschlüsse aus Landnutzung und Straßen\n"
+            "dargestellt.\n\n"
+            "Die Layer wurden aus offiziellen\n"
+            "Planungs-, Schutzgebiets- und\n"
+            "Landnutzungsdaten sowie OSM-\n"
+            "Straßendaten abgeleitet und mit\n"
+            "der amtlichen Gemeindegrenze\n"
             "verschnitten."
         ),
         "sources": (
-            "Windflächen: Regionalplanung Bayern, WFS Regionalplanung "
-            "(Vorranggebiet und Vorbehaltsgebiet Windenergienutzung), "
-            "https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung.\t"
-            "Naturschutz: Bayerisches Landesamt für Umwelt, Schutzgebiete und "
-            "Natura-2000-Daten. Landnutzung: Amtliche tatsächliche Nutzung Bayern. "
-            "Straßen: OpenStreetMap über Overpass.\n"
             "Gemeindegrenze: ALKIS Bayern, Bayerische Vermessungsverwaltung, "
             "https://geodaten.bayern.de. "
-            "Hintergrundkarte: OpenStreetMap."
+            "Naturschutz: LfU Bayern, Schutzgebiete und Natura-2000-Daten.\n"
+            "OSM: OpenStreetMap über Overpass."
+            "Nutzungsdaten: Amtliche tatsächliche Nutzung Bayern. "
+            "Windflächen: Regionalplanung Bayern, WFS Regionalplanung.\n"
+            "WFS: https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung.\n"
+            "Hintergrundkarte: OpenStreetMap.\n"
+            "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
         ),
         "legend_section": "Standortinformationen",
         "legend_items": [
@@ -127,7 +122,7 @@ TECHNOLOGY_CONFIG = {
                 "symbol": "stripe_box",
             },
             {
-                "label": "Weiche Naturschutz-Konfliktflächen",
+                "label": "Weiche Naturschutzflächen",
                 "color": "245,210,80,90",
                 "outline_color": "196,150,35,180",
             },
@@ -146,22 +141,7 @@ TECHNOLOGY_CONFIG = {
         "grid_distance_label": "Abstand: 500 m",
         "scale_units_per_segment": 1000,
         "layout_overrides": {
-            "panel_x": 225,
-            "panel_width": 66,
-            "legend_width": 66,
-            "legend_height": 100,
-            "grid_title_y": 155,
-            "grid_row_y": 160,
-            "north_arrow_inside_map": True,
-            "north_arrow_width": 18,
-            "north_arrow_height": 18,
-            "overview_map_enabled": True,
-            "overview_map_width": 72,
-            "overview_map_height": 58,
-            "scale_bar_y": 176,
-            "scale_text_y": 190,
-            "author_y": 204,
-            "date_y": 208,
+            "debug_frames": False,
         },
     },
     "solar": {
@@ -170,26 +150,34 @@ TECHNOLOGY_CONFIG = {
             "in {municipality}"
         ),
         "description": (
-            "Die Karte zeigt zwei solarbezogene Randstreifen entlang von "
-            "Autobahnen und Schienenwegen in {municipality}. Der 500-m-Bereich "
-            "bildet die EEG-Förderkulisse näherungsweise ab, der 200-m-Bereich "
-            "eine strengere BauGB-orientierte Privilegierung entlang von "
-            "Autobahnen und passend gefilterten Schienenwegen. Zusätzlich "
-            "werden harte und weiche Naturschutzflächen als Konfliktrahmen "
-            "dargestellt. Die amtliche Freiflächenkulisse des Energie-Atlas "
-            "Bayern wird als visuelle Referenz eingeblendet. Die Analyse-Layer "
-            "sind räumliche Näherungen und keine abschließende "
+            "Die Karte zeigt solare Planungs- und\n"
+            "Potenzialkulissen für {municipality}.\n\n"
+            "Dargestellt werden die PV-Freiflächenkulisse\n"
+            "des Energie-Atlas Bayern, ein eigener\n"
+            "500-m-Korridor als angenäherte\n"
+            "EEG-Förderkulisse sowie ein eigener\n"
+            "200-m-Korridor als angenäherte\n"
+            "BauGB-Privilegierung entlang relevanter\n"
+            "Verkehrsachsen.\n\n"
+            "Ergänzend werden harte und weiche\n"
+            "Naturschutzflächen als Konflikträume\n"
+            "gezeigt.\n\n"
+            "Die Ergebnisse sind räumliche\n"
+            "Näherungen und keine abschließende\n"
             "Genehmigungsprüfung."
         ),
         "sources": (
-            "Gemeindegrenze: ALKIS Bayern. OSM-Verkehrsachsen: OpenStreetMap "
-            "über Overpass. Förderkulisse: angenähert nach EEG 2023 "
-            "Paragraf 37 Abs. 1 Nr. 2 Buchstabe c. Privilegierung: "
-            "angenähert nach BauGB Paragraf 35 Abs. 1 Nr. 8 Buchstabe b. "
-            "Naturschutz: Bayerisches Landesamt für Umwelt, Schutzgebiete und "
-            "Natura-2000-Daten. Amtliche Referenz: Energie-Atlas Bayern, "
-            "Planungsgrundlagen Solar (PV-Freiflächenkulisse Zoomstufe 1 und "
-            "2) als WMS."
+            "Gemeindegrenze: ALKIS Bayern, Bayerische Vermessungsverwaltung, "
+            "https://geodaten.bayern.de. "
+            "Naturschutz: LfU Bayern, Schutzgebiete und Natura-2000-Daten. "
+            "OSM: OpenStreetMap über Overpass. "
+            "Nutzungsdaten: Amtliche tatsächliche Nutzung Bayern. "
+            "Solarflächen: Energie-Atlas Bayern, Planungsgrundlagen Solar. "
+            "WMS: https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar. "
+            "Solar-Korridore: eigene Näherung nach EEG 2023 § 37 Abs. 1 Nr. 2c "
+            "und BauGB § 35 Abs. 1 Nr. 8b.\n"
+            "Hintergrundkarte: OpenStreetMap.\n"
+            "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
         ),
         "legend_section": "Analyse und Referenz",
         "legend_items": [
@@ -225,7 +213,7 @@ TECHNOLOGY_CONFIG = {
                 "symbol": "stripe_box",
             },
             {
-                "label": "Weiche Naturschutz-Konfliktflächen",
+                "label": "Weiche Naturschutzflächen",
                 "color": "245,210,80,90",
                 "outline_color": "196,150,35,180",
             },
@@ -239,24 +227,30 @@ TECHNOLOGY_CONFIG = {
         "grid_distance_label": "Abstand: 500 m",
         "scale_units_per_segment": 1000,
         "layout_overrides": {
+            "debug_frames": False,
             "title_font_size": 12,
-            "overview_map_enabled": True,
-            "overview_map_width": 72,
-            "overview_map_height": 58,
-            "legend_height": 92,
-            "grid_title_y": 152,
-            "grid_row_y": 157,
-            "north_arrow_y": 171,
-            "scale_bar_y": 188,
-            "scale_text_y": 204,
-            "author_y": 210,
-            "date_y": 214,
+            "legend_y": 80,
+            "legend_height": 88,
+            "legend_section_font_size": 8,
+            "legend_row_gap": 7,
         },
     },
     "wasser": {
         "title": "Potenzielle Standorte für Wasserkraftanlagen in {municipality}",
-        "description": PLACEHOLDER_TEXT,
-        "sources": PLACEHOLDER_TEXT,
+        "description": (
+            "Die Wasserkarte ist aktuell als\n"
+            "Platzhalter für den späteren Workflow\n"
+            "vorbereitet. Wasserbezogene Daten,\n"
+            "Schutzflächen und Konfliktflächen\n"
+            "werden in einem nächsten Schritt ergänzt."
+        ),
+        "sources": (
+            "Gemeindegrenze: ALKIS Bayern, Bayerische Vermessungsverwaltung, "
+            "https://geodaten.bayern.de.\n"
+            "Wasserdaten: TODO, noch nicht im aktiven Workflow umgesetzt.\n"
+            "Hintergrundkarte: OpenStreetMap. "
+            "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
+        ),
         "legend_section": "Standortinformationen",
         "legend_items": [
             {
@@ -267,7 +261,9 @@ TECHNOLOGY_CONFIG = {
         ],
         "grid_distance_label": "Abstand: 500 m",
         "scale_units_per_segment": 1000,
-        "layout_overrides": {},
+        "layout_overrides": {
+            "debug_frames": True,
+        },
     },
 }
 

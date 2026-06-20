@@ -1,15 +1,16 @@
-"""
-Script 2: Download solar WMS reference rasters for one municipality.
+﻿"""
+Script 3: Download solar WMS reference rasters for one municipality.
 
 Workflow:
-1. Read the municipality boundary from script 2.
+1. Read the municipality boundary from shared prepare-data script 2.
 2. Build one municipality bounding box in EPSG:25832.
 3. Request the official solar WMS layers for that bounding box.
 4. Save the WMS images as georeferenced PNG reference rasters.
-5. Keep these rasters as visual comparison layers before the buffer workflow.
+5. Keep these rasters as visual comparison layers in the QGIS project.
 """
 
 from pathlib import Path
+import argparse
 import json
 import math
 import sys
@@ -29,10 +30,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # =============================================================================
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/solar_reference"
+OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_solar/reference"
 
 WMS_BASE_URL = "https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar"
 WMS_VERSION = "1.3.0"
@@ -340,8 +341,8 @@ def download_solar_reference_wms(municipality_name: str) -> None:
     log_success("Solar WMS reference download finished.")
 
 
-def main() -> None:
-    """Run the WMS reference download for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Download official solar WMS reference rasters for one municipality."
@@ -352,7 +353,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the WMS reference download for one municipality."""
+
+    args = parse_arguments()
     download_solar_reference_wms(args.municipality)
 
 

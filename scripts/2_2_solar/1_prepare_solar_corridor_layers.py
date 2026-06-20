@@ -1,8 +1,8 @@
-"""
-Script 2: Prepare solar corridor layers.
+﻿"""
+Script 1: Prepare solar corridor layers.
 
 Workflow:
-1. Read the municipality boundary from script 2.
+1. Read the municipality boundary from shared prepare-data script 2.
 2. Read the solar corridor basis from prepare-data script 5.
 3. Build one broad 500 m EEG transport basis.
 4. Build one stricter 200 m BauGB transport basis.
@@ -11,6 +11,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import re
 import sys
 
@@ -27,10 +28,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # =============================================================================
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
-# input/output
-OUTPUT_DIR = BASE_DIR / "data/processed/solar"
+# input
+CORRIDOR_DIR = BASE_DIR / "data/processed/2_technology_solar/corridor"
+
+# output
+OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_solar"
 
 
 # =============================================================================
@@ -283,7 +287,7 @@ def prepare_solar_corridor_layers(municipality_name: str) -> None:
 
     safe_name = safe_filename(municipality_name)
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
-    osm_file = OUTPUT_DIR / f"{safe_name}_solar_corridor_basis.gpkg"
+    osm_file = CORRIDOR_DIR / f"{safe_name}_solar_corridor_basis.gpkg"
     output_file = OUTPUT_DIR / f"{safe_name}_solar_layers.gpkg"
 
     if not boundary_file.exists():
@@ -367,8 +371,8 @@ def prepare_solar_corridor_layers(municipality_name: str) -> None:
     log_success("Solar corridor layer preparation finished.")
 
 
-def main() -> None:
-    """Run the solar corridor layer preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Prepare solar corridor, motorway, railway and buffer layers."
@@ -379,7 +383,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the solar corridor layer preparation for one municipality."""
+
+    args = parse_arguments()
     prepare_solar_corridor_layers(args.municipality)
 
 

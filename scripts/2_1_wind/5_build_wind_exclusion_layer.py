@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 5: Build one combined wind exclusion layer.
 
 Workflow:
@@ -10,6 +10,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import sys
 
 import geopandas as gpd
@@ -30,10 +31,10 @@ from utils import ColoredArgumentParser, log_info, log_success, log_warning
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
 # input/output
-WIND_OUTPUT_DIR = BASE_DIR / "data/processed/wind"
+WIND_OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_wind"
 
 
 # =============================================================================
@@ -306,8 +307,8 @@ def build_wind_exclusion_layer(municipality_name: str) -> None:
     log_success("Combined wind exclusion layer finished.")
 
 
-def main() -> None:
-    """Run wind exclusion layer preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Build one combined wind exclusion layer."
@@ -318,7 +319,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run wind exclusion layer preparation for one municipality."""
+
+    args = parse_arguments()
     build_wind_exclusion_layer(args.municipality)
 
 

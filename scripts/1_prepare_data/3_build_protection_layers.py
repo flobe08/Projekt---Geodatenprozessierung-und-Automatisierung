@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 3: Build municipality protection layers.
 
 Workflow:
@@ -20,6 +20,7 @@ Ausschlussflächen sind die flächenhaften Datensätze methodisch sauberer.
 """
 
 from pathlib import Path
+import argparse
 import re
 import sys
 
@@ -39,13 +40,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 SCHUTZGEBIETE_RAW_DIR = BASE_DIR / "data/raw/schutzgebiete"
 NATURA2000_RAW_DIR = SCHUTZGEBIETE_RAW_DIR / "natura2000"
 WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/schutzgebiete"
+OUTPUT_DIR = BASE_DIR / "data/processed/1_base_protection_areas"
 
 HARD_DATASET_DIRS = {
     "naturschutzgebiete": SCHUTZGEBIETE_RAW_DIR / "naturschutzgebiete",
@@ -500,8 +501,8 @@ def build_protection_layers_for_municipality(municipality_name: str) -> None:
     log_success("Protection layer processing finished.")
 
 
-def main() -> None:
-    """Run the municipality protection processing."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Build hard and soft protection layers for one municipality."
@@ -512,7 +513,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the municipality protection processing."""
+
+    args = parse_arguments()
     build_protection_layers_for_municipality(args.municipality)
 
 

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 1: Clip all wind datasets to one municipality.
 
 Workflow:
@@ -13,6 +13,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import re
 import sys
 
@@ -30,13 +31,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 WIND_RAW_DIR = BASE_DIR / "data/raw/wind"
 WIND_VORRANG_FILE = WIND_RAW_DIR / "wind_vorranggebiete.gpkg"
 WIND_VORBEHALT_FILE = WIND_RAW_DIR / "wind_vorbehaltsgebiete.gpkg"
 
 # output
-WIND_PROCESSED_DIR = BASE_DIR / "data/processed/wind"
+WIND_PROCESSED_DIR = BASE_DIR / "data/processed/2_technology_wind"
 
 
 def safe_filename(name: str) -> str:
@@ -261,7 +262,9 @@ def clip_wind_datasets_for_municipality(municipality_name: str) -> None:
     log_success("Wind dataset clipping finished.")
 
 
-def main() -> None:
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
+
     parser = ColoredArgumentParser(
         description="Clip all wind datasets to one municipality."
     )
@@ -271,7 +274,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run wind dataset clipping for one municipality."""
+
+    args = parse_arguments()
     clip_wind_datasets_for_municipality(args.municipality)
 
 

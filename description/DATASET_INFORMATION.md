@@ -1,4 +1,4 @@
-# Datensatzinformationen
+﻿# Datensatzinformationen
 
 Diese Datei dokumentiert die wichtigsten Eingabedaten der Pipeline.
 
@@ -32,7 +32,7 @@ Hinweis:
 - das Original bleibt unter `data/raw/landuse/landnutzung.gpkg` unverändert
 - der Output ist ein kleinerer Gemeinde-Arbeitsdatensatz mit den einzelnen
   zugeschnittenen `ln_*`-Layern:
-  `data/processed/landuse/landnutzung_<gemeinde>.gpkg`
+  `data/processed/1_base_landuse/landnutzung_<gemeinde>.gpkg`
 - methodisch wird der vollständige offizielle Bayern-Datensatz einmal lokal
   vorgehalten, weil ein echter Teil-Download nur für eine Gemeinde über das
   große GeoPackage nicht zuverlässig möglich ist
@@ -138,9 +138,9 @@ Output:
 
 Datei:
 
-- `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg`
-- `data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg`
-- `data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg`
+- `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_hart.gpkg`
+- `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_weich.gpkg`
+- `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_wind.gpkg`
 
 Hinweis:
 
@@ -214,7 +214,7 @@ Output:
 
 Datei:
 
-- `data/processed/wind/<gemeinde>_wind_layers.gpkg`
+- `data/processed/2_technology_wind/<gemeinde>_wind_layers.gpkg`
 
 ## Solar
 
@@ -252,14 +252,13 @@ Output:
 
 Datei:
 
-- `data/processed/solar/<gemeinde>_solar_layers.gpkg`
+- `data/processed/2_technology_solar/<gemeinde>_solar_layers.gpkg`
 
 Zusätzliche Arbeitslayer:
 
-- `data/processed/solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
-- `data/processed/solar/<gemeinde>_landuse_solar_potenzial.gpkg`
-- `data/processed/solar/<gemeinde>_landuse_solar_geeignet.gpkg`
-- `data/processed/solar/<gemeinde>_landuse_solar_unused.gpkg`
+- `data/processed/2_technology_solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
+- `data/processed/2_technology_solar/<gemeinde>_landuse_solar_pv_freiflaechen_naehung_vektorlayer.gpkg`
+- `data/processed/2_technology_solar/<gemeinde>_landuse_solar_unused.gpkg`
 
 ## OSM-Netzdaten als gemeinsamer Eingangsdatenblock
 
@@ -285,8 +284,8 @@ Hinweis:
 
 Typische Output-Dateien:
 
-- `data/processed/osm_streets/<gemeinde>_osm_streets.gpkg`
-- `data/processed/solar/<gemeinde>_solar_corridor_basis.gpkg`
+- `data/processed/1_base_osm_streets/<gemeinde>_osm_streets.gpkg`
+- `data/processed/2_technology_solar/corridor/<gemeinde>_solar_corridor_basis.gpkg`
 
 ## Wasser
 

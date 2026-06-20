@@ -1,36 +1,38 @@
-﻿# Reproduzierbarer Energie-Workflow fÃ¼r eine Gemeinde
+﻿# Reproduzierbarer Energie-Workflow für eine Gemeinde
 
-Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow fÃ¼r eine
-ausgewÃ¤hlte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow**
-durchgÃ¤ngig umgesetzt. Der **Solar-Workflow** wird vorbereitet und basiert auf
-OSM-Verkehrsachsen sowie rechtlichen 200-m- und 500-m-Pufferzonen.
+Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow für eine
+ausgewählte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow** als
+Referenzworkflow durchgängig umgesetzt. Der **Solar-Workflow** ist strukturell
+angebunden und basiert auf OSM-Verkehrsachsen, amtlichen WMS-Referenzlayern
+sowie rechtlichen 200-m- und 500-m-Pufferzonen. **Wasser** ist als
+Platzhalter/TODO vorbereitet.
 
 ## Zentrale Fragestellung
 
-Welche rÃ¤umlichen Potenzial- und KonfliktflÃ¤chen fÃ¼r erneuerbare Energien
-lassen sich fÃ¼r eine Gemeinde automatisiert aus offenen Geodaten ableiten und
+Welche räumlichen Potenzial- und Konfliktflächen für erneuerbare Energien
+lassen sich für eine Gemeinde automatisiert aus offenen Geodaten ableiten und
 kartografisch darstellen?
 
 Das Projekt beantwortet damit nicht die Frage, wo eine Anlage rechtsverbindlich
-genehmigt werden darf. Ziel ist eine reproduzierbare Pipeline, die fÃ¼r eine
-ausgewÃ¤hlte bayerische Gemeinde relevante offene Geodaten automatisch sammelt,
+genehmigt werden darf. Ziel ist eine reproduzierbare Pipeline, die für eine
+ausgewählte bayerische Gemeinde relevante offene Geodaten automatisch sammelt,
 harmonisiert, zuschneidet und kartografisch ausgibt.
 
-Die Karten zeigen, welche FlÃ¤chen aus Sicht von Raumplanung,
-Energieinfrastruktur, Landnutzung und Naturschutz fÃ¼r Windenergie,
-FreiflÃ¤chen-Photovoltaik und wasserbezogene Planung besonders relevant oder
+Die Karten zeigen, welche Flächen aus Sicht von Raumplanung,
+Energieinfrastruktur, Landnutzung und Naturschutz für Windenergie,
+Freiflächen-Photovoltaik und wasserbezogene Planung besonders relevant oder
 konfliktbehaftet sind.
 
 Die einzelnen Karten beantworten dabei:
 
 - **Windkarte:** Wo liegen offizielle regionalplanerische
-  WindenergieflÃ¤chen innerhalb der Gemeinde und welche allgemeinen bzw.
-  windspezifischen RestriktionsflÃ¤chen Ã¼berschneiden oder begrenzen diese?
+  Windenergieflächen innerhalb der Gemeinde und welche allgemeinen bzw.
+  windspezifischen Restriktionsflächen überschneiden oder begrenzen diese?
 - **Solarkarte:** Wo liegen potenziell relevante
-  FreiflÃ¤chen-Photovoltaikbereiche in der Gemeinde und wie verhalten sie sich
-  zu 200-m-/500-m-Randstreifen sowie Naturschutz-KonfliktflÃ¤chen?
+  Freiflächen-Photovoltaikbereiche in der Gemeinde und wie verhalten sie sich
+  zu 200-m-/500-m-Randstreifen sowie Naturschutz-Konfliktflächen?
 - **Wasserkarte:** Welche wasserbezogenen Infrastruktur-, Schutz- und
-  KonfliktflÃ¤chen liegen innerhalb der Gemeinde und welche Bereiche sind fÃ¼r
+  Konfliktflächen liegen innerhalb der Gemeinde und welche Bereiche sind für
   eine weitere wasserbezogene Energie- oder Planungsanalyse relevant?
 
 ## Setup
@@ -39,6 +41,7 @@ Empfohlenes System:
 
 - Windows mit **WSL / Ubuntu**
 - QGIS in WSL installiert
+- Verwendete QGIS-Version im Projekt: **QGIS 4.0 Norrköping**
 
 WSL starten:
 
@@ -59,7 +62,7 @@ sudo apt update
 sudo apt install python3 python3-venv python3-pip qgis python3-qgis
 ```
 
-Python-Umgebung fÃ¼r die Datenvorbereitung anlegen:
+Python-Umgebung für die Datenvorbereitung anlegen:
 
 ```bash
 python3 -m venv .venv-wsl
@@ -67,6 +70,25 @@ source .venv-wsl/bin/activate
 pip install -r requirements.txt
 deactivate
 ```
+
+Installation prüfen:
+
+```bash
+python3 --version
+qgis --version
+source .venv-wsl/bin/activate
+python3 -c "import geopandas; print('geopandas ok')"
+deactivate
+python3 -c "from qgis.core import QgsApplication; print('qgis ok')"
+```
+
+Wichtig zur Python-Umgebung:
+
+- Die Datenvorbereitung läuft in der lokalen Umgebung `.venv-wsl`.
+- Die Kartenerzeugung läuft außerhalb von `.venv-wsl` mit dem System-/QGIS-Python.
+- Deshalb wird vor `scripts/3_generate_map.py` immer `deactivate` ausgeführt.
+- Wenn `from qgis.core import QgsApplication` fehlschlägt, fehlen meistens
+  `qgis` oder `python3-qgis`.
 
 ## Schnellstart
 
@@ -78,10 +100,39 @@ bash run_workflow.sh Drachselsried wind
 
 Hinweis:
 
-- Der erste vollstÃ¤ndige Durchlauf kann deutlich lÃ¤nger dauern.
-- Grund dafÃ¼r sind mehrere groÃŸe Bayern-DatensÃ¤tze.
-- Vor allem die offizielle Landnutzung wird lokal als groÃŸer Datensatz
-  vorgehalten und liegt ungefÃ¤hr im Bereich von 5 bis 6 GB.
+- Der erste vollständige Durchlauf kann deutlich länger dauern.
+- Grund dafür sind mehrere große Bayern-Datensätze.
+- Vor allem die offizielle Landnutzung wird lokal als großer Datensatz
+  vorgehalten und liegt ungefähr im Bereich von 5 bis 6 GB.
+
+## Ergebnisstruktur
+
+Die automatisch erzeugten Daten liegen unter `data/processed/`. Die Ordner sind
+nach Verarbeitungsebene nummeriert, damit Basisdaten, technologiespezifische
+Zwischenergebnisse und finale Ausgaben klar getrennt bleiben:
+
+```text
+data/processed/
+  1_base_boundaries/
+  1_base_landuse/
+  1_base_osm_streets/
+  1_base_overview/
+  1_base_protection_areas/
+
+  2_technology_wind/
+  2_technology_solar/
+
+  3_qgis_projects/
+  3_maps/
+```
+
+Im Solar-Ordner werden die Korridorgrundlage und die amtlichen
+WMS-Referenzbilder zusätzlich getrennt abgelegt:
+
+```text
+data/processed/2_technology_solar/corridor/
+data/processed/2_technology_solar/reference/
+```
 
 ## Hauptskripte
 
@@ -99,7 +150,7 @@ QGIS-Projekt und PDF-Karte erzeugen:
 python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 ```
 
-## Manuelle AusfÃ¼hrung ohne Bash-Skript
+## Manuelle Ausführung ohne Bash-Skript
 
 Wenn du jeden Schritt einzeln starten willst, erreichst du dasselbe Ergebnis
 mit diesen Befehlen.
@@ -133,25 +184,50 @@ python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality
 python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
 python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology solar
-python3 scripts/2_2_solar/4_prepare_solar_osm_streets.py --municipality Drachselsried
-python3 scripts/2_2_solar/2_prepare_solar_corridor_layers.py --municipality Drachselsried
-python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
+python3 scripts/2_2_solar/1_prepare_solar_corridor_layers.py --municipality Drachselsried
+python3 scripts/2_2_solar/2_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
-python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
+python3 scripts/2_2_solar/3_download_solar_reference_wms.py --municipality Drachselsried
 python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
 python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology solar
 python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology solar
+```
+
+Hinweis: `3_download_solar_reference_wms.py` nutzt PyQGIS und wird deshalb
+außerhalb der `.venv-wsl` mit dem QGIS-/System-Python ausgeführt.
+
+## Troubleshooting
+
+Wenn `python3` nicht gefunden wird:
+
+```bash
+sudo apt update
+sudo apt install python3 python3-venv python3-pip
+```
+
+Wenn `qgis` oder `from qgis.core import QgsApplication` nicht funktioniert:
+
+```bash
+sudo apt update
+sudo apt install qgis python3-qgis
+```
+
+Wenn PowerShell Befehle wie `source .venv-wsl/bin/activate` nicht erkennt,
+läuft der Befehl wahrscheinlich außerhalb von WSL. Dann zuerst WSL starten:
+
+```powershell
+wsl -d Ubuntu
 ```
 
 ## Wichtige Hinweise
 
 - `.venv-wsl` ist eine **lokale** Umgebung und wird **nicht** in Git
   eingecheckt.
-- GroÃŸe Roh- und Ergebnisdaten unter `data/` werden ebenfalls nicht normal in
+- Große Roh- und Ergebnisdaten unter `data/` werden ebenfalls nicht normal in
   Git versioniert.
-- Die genaue Schritt-fÃ¼r-Schritt-Anleitung steht in
-  [ANLEITUNG.md](ANLEITUNG.md).
-- Die manuelle DatenprÃ¼fung und Verifikation steht in
+- Die genaue Schritt-für-Schritt-Anleitung steht in
+  [Anleitung.md](Anleitung.md).
+- Die manuelle Datenprüfung und Verifikation steht in
   [description/VERIFIKATION.md](description/VERIFIKATION.md).
 - Die Workflow-Diagramme mit den Log-Step-Namen stehen in
   [description/WORKFLOW_DIAGRAMME.md](description/WORKFLOW_DIAGRAMME.md).

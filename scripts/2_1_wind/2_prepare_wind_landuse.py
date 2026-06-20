@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 2: Prepare wind-specific landuse layers.
 
 Workflow:
@@ -9,6 +9,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
@@ -31,7 +32,7 @@ from utils import ColoredArgumentParser, log_detail, log_info, log_success
 # input is resolved in landuse_utils.load_official_landuse()
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/wind"
+OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_wind"
 
 
 # =============================================================================
@@ -168,8 +169,8 @@ def prepare_wind_landuse(municipality_name: str) -> None:
     log_success("Wind landuse preparation finished.")
 
 
-def main() -> None:
-    """Run the wind landuse preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Prepare wind-specific landuse layers for one municipality."
@@ -180,7 +181,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the wind landuse preparation for one municipality."""
+
+    args = parse_arguments()
     prepare_wind_landuse(args.municipality)
 
 

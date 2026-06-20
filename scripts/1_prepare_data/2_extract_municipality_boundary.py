@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 2: Extract municipality boundary.
 
 This script reads the Bavarian administrative boundary dataset and extracts
@@ -6,6 +6,7 @@ one selected municipality as a GeoPackage for all following processing steps.
 """
 
 from pathlib import Path
+import argparse
 import geopandas as gpd
 import sys
 
@@ -25,7 +26,7 @@ INPUT_FILE = (
 )
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/boundaries"
+OUTPUT_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
 
 # -----------------------------------------------------------------------------
@@ -109,7 +110,12 @@ def extract_municipality(municipality_name: str) -> None:
     log_success("Municipality boundary extraction finished.")
 
 
-if __name__ == "__main__":
+# -----------------------------------------------------------------------------
+# Command line entry point
+# -----------------------------------------------------------------------------
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
+
     parser = ColoredArgumentParser(
         description="Extract a municipality boundary from the Bavarian administrative dataset."
     )
@@ -120,5 +126,15 @@ if __name__ == "__main__":
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Extract the selected municipality boundary."""
+
+    args = parse_arguments()
     extract_municipality(args.municipality)
+
+
+if __name__ == "__main__":
+    main()

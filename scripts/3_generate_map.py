@@ -1,4 +1,4 @@
-﻿"""
+"""
 Generate map entry point.
 
 This script runs the QGIS map generation steps for one selected municipality.
@@ -101,26 +101,36 @@ def generate_map(municipality: str, technology: str) -> None:
     # =========================================================================
     # Wasser
     # =========================================================================
-    # Hydropower is structurally prepared already. The shared map scripts are
-    # called in the same way, once the required water layers are available.
+    # Water is kept as TODO/TBD until the required water-specific layers are
+    # implemented.
 
-    run_script(
-        "Step 3.1: Prepare overview map layers",
-        "1_prepare_overview_layers.py",
-        ["--municipality", municipality],
-    )
+    if technology == "wasser":
+        log_section("Step 3.x: Water map generation")
+        log_info(
+            "Water map generation is TODO/TBD and is intentionally not "
+            "executed yet."
+        )
+        return
 
     if technology == "solar":
         run_script(
-            "Step 3.2: Download solar WMS reference rasters",
-            "2_2_solar/1_download_solar_reference_wms.py",
+            "Step 3.1: Download solar WMS reference rasters",
+            "2_2_solar/3_download_solar_reference_wms.py",
             ["--municipality", municipality],
         )
+        overview_step = "Step 3.2: Prepare overview map layers"
         create_project_step = "Step 3.3: Create QGIS map project"
         generate_pdf_step = "Step 3.4: Generate map PDF"
     else:
+        overview_step = "Step 3.1: Prepare overview map layers"
         create_project_step = "Step 3.2: Create QGIS map project"
         generate_pdf_step = "Step 3.3: Generate map PDF"
+
+    run_script(
+        overview_step,
+        "1_prepare_overview_layers.py",
+        ["--municipality", municipality],
+    )
 
     run_script(
         create_project_step,

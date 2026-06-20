@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 4: Prepare wind-specific OSM street layers.
 
 Workflow:
@@ -10,6 +10,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import re
 import sys
 
@@ -26,10 +27,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # =============================================================================
 # input
-OSM_STREETS_DIR = BASE_DIR / "data/processed/osm_streets"
+OSM_STREETS_DIR = BASE_DIR / "data/processed/1_base_osm_streets"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/wind"
+OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_wind"
 
 
 WIND_STREET_AUSSCHLUSS = {
@@ -320,8 +321,8 @@ def prepare_wind_osm_streets(municipality_name: str) -> None:
     log_success("Wind OSM street preparation finished.")
 
 
-def main() -> None:
-    """Run the wind OSM street preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Prepare wind-specific OSM street exclusion data."
@@ -332,7 +333,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the wind OSM street preparation for one municipality."""
+
+    args = parse_arguments()
     prepare_wind_osm_streets(args.municipality)
 
 

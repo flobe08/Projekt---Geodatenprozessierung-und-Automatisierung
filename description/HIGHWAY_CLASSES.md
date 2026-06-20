@@ -1,4 +1,4 @@
-# Highway-Klassen
+﻿# Highway-Klassen
 
 Diese Datei dokumentiert, wie OpenStreetMap-Verkehrsdaten in der Pipeline
 verwendet werden.
@@ -47,8 +47,8 @@ Das Skript lädt für alle Technologien zuerst einen gemeinsamen
 Straßenbasisdatensatz:
 
 ```text
-data/processed/osm_streets/<gemeinde>_osm_streets.gpkg
-data/processed/osm_streets/<gemeinde>_osm_streets_raw.json
+data/processed/1_base_osm_streets/<gemeinde>_osm_streets.gpkg
+data/processed/1_base_osm_streets/<gemeinde>_osm_streets_raw.json
 ```
 
 Layer:
@@ -103,8 +103,8 @@ scripts/2_1_wind/4_prepare_wind_osm_streets.py
 Output:
 
 ```text
-data/processed/wind/<gemeinde>_osm_wind_streets.gpkg
-data/processed/wind/<gemeinde>_osm_wind_streets_puffer.gpkg
+data/processed/2_technology_wind/<gemeinde>_osm_wind_streets.gpkg
+data/processed/2_technology_wind/<gemeinde>_osm_wind_streets_puffer.gpkg
 ```
 
 Layer:
@@ -132,60 +132,28 @@ service, track, road
 Diese kleineren oder unklaren Wege bleiben im Rohlayer erhalten und können
 später manuell geprüft oder mit eigenen Puffern verarbeitet werden.
 
-Zus�tzlich wird aus dem gefilterten Linienlayer ein erster Pufferlayer
+Zus�tzlich wird aus dem gefilterten Linienlayer ein erster Pufferlayer
 erzeugt. Die Pufferdistanz steht im Feld `buffer_m`. Die Werte sind
-Arbeitsannahmen f�r eine erste Ausschluss- bzw. Konfliktfl�che und k�nnen
-sp�ter fachlich angepasst werden.
+Arbeitsannahmen f�r eine erste Ausschluss- bzw. Konfliktfl�che und k�nnen
+sp�ter fachlich angepasst werden.
 
 ## 4. Solar
 
-Für Solar gibt es zwei getrennte OSM-Verwendungen.
-
-### 4.1 Solar-Straßenausschluss
-
-Aus dem gemeinsamen Rohlayer wird ein Solar-Straßenlayer abgeleitet:
+Für Solar wird OSM aktuell für die Korridorbasis nach EEG und BauGB verwendet.
+Das frühere Solar-Straßenausschluss-Skript bleibt als Reserve erhalten, ist
+aber nicht Teil des aktiven Solar-Workflows:
 
 ```text
-scripts/2_2_solar/4_prepare_solar_osm_streets.py
+scripts/2_2_solar/unused_prepare_solar_osm_streets.py
 ```
 
-Output:
+### 4.1 Solar-Korridorbasis für EEG und BauGB
+
+Script 5 erzeugt für Solar eine eigene Korridorgrundlage:
 
 ```text
-data/processed/solar/<gemeinde>_osm_solar_streets.gpkg
-data/processed/solar/<gemeinde>_osm_solar_streets_puffer.gpkg
-```
-
-Layer:
-
-```text
-osm_streets_solar_ausschluss
-osm_streets_solar_ausschluss_puffer
-```
-
-Die verwendeten Klassen entsprechen aktuell der Wind-Auswahl:
-
-```text
-motorway, motorway_link, trunk, trunk_link,
-primary, primary_link, secondary, secondary_link,
-tertiary, tertiary_link, unclassified,
-residential, living_street
-```
-
-Auch hier bleiben `service`, `track` und `road` zunächst nur im Rohlayer.
-
-Zus�tzlich wird ein Solar-Stra�enpuffer erzeugt. Dieser ist vom
-EEG-/BauGB-Korridor zu unterscheiden: Die 200-m- und 500-m-Solarkorridore
-werden aus Autobahnen und Schienenwegen abgeleitet, w�hrend der
-Stra�enpuffer ein separater Kontext- bzw. Ausschlusslayer ist.
-
-### 4.2 Solar-Korridorbasis für EEG und BauGB
-
-Zusätzlich erzeugt Script 5 für Solar eine eigene Korridorgrundlage:
-
-```text
-data/processed/solar/<gemeinde>_solar_corridor_basis.gpkg
-data/processed/solar/<gemeinde>_solar_corridor_basis_raw.json
+data/processed/2_technology_solar/corridor/<gemeinde>_solar_corridor_basis.gpkg
+data/processed/2_technology_solar/corridor/<gemeinde>_solar_corridor_basis_raw.json
 ```
 
 Layer:
@@ -199,7 +167,7 @@ solar_corridor_schienenwege_<gemeinde>
 Diese Korridorbasis wird von folgendem Skript weiterverarbeitet:
 
 ```text
-scripts/2_2_solar/2_prepare_solar_corridor_layers.py
+scripts/2_2_solar/1_prepare_solar_corridor_layers.py
 ```
 
 Fachlicher Bezug:
@@ -217,17 +185,10 @@ Diese Buffer sind keine rechtsverbindliche Einzelfallprüfung.
 
 Für Wasser ist OSM aktuell nur als vorbereitender Kontextlayer vorgesehen.
 
-Script:
+Script und Output:
 
 ```text
-scripts/2_3_wasser/2_prepare_water_osm_streets.py
-```
-
-Output:
-
-```text
-data/processed/wasser/<gemeinde>_osm_wasser_streets.gpkg
-data/processed/wasser/<gemeinde>_osm_wasser_streets_puffer.gpkg
+TODO: TBD: Wasser-spezifische OSM-Verarbeitung ist noch nicht umgesetzt.
 ```
 
 Layer:

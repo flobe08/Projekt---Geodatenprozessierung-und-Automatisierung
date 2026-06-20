@@ -1,4 +1,4 @@
-# Landnutzung: Layer und erste Einordnung
+﻿# Landnutzung: Layer und erste Einordnung
 
 Diese Datei dokumentiert die Layer des offiziellen Landnutzungsdatensatzes
 und wie sie im Wind-Workflow zunächst eingeordnet werden.
@@ -43,13 +43,13 @@ wird.
 Auf die Gemeinde zugeschnittener Landnutzungsdatensatz:
 
 ```text
-data/processed/landuse/landnutzung_<gemeinde>.gpkg
+data/processed/1_base_landuse/landnutzung_<gemeinde>.gpkg
 ```
 
 Beispiel:
 
 ```text
-data/processed/landuse/landnutzung_drachselsried.gpkg
+data/processed/1_base_landuse/landnutzung_drachselsried.gpkg
 ```
 
 ## Layer im Originaldatensatz

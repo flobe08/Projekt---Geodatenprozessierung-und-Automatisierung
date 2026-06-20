@@ -1,4 +1,4 @@
-# Landnutzung nach Technologie
+﻿# Landnutzung nach Technologie
 
 Diese Datei dokumentiert, wie die offiziellen Landnutzungs-Layer für die
 weiteren Technologien fachlich eingeordnet werden können.
@@ -88,55 +88,56 @@ Hinweis:
   offizielle Landnutzungsklasse auch kleinere Wege enthalten kann und damit
   für einen pauschalen Ausschluss zu grob wäre.
 - Die Wind-Landnutzung wird als vier separate Dateien geschrieben:
-  - `data/processed/wind/<gemeinde>_landuse_wind_ausschluss.gpkg`
-  - `data/processed/wind/<gemeinde>_landuse_wind_potenzial.gpkg`
-  - `data/processed/wind/<gemeinde>_landuse_wind_geeignet.gpkg`
-  - `data/processed/wind/<gemeinde>_landuse_wind_unused.gpkg`
+  - `data/processed/2_technology_wind/<gemeinde>_landuse_wind_ausschluss.gpkg`
+  - `data/processed/2_technology_wind/<gemeinde>_landuse_wind_potenzial.gpkg`
+  - `data/processed/2_technology_wind/<gemeinde>_landuse_wind_geeignet.gpkg`
+  - `data/processed/2_technology_wind/<gemeinde>_landuse_wind_unused.gpkg`
 
 
 ### Solar
 
 #### `landuse_solar_ausschluss`
 
-- `ln_wohnnutzung`
-- `ln_bestattung`
-- `ln_oeffentlicheeinrichtungen`
-- `ln_sportanlage`
-- `ln_freizeitanlage`
-- `ln_freiluftundnaherholung`
-- `ln_bahnverkehr`
-- `ln_flugverkehr`
-- `ln_schiffsverkehr`
-- `ln_wasserwirtschaft`
 - `ln_aquakulturundfischereiwirtschaft`
-- `ln_strassenundwegeverkehr`
+- `ln_bahnverkehr`
+- `ln_bestattung`
+- `ln_flugverkehr`
 - `ln_forstwirtschaft`
+- `ln_freiluftundnaherholung`
+- `ln_freizeitanlage`
 - `ln_gewerblichedienstleistungen`
 - `ln_industrieundverarbeitendesgewerbe`
-- `ln_versorgungundentsorgung`
 - `ln_kulturundunterhaltung`
+- `ln_lagerung`
+- `ln_oeffentlicheeinrichtungen`
+- `ln_schiffsverkehr`
+- `ln_sportanlage`
+- `ln_strassenundwegeverkehr`
+- `ln_versorgungundentsorgung`
+- `ln_wasserwirtschaft`
+- `ln_wohnnutzung`
 
-#### `landuse_solar_potenzial`
-
-- `ln_landwirtschaft`
-- `ln_ohnenutzung`
-
-Optional nach Einzelfallprüfung:
+#### `landuse_solar_pv_freiflaechen_naehung_vektorlayer`
 
 - `ln_abbau`
-- `ln_lagerung`
+- `ln_landwirtschaft`
+- `ln_ohnenutzung`
 
 Hinweis:
 
 - Wald (`ln_forstwirtschaft`) wird für Solar hier als **Ausschluss** behandelt.
-- Die Solar-Landnutzung wird als vier separate Dateien geschrieben:
-  - `data/processed/solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
-  - `data/processed/solar/<gemeinde>_landuse_solar_potenzial.gpkg`
-  - `data/processed/solar/<gemeinde>_landuse_solar_geeignet.gpkg`
-  - `data/processed/solar/<gemeinde>_landuse_solar_unused.gpkg`
-- `landuse_solar_potenzial` und `landuse_solar_geeignet` sind aktuell
-  Arbeitslayer für Prüfung und Vergleich, werden aber noch nicht direkt in der
-  finalen Karte verwendet.
+- `ln_lagerung` wird ebenfalls als Ausschluss behandelt.
+- `landuse_solar_pv_freiflaechen_naehung_vektorlayer` ist eine eigene
+  vektorbasierte Näherung möglicher PV-Freiflächen aus der amtlichen
+  Landnutzung. Der Layer dient vor allem als Detail- und Attributlayer im
+  QGIS-Projekt.
+- Die Solar-Landnutzung wird als drei separate Dateien geschrieben:
+  - `data/processed/2_technology_solar/<gemeinde>_landuse_solar_ausschluss.gpkg`
+  - `data/processed/2_technology_solar/<gemeinde>_landuse_solar_pv_freiflaechen_naehung_vektorlayer.gpkg`
+  - `data/processed/2_technology_solar/<gemeinde>_landuse_solar_unused.gpkg`
+- Die amtliche PV-Freiflächenkulisse wird zusätzlich als WMS-Referenz genutzt.
+  Der Vektorlayer ersetzt diese Referenz nicht, sondern macht die eigene
+  Näherung prüfbar und weiterverarbeitbar.
 
 
 ### Wasser
@@ -160,10 +161,10 @@ Hinweis:
   Hauptfilter. Die eigentlichen Fachlayer kommen dort eher aus Gewässer- und
   Schutzgebietsdaten.
 - Die Wasser-Landnutzung wird als vier separate Dateien geschrieben:
-  - `data/processed/wasser/<gemeinde>_landuse_wasser_ausschluss.gpkg`
-  - `data/processed/wasser/<gemeinde>_landuse_wasser_kontext.gpkg`
-  - `data/processed/wasser/<gemeinde>_landuse_wasser_geeignet.gpkg`
-  - `data/processed/wasser/<gemeinde>_landuse_wasser_unused.gpkg`
+  - `data/processed/2_technology_wasser/<gemeinde>_landuse_wasser_ausschluss.gpkg`
+  - `data/processed/2_technology_wasser/<gemeinde>_landuse_wasser_kontext.gpkg`
+  - `data/processed/2_technology_wasser/<gemeinde>_landuse_wasser_geeignet.gpkg`
+  - `data/processed/2_technology_wasser/<gemeinde>_landuse_wasser_unused.gpkg`
 - `landuse_wasser_kontext` und `landuse_wasser_geeignet` sind aktuell
   Arbeitslayer für Prüfung und Vergleich, werden aber noch nicht direkt in der
   finalen Karte verwendet.

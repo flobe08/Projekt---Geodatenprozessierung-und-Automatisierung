@@ -1,5 +1,8 @@
-"""
-Script 4: Prepare solar-specific OSM street layers.
+﻿"""
+Unused solar helper: Prepare solar-specific OSM street layers.
+
+TODO: Currently not used in the active solar workflow.
+Solar corridor analysis uses solar_corridor_basis instead.
 
 Workflow:
 1. Read the broad OSM street basis from prepare-data script 5.
@@ -10,6 +13,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import re
 import sys
 
@@ -26,10 +30,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # =============================================================================
 # input
-OSM_STREETS_DIR = BASE_DIR / "data/processed/osm_streets"
+OSM_STREETS_DIR = BASE_DIR / "data/processed/1_base_osm_streets"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/solar"
+OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_solar"
 
 
 SOLAR_STREET_AUSSCHLUSS = {
@@ -266,8 +270,8 @@ def prepare_solar_osm_streets(municipality_name: str) -> None:
     log_success("Solar OSM street preparation finished.")
 
 
-def main() -> None:
-    """Run the solar OSM street preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Prepare solar-specific OSM street exclusion data."
@@ -278,7 +282,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the solar OSM street preparation for one municipality."""
+
+    args = parse_arguments()
     prepare_solar_osm_streets(args.municipality)
 
 

@@ -9,6 +9,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import os
 import requests
 import sys
@@ -414,7 +415,7 @@ def prepare_wind_raw_datasets() -> None:
 # =============================================================================
 
 def prepare_solar_raw_datasets() -> None:
-    """Placeholder for future raw solar downloads."""
+    """Placeholder for future raw solar downloads. todo:"""
 
     log_section("Solar datasets")
     log_info("No raw solar download configured in script 1 yet.")
@@ -426,7 +427,7 @@ def prepare_solar_raw_datasets() -> None:
 # =============================================================================
 
 def prepare_wasser_raw_datasets() -> None:
-    """Placeholder for future raw water downloads."""
+    """Placeholder for future raw water downloads.todo: """
 
     log_section("Wasser datasets")
     log_info("No raw water download configured yet.")
@@ -436,8 +437,8 @@ def prepare_wasser_raw_datasets() -> None:
 # Command line entry point
 # =============================================================================
 
-def main() -> None:
-    """Download and validate the raw datasets used by the selected workflow."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Download and validate raw datasets for the geodata pipeline."
@@ -448,7 +449,14 @@ def main() -> None:
         choices=["wind", "solar", "wasser"],
         help="Selected technology for the current workflow run.",
     )
-    args = parser.parse_args()
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Download and validate the raw datasets used by the selected workflow."""
+
+    args = parse_arguments()
 
     download_general_datasets()
 

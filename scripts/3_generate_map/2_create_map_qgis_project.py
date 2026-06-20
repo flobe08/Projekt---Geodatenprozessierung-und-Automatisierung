@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 2: Create a QGIS map project.
 
 Workflow:
@@ -10,6 +10,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import sys
 
 from qgis.PyQt.QtGui import QImage
@@ -40,14 +41,14 @@ from utils import ColoredArgumentParser, log_warning
 # 0. Input and output paths
 # =============================================================================
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
-WIND_DIR = BASE_DIR / "data/processed/wind"
-PROTECTION_DIR = BASE_DIR / "data/processed/schutzgebiete"
-SOLAR_DIR = BASE_DIR / "data/processed/solar"
-SOLAR_REFERENCE_DIR = BASE_DIR / "data/processed/solar_reference"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
+WIND_DIR = BASE_DIR / "data/processed/2_technology_wind"
+PROTECTION_DIR = BASE_DIR / "data/processed/1_base_protection_areas"
+SOLAR_DIR = BASE_DIR / "data/processed/2_technology_solar"
+SOLAR_REFERENCE_DIR = SOLAR_DIR / "reference"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/qgis_projects"
+OUTPUT_DIR = BASE_DIR / "data/processed/3_qgis_projects"
 
 SOLAR_WMS_ZOOM_1 = "PV-Freiflächenkulisse - Zoomstufe 1"
 SOLAR_WMS_ZOOM_2 = "PV-Freiflächenkulisse - Zoomstufe 2"
@@ -166,6 +167,15 @@ def solar_landuse_ausschluss_file_name(municipality_name: str) -> str:
     return f"{safe_filename(municipality_name)}_landuse_solar_ausschluss.gpkg"
 
 
+def solar_pv_freiflaechen_naehung_file_name(municipality_name: str) -> str:
+    """Create the municipality-specific file name for the solar PV vector approximation."""
+
+    return (
+        f"{safe_filename(municipality_name)}"
+        "_landuse_solar_pv_freiflaechen_naehung_vektorlayer.gpkg"
+    )
+
+
 def wind_landuse_ausschluss_layer_name() -> str:
     """Return the layer name for wind landuse exclusions."""
 
@@ -176,6 +186,12 @@ def solar_landuse_ausschluss_layer_name() -> str:
     """Return the layer name for solar landuse exclusions."""
 
     return "landuse_solar_ausschluss"
+
+
+def solar_pv_freiflaechen_naehung_layer_name() -> str:
+    """Return the layer name for the solar PV vector approximation."""
+
+    return "landuse_solar_pv_freiflaechen_naehung_vektorlayer"
 
 
 def osm_wind_ausschluss_layer_name() -> str:
@@ -284,6 +300,10 @@ def load_optional_raster_layer(
 
     if not raster_file.exists():
         log_warning(f"Solar reference raster not found: {display_path(raster_file)}")
+        log_warning(
+            "Run Step 3.1 first through scripts/3_generate_map.py, or run: "
+            "python3 scripts/2_2_solar/3_download_solar_reference_wms.py --municipality <name>"
+        )
         return None
 
     image = QImage(str(raster_file))
@@ -613,6 +633,19 @@ def style_solar_transport_axes(layer: QgsVectorLayer) -> None:
     apply_symbol(layer, symbol)
 
 
+def style_solar_landuse_ausschluss(layer: QgsVectorLayer) -> None:
+    """Style solar landuse exclusions as a distinct purple context layer."""
+
+    symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "125,72,165,95",
+            "outline_color": "92,47,128,210",
+            "outline_width": "0.14",
+        }
+    )
+    apply_symbol(layer, symbol)
+
+
 # =============================================================================
 # Shared project setup
 # =============================================================================
@@ -869,6 +902,10 @@ def create_solar_map_project(municipality_name: str) -> None:
 
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
     solar_file = SOLAR_DIR / f"{safe_name}_solar_layers.gpkg"
+    solar_landuse_file = SOLAR_DIR / solar_landuse_ausschluss_file_name(municipality_name)
+    solar_pv_naehung_file = (
+        SOLAR_DIR / solar_pv_freiflaechen_naehung_file_name(municipality_name)
+    )
     protection_hard_file = PROTECTION_DIR / naturschutz_hart_file_name(municipality_name)
     protection_weich_file = PROTECTION_DIR / naturschutz_weich_file_name(municipality_name)
     solar_reference_zoom_1 = (
@@ -942,25 +979,6 @@ def create_solar_map_project(municipality_name: str) -> None:
     )
 
     # -------------------------------------------------------------------------
-    # TODO: Future solar exclusion layers
-    # These prepared exclusion layers already exist as processing outputs.
-    # They are intentionally kept commented out until the final exclusion
-    # design for the solar map is fixed and cartographically tested.
-    # -------------------------------------------------------------------------
-    # solar_landuse_file = SOLAR_DIR / solar_landuse_ausschluss_file_name(municipality_name)
-    # solar_osm_file = SOLAR_DIR / f"{safe_name}_osm_solar_streets.gpkg"
-    # solar_landuse_layer = load_optional_vector_layer(
-    #     solar_landuse_file,
-    #     solar_landuse_ausschluss_layer_name(),
-    #     f"Landnutzung Ausschluss Solar {municipality_name}",
-    # )
-    # solar_osm_layer = load_optional_vector_layer(
-    #     solar_osm_file,
-    #     osm_solar_ausschluss_layer_name(),
-    #     f"OSM Straßen Ausschluss Solar {municipality_name}",
-    # )
-
-    # -------------------------------------------------------------------------
     # Administrative boundary
     # The municipality outline frames all solar reference and analysis layers.
     # -------------------------------------------------------------------------
@@ -993,6 +1011,20 @@ def create_solar_map_project(municipality_name: str) -> None:
         "Detail- und Attributlayer Naturschutz weich",
         protection_weich_file,
         NATURSCHUTZ_WEICH_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Solar-Landnutzung",
+        solar_landuse_file,
+        [solar_landuse_ausschluss_layer_name()],
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Solar-Landnutzung",
+        solar_pv_naehung_file,
+        [solar_pv_freiflaechen_naehung_layer_name()],
         municipality_name,
     )
 
@@ -1028,8 +1060,8 @@ def create_solar_map_project(municipality_name: str) -> None:
 # =============================================================================
 # Main entry point
 # =============================================================================
-def main() -> None:
-    """Parse CLI arguments and create the requested technology project."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Create a QGIS map project for one municipality."
@@ -1046,7 +1078,13 @@ def main() -> None:
         help="Energy technology used for the layer setup.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Create the requested technology project."""
+
+    args = parse_arguments()
 
     match args.technology:
         case "wind":

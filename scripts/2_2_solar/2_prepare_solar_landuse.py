@@ -1,14 +1,15 @@
-"""
-Script 3: Prepare solar-specific landuse layers.
+﻿"""
+Script 2: Prepare solar-specific landuse layers.
 
 Workflow:
 1. Read the municipality landuse GeoPackage created by prepare-data script 4.
 2. Filter the official landuse classes via the field ``source_layer``.
-3. Build four solar-specific output layers.
+3. Build solar-specific exclusion and PV open-space approximation layers.
 4. Save each category as its own GeoPackage for QGIS and manual validation.
 """
 
 from pathlib import Path
+import argparse
 import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
@@ -31,7 +32,7 @@ from utils import ColoredArgumentParser, log_detail, log_info, log_success
 # input is resolved in landuse_utils.load_official_landuse()
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/solar"
+OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_solar"
 
 
 # =============================================================================
@@ -51,6 +52,7 @@ SOLAR_AUSSCHLUSS = {
     "ln_gewerblichedienstleistungen",
     "ln_industrieundverarbeitendesgewerbe",
     "ln_kulturundunterhaltung",
+    "ln_lagerung",
     "ln_oeffentlicheeinrichtungen",
     "ln_schiffsverkehr",
     "ln_sportanlage",
@@ -60,21 +62,12 @@ SOLAR_AUSSCHLUSS = {
     "ln_wohnnutzung",
 }
 
-# Potential:
-# This group contains areas that may still be considered in a first solar
-# screening, even if some of them need later manual review.
-# Output currently not used directly in the final map.
-SOLAR_POTENZIAL = {
+# PV open-space approximation:
+# This vector layer is a simplified landuse-based approximation of possible
+# open-space PV areas. It is mainly used for QGIS inspection and comparison
+# with the official PV open-space WMS reference.
+SOLAR_PV_FREIFLAECHEN_NAEHUNG = {
     "ln_abbau",
-    "ln_lagerung",
-    "ln_landwirtschaft",
-    "ln_ohnenutzung",
-}
-
-# Geeignet:
-# Smallest core set for a first solar pre-check.
-# Output currently not used directly in the final map.
-SOLAR_GEEIGNET = {
     "ln_landwirtschaft",
     "ln_ohnenutzung",
 }
@@ -98,17 +91,17 @@ def prepare_solar_landuse(municipality_name: str) -> None:
 
     safe_name = safe_filename(municipality_name)
     ausschluss_file = OUTPUT_DIR / f"{safe_name}_landuse_solar_ausschluss.gpkg"
-    # Output is currently not used directly in the final map.
-    potenzial_file = OUTPUT_DIR / f"{safe_name}_landuse_solar_potenzial.gpkg"
-    # Output is currently not used directly in the final map.
-    geeignet_file = OUTPUT_DIR / f"{safe_name}_landuse_solar_geeignet.gpkg"
+    # Output is currently used as a detail and attribute layer in QGIS.
+    pv_freiflaechen_file = (
+        OUTPUT_DIR
+        / f"{safe_name}_landuse_solar_pv_freiflaechen_naehung_vektorlayer.gpkg"
+    )
     # Output is currently not used directly in the final map.
     unused_file = OUTPUT_DIR / f"{safe_name}_landuse_solar_unused.gpkg"
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     remove_existing_output(ausschluss_file)
-    remove_existing_output(potenzial_file)
-    remove_existing_output(geeignet_file)
+    remove_existing_output(pv_freiflaechen_file)
     remove_existing_output(unused_file)
 
     landuse = load_official_landuse(municipality_name)
@@ -116,19 +109,19 @@ def prepare_solar_landuse(municipality_name: str) -> None:
     log_info(f"Preparing solar landuse for: {municipality_name}")
     log_info("Filtering official landuse classes by source_layer.")
     log_info(f"Output 1: {display_path(ausschluss_file)}")
-    log_info(f"Output 2: {display_path(potenzial_file)}")
-    log_info(f"Output 3: {display_path(geeignet_file)}")
-    log_info(f"Output 4: {display_path(unused_file)}")
+    log_info(f"Output 2: {display_path(pv_freiflaechen_file)}")
+    log_info(f"Output 3: {display_path(unused_file)}")
     log_detail(f"Ausschluss layers: {format_source_layers(SOLAR_AUSSCHLUSS)}")
-    log_detail(f"Potenzial layers: {format_source_layers(SOLAR_POTENZIAL)}")
-    log_detail(f"Geeignet layers: {format_source_layers(SOLAR_GEEIGNET)}")
+    log_detail(
+        "PV-Freiflächen-Näherung layers: "
+        f"{format_source_layers(SOLAR_PV_FREIFLAECHEN_NAEHUNG)}"
+    )
     log_detail(f"Unused layers: {format_source_layers(SOLAR_UNUSED)}")
     validate_landuse_group_assignment(
         "Solar",
         {
             "ausschluss": SOLAR_AUSSCHLUSS,
-            "potenzial": SOLAR_POTENZIAL,
-            "geeignet": SOLAR_GEEIGNET,
+            "pv_freiflaechen_naehung": SOLAR_PV_FREIFLAECHEN_NAEHUNG,
             "unused": SOLAR_UNUSED,
         },
     )
@@ -138,15 +131,10 @@ def prepare_solar_landuse(municipality_name: str) -> None:
         SOLAR_AUSSCHLUSS,
         "solar_ausschluss",
     )
-    solar_potenzial = filter_landuse_by_source_layers(
+    solar_pv_freiflaechen = filter_landuse_by_source_layers(
         landuse,
-        SOLAR_POTENZIAL,
-        "solar_potenzial",
-    )
-    solar_geeignet = filter_landuse_by_source_layers(
-        landuse,
-        SOLAR_GEEIGNET,
-        "solar_geeignet",
+        SOLAR_PV_FREIFLAECHEN_NAEHUNG,
+        "solar_pv_freiflaechen_naehung",
     )
     solar_unused = filter_landuse_by_source_layers(
         landuse,
@@ -155,15 +143,18 @@ def prepare_solar_landuse(municipality_name: str) -> None:
     )
 
     write_layer(ausschluss_file, "landuse_solar_ausschluss", solar_ausschluss)
-    write_layer(potenzial_file, "landuse_solar_potenzial", solar_potenzial)
-    write_layer(geeignet_file, "landuse_solar_geeignet", solar_geeignet)
+    write_layer(
+        pv_freiflaechen_file,
+        "landuse_solar_pv_freiflaechen_naehung_vektorlayer",
+        solar_pv_freiflaechen,
+    )
     write_layer(unused_file, "landuse_solar_unused", solar_unused)
 
     log_success("Solar landuse preparation finished.")
 
 
-def main() -> None:
-    """Run the solar landuse preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Prepare solar-specific landuse layers for one municipality."
@@ -174,7 +165,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the solar landuse preparation for one municipality."""
+
+    args = parse_arguments()
     prepare_solar_landuse(args.municipality)
 
 

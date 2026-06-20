@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 1: Prepare overview map layers.
 
 Workflow:
@@ -35,10 +35,10 @@ ADMIN_BOUNDARY_FILE = (
     BASE_DIR
     / "data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp"
 )
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/overview"
+OUTPUT_DIR = BASE_DIR / "data/processed/1_base_overview"
 BAVARIA_OUTLINE_FILE = OUTPUT_DIR / "bayern_outline.gpkg"
 
 

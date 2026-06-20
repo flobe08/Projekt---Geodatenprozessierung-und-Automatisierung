@@ -1,4 +1,4 @@
-# Verifikation der Verarbeitungsschritte
+﻿# Verifikation der Verarbeitungsschritte
 
 Diese Datei dokumentiert die fachliche Verifikation der aktuellen
 Verarbeitungsschritte. Sie ist getrennt von der reinen Bedienanleitung in
@@ -30,7 +30,7 @@ Vorgehen zur Verifikation:
 4. Der aktuelle Skript-Output wurde geladen:
 
 ```text
-data/processed/boundaries/drachselsried_boundary.gpkg
+data/processed/1_base_boundaries/drachselsried_boundary.gpkg
 ```
 
 5. Der Skript-Output wurde mit dem offiziellen Verwaltungsdatensatz
@@ -66,9 +66,9 @@ Verwendete Datensätze:
 - automatischer Skript-Output:
 
 ```text
-data/processed/schutzgebiete/drachselsried_naturschutz_allgemein_hart.gpkg
-data/processed/schutzgebiete/drachselsried_naturschutz_allgemein_weich.gpkg
-data/processed/schutzgebiete/drachselsried_naturschutz_wind.gpkg
+data/processed/1_base_protection_areas/drachselsried_naturschutz_allgemein_hart.gpkg
+data/processed/1_base_protection_areas/drachselsried_naturschutz_allgemein_weich.gpkg
+data/processed/1_base_protection_areas/drachselsried_naturschutz_wind.gpkg
 ```
 
 Vorgehen zur Verifikation:
@@ -142,7 +142,7 @@ Verwendete Datensätze:
 Automatischer Output:
 
 ```text
-data/processed/wind/drachselsried_wind_layers.gpkg
+data/processed/2_technology_wind/drachselsried_wind_layers.gpkg
 ```
 
 Relevante Layer:
@@ -193,11 +193,11 @@ Verwendete Datensätze:
 Automatische Outputs:
 
 ```text
-data/processed/landuse/landnutzung_drachselsried.gpkg
-data/processed/wind/drachselsried_landuse_wind_ausschluss.gpkg
-data/processed/wind/drachselsried_landuse_wind_potenzial.gpkg
-data/processed/wind/drachselsried_landuse_wind_geeignet.gpkg
-data/processed/wind/drachselsried_landuse_wind_unused.gpkg
+data/processed/1_base_landuse/landnutzung_drachselsried.gpkg
+data/processed/2_technology_wind/drachselsried_landuse_wind_ausschluss.gpkg
+data/processed/2_technology_wind/drachselsried_landuse_wind_potenzial.gpkg
+data/processed/2_technology_wind/drachselsried_landuse_wind_geeignet.gpkg
+data/processed/2_technology_wind/drachselsried_landuse_wind_unused.gpkg
 ```
 
 Relevante Layer:
@@ -244,8 +244,8 @@ scripts/2_1_wind/2_prepare_wind_landuse.py
 Verwendeter Datensatz:
 
 ```text
-data/processed/osm_streets/drachselsried_osm_streets.gpkg
-data/processed/wind/drachselsried_osm_wind_streets.gpkg
+data/processed/1_base_osm_streets/drachselsried_osm_streets.gpkg
+data/processed/2_technology_wind/drachselsried_osm_wind_streets.gpkg
 ```
 
 Relevante Layer:
@@ -293,8 +293,8 @@ scripts/1_prepare_data/5_download_osm_network_data.py --technology wind
 Automatische Outputs:
 
 ```text
-data/processed/qgis_projects/drachselsried_map_wind.qgz
-data/processed/maps/drachselsried_map_wind.pdf
+data/processed/3_qgis_projects/drachselsried_map_wind.qgz
+data/processed/3_maps/drachselsried_map_wind.pdf
 ```
 
 In der finalen Windkarte aktiv dargestellte Layer:
@@ -345,9 +345,8 @@ Kartenerstellung geeignet.
 
 Verwendete Datensätze:
 
-- `data/processed/osm_streets/drachselsried_osm_streets.gpkg`
-- `data/processed/solar/drachselsried_solar_corridor_basis.gpkg`
-- `data/processed/solar/drachselsried_osm_solar_streets.gpkg`
+- `data/processed/1_base_osm_streets/drachselsried_osm_streets.gpkg`
+- `data/processed/2_technology_solar/corridor/drachselsried_solar_corridor_basis.gpkg`
 - amtliche OSM-Basiskarte in QGIS
 
 Vorgehen zur Verifikation:
@@ -369,7 +368,7 @@ Ergebnis:
 
 Verwendete Datensätze:
 
-- `data/processed/solar/drachselsried_solar_layers.gpkg`
+- `data/processed/2_technology_solar/drachselsried_solar_layers.gpkg`
 - amtlicher WMS-Dienst `Planungsgrundlagen Solar`
 - daraus insbesondere:
   - `PV-Freiflächenkulisse - Zoomstufe 1`

@@ -11,8 +11,8 @@ Workflow:
 
 from pathlib import Path
 import argparse
+import html
 import math
-import textwrap
 import sys
 import warnings
 from datetime import date
@@ -60,12 +60,12 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
 # input
-PROJECT_DIR = BASE_DIR / "data/processed/qgis_projects"
-OVERVIEW_DIR = BASE_DIR / "data/processed/overview"
+PROJECT_DIR = BASE_DIR / "data/processed/3_qgis_projects"
+OVERVIEW_DIR = BASE_DIR / "data/processed/1_base_overview"
 BAVARIA_OUTLINE_FILE = OVERVIEW_DIR / "bayern_outline.gpkg"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/maps"
+OUTPUT_DIR = BASE_DIR / "data/processed/3_maps"
 
 # input
 NORTH_ARROW_PATH = BASE_DIR / "assets/svg/NorthArrow_11.svg"
@@ -211,11 +211,14 @@ def add_label(
     bold: bool = False,
     width: float | None = None,
     height: float | None = None,
+    html_mode: bool = False,
 ) -> QgsLayoutItemLabel:
     """Add one text label to the layout."""
 
     label = QgsLayoutItemLabel(layout)
     label.setText(text)
+    if html_mode:
+        label.setMode(QgsLayoutItemLabel.ModeHtml)
 
     font = QFont("Arial", font_size)
     font.setBold(bold)
@@ -230,6 +233,47 @@ def add_label(
         label.adjustSizeToText()
 
     return label
+
+
+def add_manual_multiline_label(
+    layout: QgsPrintLayout,
+    text: str,
+    x: float,
+    y: float,
+    font_size: int,
+    line_height: float,
+    bold_prefixes: tuple[str, ...] = (),
+    line_width: float | None = None,
+    line_box_height: float | None = None,
+) -> None:
+    """Add manual text lines without QGIS automatic wrapping."""
+
+    for line_index, line in enumerate(text.splitlines()):
+        line_text = html.escape(line)
+        html_mode = False
+
+        for prefix in bold_prefixes:
+            escaped_prefix = html.escape(prefix)
+            if line_text.startswith(escaped_prefix):
+                line_text = line_text.replace(
+                    escaped_prefix,
+                    f"<b>{escaped_prefix}</b>",
+                    1,
+                )
+                html_mode = True
+                break
+
+        add_label(
+            layout,
+            line_text,
+            x,
+            y + line_index * line_height,
+            font_size,
+            False,
+            line_width,
+            line_box_height,
+            html_mode,
+        )
 
 
 def add_box(
@@ -683,6 +727,7 @@ def create_pdf_layout(
     main_extent = boundary_layer.extent()
     map_config = get_map_config(technology)
     layout_config = map_config["layout"]
+    debug_frames = layout_config.get("debug_frames", False)
     scale_map_extent(main_extent, layout_config)
 
     # -------------------------------------------------------------------------
@@ -708,14 +753,16 @@ def create_pdf_layout(
     legend_width = layout_config["legend_width"]
     legend_height = layout_config["legend_height"]
 
-    legend_title_y = layout_config["legend_title_y"]
-    legend_section_y = layout_config["legend_section_y"]
-
-    legend_row_start_y = layout_config["legend_row_start_y"]
+    legend_title_y = legend_y + layout_config["legend_title_offset"]
+    legend_section_y = legend_y + layout_config["legend_section_offset"]
+    legend_row_start_y = legend_y + layout_config["legend_row_start_offset"]
     legend_row_gap = layout_config["legend_row_gap"]
 
-    grid_title_y = layout_config["grid_title_y"]
-    grid_row_y = layout_config["grid_row_y"]
+    last_legend_row_y = legend_row_start_y + (
+        (len(map_config["legend_items"]) - 1) * legend_row_gap
+    )
+    grid_title_y = last_legend_row_y + layout_config["grid_title_gap_after_last_row"]
+    grid_row_y = grid_title_y + layout_config["grid_row_offset"]
 
     north_arrow_y = layout_config["north_arrow_y"]
 
@@ -781,23 +828,19 @@ def create_pdf_layout(
 
     add_map_grid(map_item)
     map_item.refresh()
-    add_debug_frame(layout, map_x, map_y, map_width, map_height)  # todo: keep while tuning layout
+    if debug_frames:
+        add_debug_frame(layout, map_x, map_y, map_width, map_height)
 
     # -------------------------------------------------------------------------
     # 2.4 Add right-side description
     # -------------------------------------------------------------------------
-    add_label(
+    add_manual_multiline_label(
         layout,
-        textwrap.fill(
-            map_config["description"].format(municipality=municipality_name),
-            width=layout_config["description_wrap_width"],
-        ),
+        map_config["description"].format(municipality=municipality_name),
         panel_x,
         description_y,
         layout_config["description_font_size"],
-        False,
-        panel_width,
-        layout_config["description_height"],
+        3.2,
     )
 
     # -------------------------------------------------------------------------
@@ -811,10 +854,30 @@ def create_pdf_layout(
         legend_height,
         "255,255,255,235",
     )
-    add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)  # todo: keep while tuning layout
+    if debug_frames:
+        add_debug_frame(layout, panel_x, legend_y, legend_width, legend_height)
+    add_box(
+        layout,
+        panel_x,
+        legend_y,
+        legend_width,
+        legend_height,
+        "255,255,255,0",
+        "80,80,80,255",
+        "0.2",
+    )
 
     add_label(layout, "Legende", panel_x + 2, legend_title_y, 12, True)
-    add_label(layout, map_config["legend_section"], panel_x + 2, legend_section_y + 1, 9, True)
+    add_label(
+        layout,
+        map_config["legend_section"],
+        panel_x + 2,
+        legend_section_y + 1,
+        layout_config.get("legend_section_font_size", 9),
+        True,
+        width=legend_width - 4,
+        height=6,
+    )
 
     for index, item in enumerate(map_config["legend_items"]):
         add_legend_row(
@@ -867,8 +930,19 @@ def create_pdf_layout(
     north_arrow_x = panel_x
 
     if layout_config.get("north_arrow_inside_map", False):
-        north_arrow_x = map_x + map_width - layout_config["north_arrow_width"] - 2.2
-        north_arrow_y = map_y + map_height - layout_config["north_arrow_height"] - 3
+        north_arrow_margin = layout_config.get("north_arrow_map_margin", 3)
+        north_arrow_x = (
+            map_x
+            + map_width
+            - layout_config["north_arrow_width"]
+            - north_arrow_margin
+        )
+        north_arrow_y = (
+            map_y
+            + map_height
+            - layout_config["north_arrow_height"]
+            - north_arrow_margin
+        )
 
     add_north_arrow(
         layout,
@@ -886,13 +960,14 @@ def create_pdf_layout(
         legend_width,
         units_per_segment=map_config["scale_units_per_segment"],
     )
-    add_debug_frame(
-        layout,
-        panel_x,
-        panel_y,
-        panel_width,
-        panel_height,
-    )  # todo: keep while tuning layout
+    if debug_frames:
+        add_debug_frame(
+            layout,
+            panel_x,
+            panel_y,
+            panel_width,
+            panel_height,
+        )
 
     scale_denominator = round(map_item.scale())
 
@@ -907,23 +982,14 @@ def create_pdf_layout(
     # -------------------------------------------------------------------------
     # 2.7 Add metadata block
     # -------------------------------------------------------------------------
-    add_box(
-        layout,
-        metadata_box_x,
-        metadata_box_y,
-        metadata_box_width,
-        metadata_box_height,
-        "255,255,255,255",
-        "80,80,80,255",
-        "0.2",
-    )
-    add_debug_frame(
-        layout,
-        metadata_box_x,
-        metadata_box_y,
-        metadata_box_width,
-        metadata_box_height,
-    )  # todo: keep while tuning layout
+    if debug_frames:
+        add_debug_frame(
+            layout,
+            metadata_box_x,
+            metadata_box_y,
+            metadata_box_width,
+            metadata_box_height,
+        )
 
     add_label(
         layout,
@@ -940,22 +1006,11 @@ def create_pdf_layout(
         layout_config["metadata_font_size"],
     )
 
-    # -------------------------------------------------------------------------
     # 2.8 Add footer information below map
-    # -------------------------------------------------------------------------
-    footer_text = (
-        "Datenquellen: "
-        f"{map_config['sources']}\n"
-        "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
-    )
-    footer_text = "\n".join(
-        textwrap.fill(line, width=layout_config["footer_wrap_width"])
-        for line in footer_text.splitlines()
-    )
-
+    # -----------------------------------------------------------------------------
     add_label(
         layout,
-        footer_text,
+        "Datenquellen: " + map_config["sources"],
         map_x,
         footer_y,
         layout_config["footer_font_size"],
@@ -963,15 +1018,17 @@ def create_pdf_layout(
         map_width,
         layout_config["footer_height"],
     )
-    add_debug_frame(
-        layout,
-        map_x,
-        footer_y,
-        map_width,
-        layout_config["footer_height"],
-    )  # todo: keep while tuning layout
-    return layout
 
+    if debug_frames:
+        add_debug_frame(
+            layout,
+            map_x,
+            footer_y,
+            map_width,
+            layout_config["footer_height"],
+        )
+
+    return layout
 
 # -----------------------------------------------------------------------------
 # 3. Export QGIS project as PDF
@@ -1011,7 +1068,9 @@ def generate_map_pdf(municipality_name: str, technology: str) -> None:
     log_success(f"QGIS map PDF created: {display_path(output_file)}")
 
 
-def main() -> None:
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
+
     parser = ColoredArgumentParser(
         description="Generate a PDF map from the QGIS project."
     )
@@ -1029,7 +1088,13 @@ def main() -> None:
         help="Energy technology used for the map title.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Generate the requested PDF map."""
+
+    args = parse_arguments()
     generate_map_pdf(args.municipality, args.technology)
 
 

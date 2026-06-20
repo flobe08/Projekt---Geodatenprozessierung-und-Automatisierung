@@ -1,4 +1,4 @@
-"""
+﻿"""
 Gemeinsame Hilfsfunktionen für technologiespezifische Landnutzungs-Layer.
 
 Die Skripte für Wind, Solar und Wasser lesen alle denselben vorbereiteten
@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input paths
 # -----------------------------------------------------------------------------
 # input
-LANDUSE_DIR = BASE_DIR / "data/processed/landuse"
+LANDUSE_DIR = BASE_DIR / "data/processed/1_base_landuse"
 EXPECTED_LANDUSE_LAYERS = {
     "ln_abbau",
     "ln_aquakulturundfischereiwirtschaft",

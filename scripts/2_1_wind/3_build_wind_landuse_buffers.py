@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 3: Build wind-specific landuse buffer layers.
 
 Workflow:
@@ -10,6 +10,7 @@ Workflow:
 """
 
 from pathlib import Path
+import argparse
 import sys
 
 import geopandas as gpd
@@ -36,10 +37,10 @@ from utils import (
 # 0. Input and output paths
 # -----------------------------------------------------------------------------
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
 # input/output
-WIND_OUTPUT_DIR = BASE_DIR / "data/processed/wind"
+WIND_OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_wind"
 
 
 # =============================================================================
@@ -210,8 +211,8 @@ def build_wind_landuse_buffers(municipality_name: str) -> None:
     log_success("Wind landuse buffer preparation finished.")
 
 
-def main() -> None:
-    """Run wind landuse buffer preparation for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Build wind-specific buffers from landuse exclusion layers."
@@ -222,7 +223,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run wind landuse buffer preparation for one municipality."""
+
+    args = parse_arguments()
     build_wind_landuse_buffers(args.municipality)
 
 

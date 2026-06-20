@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 5: Download shared OSM network data.
 
 Workflow:
@@ -16,6 +16,7 @@ solar and water folders.
 """
 
 from pathlib import Path
+import argparse
 import json
 import re
 import sys
@@ -36,11 +37,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # =============================================================================
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 
 # output
-OSM_STREETS_DIR = BASE_DIR / "data/processed/osm_streets"
-SOLAR_OUTPUT_DIR = BASE_DIR / "data/processed/solar"
+OSM_STREETS_DIR = BASE_DIR / "data/processed/1_base_osm_streets"
+SOLAR_OUTPUT_DIR = BASE_DIR / "data/processed/2_technology_solar/corridor"
 
 # external source
 OVERPASS_URLS = [
@@ -457,8 +458,8 @@ def download_osm_network_data(municipality_name: str, technology: str) -> None:
     log_success("OSM network download finished.")
 
 
-def main() -> None:
-    """Run the OSM network download for one municipality and technology."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Download shared OSM street data and optional solar corridor data."
@@ -475,7 +476,13 @@ def main() -> None:
         help="Technology that defines whether additional railway data is needed.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the OSM network download for one municipality and technology."""
+
+    args = parse_arguments()
     download_osm_network_data(args.municipality, args.technology)
 
 

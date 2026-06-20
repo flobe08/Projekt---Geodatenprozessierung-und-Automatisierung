@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 4: Clip official landuse data.
 
 Workflow:
@@ -18,6 +18,7 @@ weiterarbeiten können.
 """
 
 from pathlib import Path
+import argparse
 import re
 import sqlite3
 import sys
@@ -34,12 +35,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # 0. Input and output paths
 # =============================================================================
 # input
-BOUNDARY_DIR = BASE_DIR / "data/processed/boundaries"
+BOUNDARY_DIR = BASE_DIR / "data/processed/1_base_boundaries"
 LANDUSE_URL = "https://geodaten.bayern.de/odd/m/3/daten/ln/landnutzung.gpkg"
 LANDUSE_FILE = BASE_DIR / "data/raw/landuse/landnutzung.gpkg"
 
 # output
-OUTPUT_DIR = BASE_DIR / "data/processed/landuse"
+OUTPUT_DIR = BASE_DIR / "data/processed/1_base_landuse"
 
 EXPECTED_LANDUSE_LAYERS = {
     "ln_abbau",
@@ -411,8 +412,8 @@ def clip_landuse_for_municipality(municipality_name: str) -> None:
     log_success("Official landuse clipping finished.")
 
 
-def main() -> None:
-    """Run the landuse clipping for one municipality."""
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
 
     parser = ColoredArgumentParser(
         description="Clip official landuse data to one municipality."
@@ -423,7 +424,13 @@ def main() -> None:
         help="Name of the municipality, e.g. Drachselsried",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Run the landuse clipping for one municipality."""
+
+    args = parse_arguments()
     clip_landuse_for_municipality(args.municipality)
 
 

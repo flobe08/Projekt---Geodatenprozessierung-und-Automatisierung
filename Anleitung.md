@@ -1,7 +1,7 @@
 ﻿# Anleitung
 
 Diese Datei beschreibt den aktuellen Projektaufbau, die Reihenfolge der
-Skripte und die manuelle AusfÃ¼hrung.
+Skripte und die manuelle Ausführung.
 
 ## Skriptstruktur
 
@@ -21,12 +21,16 @@ Skripte und die manuelle AusfÃ¼hrung.
 - Wind: `scripts/2_1_wind/3_build_wind_landuse_buffers.py`
 - Wind: `scripts/2_1_wind/4_prepare_wind_osm_streets.py`
 - Wind: `scripts/2_1_wind/5_build_wind_exclusion_layer.py`
-- Solar: `scripts/2_2_solar/1_download_solar_reference_wms.py`
-- Solar: `scripts/2_2_solar/2_prepare_solar_corridor_layers.py`
-- Solar: `scripts/2_2_solar/3_prepare_solar_landuse.py`
-- Solar: `scripts/2_2_solar/4_prepare_solar_osm_streets.py`
-- Wasser: `scripts/2_3_wasser/1_prepare_water_landuse.py`
-- Wasser: `scripts/2_3_wasser/2_prepare_water_osm_streets.py`
+- Solar: `scripts/2_2_solar/1_prepare_solar_corridor_layers.py`
+- Solar: `scripts/2_2_solar/2_prepare_solar_landuse.py`
+- Solar: `scripts/2_2_solar/3_download_solar_reference_wms.py`
+- Wasser: TODO/TBD, aktuell nur als Platzhalter vorbereitet
+
+Hinweis:
+
+- `scripts/2_2_solar/unused_prepare_solar_osm_streets.py` bleibt als
+  Reserve im Codebestand, wird aber im aktiven Solar-Workflow nicht
+  ausgeführt.
 
 ### 3. Kartenerzeugung
 
@@ -35,14 +39,51 @@ Skripte und die manuelle AusfÃ¼hrung.
 - `scripts/3_generate_map/2_create_map_qgis_project.py`
 - `scripts/3_generate_map/3_generate_map_pdf.py`
 
+## Ergebnisstruktur
+
+Die Ergebnisse unter `data/processed/` sind nach Verarbeitungsebene getrennt:
+
+```text
+data/processed/
+  1_base_boundaries/
+  1_base_landuse/
+  1_base_osm_streets/
+  1_base_overview/
+  1_base_protection_areas/
+
+  2_technology_wind/
+  2_technology_solar/
+
+  3_qgis_projects/
+  3_maps/
+```
+
+Die `1_base_*`-Ordner enthalten gemeinsame Grundlagen wie Gemeindegrenzen,
+Landnutzung, OSM-Straßen, Schutzgebiete und Locator-Layer. Die
+`2_technology_*`-Ordner enthalten daraus abgeleitete Fachlayer für Wind bzw.
+Solar. Die finalen QGIS-Projekte und PDF-Karten liegen in den `3_output_*`-
+Ordnern.
+
+Für Solar wird zusätzlich innerhalb des Solar-Ordners getrennt:
+
+```text
+data/processed/2_technology_solar/corridor/
+data/processed/2_technology_solar/reference/
+```
+
+`corridor/` enthält die OSM-basierte Grundlage für die 200-m- und
+500-m-Korridore. `reference/` enthält die aus dem amtlichen WMS geladenen
+PV-Freiflächenkulissen als georeferenzierte Rasterbilder.
+
 ## Automatischer Workflow
 
 Hinweis vor dem Start:
 
-- Der erste vollstÃ¤ndige Durchlauf kann spÃ¼rbar lÃ¤nger dauern.
-- Im Workflow werden mehrere groÃŸe Bayern-DatensÃ¤tze verarbeitet.
-- Vor allem der offizielle Landnutzungsdatensatz ist ungefÃ¤hr 5 bis 6 GB groÃŸ
-  und braucht beim ersten lokalen Download entsprechend lÃ¤nger.
+- Verwendete QGIS-Version im Projekt: **QGIS 4.0 Norrköping**
+- Der erste vollständige Durchlauf kann spürbar länger dauern.
+- Im Workflow werden mehrere große Bayern-Datensätze verarbeitet.
+- Vor allem der offizielle Landnutzungsdatensatz ist ungefähr 5 bis 6 GB groß
+  und braucht beim ersten lokalen Download entsprechend länger.
 
 ### Wind
 
@@ -63,9 +104,10 @@ deactivate
 python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 ```
 
-`--skip-existing` Ã¼berspringt aktuell insbesondere den bereits vorhandenen
+`--skip-existing` überspringt aktuell insbesondere den bereits vorhandenen
 zugeschnittenen Landnutzungsdatensatz. Das ist sinnvoll, wenn nur die Karte,
-das QGIS-Projekt oder spÃ¤tere Folgeschritte erneut getestet werden sollen.
+das QGIS-Projekt oder spätere Folgeschritte erneut getestet werden sollen.
+
 
 ### Solar
 
@@ -73,6 +115,17 @@ das QGIS-Projekt oder spÃ¤tere Folgeschritte erneut getestet werden sollen.
 source .venv-wsl/bin/activate
 python3 scripts/1_prepare_data.py --municipality Drachselsried --technology solar
 deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology solar
+```
+
+### beides:
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology solar
+deactivate
+
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 python3 scripts/3_generate_map.py --municipality Drachselsried --technology solar
 ```
 
@@ -91,7 +144,7 @@ Die Mermaid-Diagramme mit den exakten Log-Step-Namen stehen in:
 
 - `description/WORKFLOW_DIAGRAMME.md`
 
-## Manuelle AusfÃ¼hrung Schritt fÃ¼r Schritt
+## Manuelle Ausführung Schritt für Schritt
 
 ### Wind
 
@@ -126,13 +179,13 @@ python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wind
 ```
 
-6. OSM-StraÃŸen fÃ¼r Wind filtern:
+6. OSM-Straßen für Wind filtern:
 
 ```bash
 python3 scripts/2_1_wind/4_prepare_wind_osm_streets.py --municipality Drachselsried
 ```
 
-7. WindflÃ¤chen clippen:
+7. Windflächen clippen:
 
 ```bash
 python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
@@ -157,7 +210,7 @@ python3 scripts/2_1_wind/5_build_wind_exclusion_layer.py --municipality Drachsel
 deactivate
 ```
 
-11. Ãœbersichtskarten-Layer vorbereiten:
+11. Übersichtskarten-Layer vorbereiten:
 
 ```bash
 python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
@@ -208,34 +261,31 @@ python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
 python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology solar
 ```
 
-6. OSM-StraÃŸen fÃ¼r Solar filtern:
+6. Solarpuffer erzeugen:
 
 ```bash
-python3 scripts/2_2_solar/4_prepare_solar_osm_streets.py --municipality Drachselsried
+python3 scripts/2_2_solar/1_prepare_solar_corridor_layers.py --municipality Drachselsried
 ```
 
-7. Solarpuffer erzeugen:
+7. Solarspezifische Landnutzung ableiten:
 
 ```bash
-python3 scripts/2_2_solar/2_prepare_solar_corridor_layers.py --municipality Drachselsried
-```
-
-8. Solarspezifische Landnutzung ableiten:
-
-```bash
-python3 scripts/2_2_solar/3_prepare_solar_landuse.py --municipality Drachselsried
+python3 scripts/2_2_solar/2_prepare_solar_landuse.py --municipality Drachselsried
 deactivate
 ```
 
-9. Amtliche Solar-WMS-Referenzbilder lokal laden:
+8. Amtliche Solar-WMS-Referenzbilder lokal laden:
 
 ```bash
-python3 scripts/2_2_solar/1_download_solar_reference_wms.py --municipality Drachselsried
+python3 scripts/2_2_solar/3_download_solar_reference_wms.py --municipality Drachselsried
 ```
 
-ZusÃ¤tzliche manuelle Referenz in QGIS:
+Hinweis: Dieser Schritt nutzt PyQGIS und wird deshalb außerhalb der
+`.venv-wsl` mit dem QGIS-/System-Python ausgeführt.
 
-1. `WMS/WMTS` Ã¶ffnen
+Zusätzliche manuelle Referenz in QGIS:
+
+1. `WMS/WMTS` öffnen
 2. Dienst registrieren:
 
 ```text
@@ -244,27 +294,27 @@ https://www.lfu.bayern.de/gdi/wms/energieatlas/planungsgrundlagen_solar
 
 3. Danach diese amtlichen Referenzlayer laden:
 
-- `PV-FreiflÃ¤chenkulisse - Zoomstufe 1`
-- `PV-FreiflÃ¤chenkulisse - Zoomstufe 2`
+- `PV-Freiflächenkulisse - Zoomstufe 1`
+- `PV-Freiflächenkulisse - Zoomstufe 2`
 
 Hinweis:
 
 - Im automatisch erzeugten Solar-QGIS-Projekt werden diese beiden
   WMS-Referenzlayer bereits direkt eingebunden.
 
-10. Ãœbersichtskarten-Layer vorbereiten:
+9. Übersichtskarten-Layer vorbereiten:
 
 ```bash
 python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
 ```
 
-11. QGIS-Projekt erzeugen:
+10. QGIS-Projekt erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology solar
 ```
 
-12. PDF-Karte erzeugen:
+11. PDF-Karte erzeugen:
 
 ```bash
 python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology solar
@@ -276,17 +326,17 @@ python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsrie
 separate GeoPackages:
 
 ```text
-data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_hart.gpkg
-data/processed/schutzgebiete/<gemeinde>_naturschutz_allgemein_weich.gpkg
-data/processed/schutzgebiete/<gemeinde>_naturschutz_wind.gpkg
+data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_hart.gpkg
+data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_weich.gpkg
+data/processed/1_base_protection_areas/<gemeinde>_naturschutz_wind.gpkg
 ```
 
-Jede dieser Dateien enthÃ¤lt:
+Jede dieser Dateien enthält:
 
 - die einzeln zugeschnittenen Ursprungslayer
-- einen zusammengefÃ¼hrten Layer fÃ¼r die jeweilige Kategorie
+- einen zusammengeführten Layer für die jeweilige Kategorie
 
-Typische zusammengefÃ¼hrte Layernamen:
+Typische zusammengeführte Layernamen:
 
 - `naturschutz_allgemein_hart_merged`
 - `naturschutz_allgemein_weich_merged`
@@ -294,30 +344,30 @@ Typische zusammengefÃ¼hrte Layernamen:
 
 Hinweis:
 
-- `naturschutz_wind` wird nur dann sinnvoll befÃ¼llt, wenn vorher
-  `1_download_data.py --technology wind` ausgefÃ¼hrt wurde, weil dabei die
+- `naturschutz_wind` wird nur dann sinnvoll befüllt, wenn vorher
+  `1_download_data.py --technology wind` ausgeführt wurde, weil dabei die
   Vogelkulissen 2024 mitgeladen werden.
-- PunktfÃ¶rmige Naturdenkmale und punktfÃ¶rmige geschÃ¼tzte
+- Punktförmige Naturdenkmale und punktförmige geschützte
   Landschaftsbestandteile werden als eigene geclippte Punktlayer mit
   ausgegeben.
-- Sie werden aktuell aber noch nicht in den zusammengefÃ¼hrten harten
-  FlÃ¤chenausschlusslayer `naturschutz_allgemein_hart_merged` Ã¼bernommen, weil
-  dafÃ¼r erst eine fachlich begrÃ¼ndete Pufferregel festgelegt werden mÃ¼sste.
+- Sie werden aktuell aber noch nicht in den zusammengeführten harten
+  Flächenausschlusslayer `naturschutz_allgemein_hart_merged` übernommen, weil
+  dafür erst eine fachlich begründete Pufferregel festgelegt werden müsste.
 
 ## QGIS-Projekt, Detail- und Attributlayer
 
-Das automatisch erzeugte QGIS-Projekt enthÃ¤lt zwei Ebenen:
+Das automatisch erzeugte QGIS-Projekt enthält zwei Ebenen:
 
-1. sichtbare Kartenlayer fÃ¼r die eigentliche Karte
-2. ausgeblendete Detail- und Attributlayer fÃ¼r Kontrolle und Dokumentation
+1. sichtbare Kartenlayer für die eigentliche Karte
+2. ausgeblendete Detail- und Attributlayer für Kontrolle und Dokumentation
 
 Die sichtbaren Naturschutzlayer bleiben bewusst zusammengefasst:
 
 - `Harte Naturschutz-Restriktionen`
-- `Weiche Naturschutz-KonfliktflÃ¤chen`
+- `Weiche Naturschutz-Konfliktflächen`
 - `Windspezifische Restriktionen`
 
-ZusÃ¤tzlich werden im QGIS-Projekt ausgeblendete Gruppen angelegt:
+Zusätzlich werden im QGIS-Projekt ausgeblendete Gruppen angelegt:
 
 - `Detail- und Attributlayer Naturschutz hart`
 - `Detail- und Attributlayer Naturschutz weich`
@@ -326,28 +376,28 @@ ZusÃ¤tzlich werden im QGIS-Projekt ausgeblendete Gruppen angelegt:
 - `Detail- und Attributlayer OSM`
 
 Diese Detail- und Attributlayer dienen dazu, einzelne Ursprungslayer und ihre
-Attribute nachvollziehen zu kÃ¶nnen. Sie werden nicht automatisch als
-zusÃ¤tzliche Hauptlayer in der PDF-Karte dargestellt, damit die Karte lesbar
+Attribute nachvollziehen zu können. Sie werden nicht automatisch als
+zusätzliche Hauptlayer in der PDF-Karte dargestellt, damit die Karte lesbar
 bleibt.
 
-Die PDF-Legende enthÃ¤lt fÃ¼r die Windkarte zusÃ¤tzlich:
+Die PDF-Legende enthält für die Windkarte zusätzlich:
 
-- `StraÃŸen`
+- `Straßen`
 - `Nutzungsausschluss`
 
 Der Nordpfeil wird in der Wind-PDF unten rechts innerhalb der Karte platziert.
-Dadurch bleibt im rechten Layoutbereich mehr Platz fÃ¼r Legende, MaÃŸstab,
-Autor und Datum. ZusÃ¤tzlich wird eine kleine Ãœbersichtskarte mit dem Titel
-`Lage in Bayern` eingebunden. Diese Ãœbersichtskarte nutzt einen dezenten
+Dadurch bleibt im rechten Layoutbereich mehr Platz für Legende, Maßstab,
+Autor und Datum. Zusätzlich wird eine kleine Übersichtskarte mit dem Titel
+`Lage in Bayern` eingebunden. Diese Übersichtskarte nutzt einen dezenten
 OSM-Hintergrund, die Bayern-Grenze aus dem amtlichen Verwaltungsdatensatz und
-die ausgewÃ¤hlte Gemeinde als rote FlÃ¤che mit zusÃ¤tzlichem Punktmarker.
+die ausgewählte Gemeinde als rote Fläche.
 
 ## Landnutzung
 
 Die Landnutzung wird im Workflow als offizieller Bayern-Gesamtdatensatz lokal
-heruntergeladen und anschlieÃŸend in Script 4 auf die Gemeinde zugeschnitten.
+heruntergeladen und anschließend in Script 4 auf die Gemeinde zugeschnitten.
 
-Die separate manuelle Verarbeitung ist weiterhin mÃ¶glich:
+Die separate manuelle Verarbeitung ist weiterhin möglich:
 
 ```bash
 source .venv-wsl/bin/activate
@@ -359,51 +409,51 @@ Dabei gilt:
 - zuerst Gemeindegrenze lesen
 - dann den bereits lokal vorhandenen offiziellen Bayern-Datensatz verwenden
 - danach nur den relevanten Bereich per Bounding-Box lesen
-- anschlieÃŸend exakt auf die Gemeinde clippen
-- anschlieÃŸend ein `landnutzung_<gemeinde>.gpkg` schreiben
+- anschließend exakt auf die Gemeinde clippen
+- anschließend ein `landnutzung_<gemeinde>.gpkg` schreiben
 - darin bleiben die zugeschnittenen `ln_*`-Layer einzeln erhalten
 
 Beispiel:
 
 ```text
-data/processed/landuse/landnutzung_drachselsried.gpkg
+data/processed/1_base_landuse/landnutzung_drachselsried.gpkg
 ```
 
 Damit bleibt der Originaldatensatz unangetastet und die technologiespezifischen
-Skripte kÃ¶nnen spÃ¤ter alle denselben kleineren Gemeinde-Datensatz verwenden.
+Skripte können später alle denselben kleineren Gemeinde-Datensatz verwenden.
 
 Methodischer Hinweis:
 
-- Die offizielle Quelle wird als groÃŸes GeoPackage fÃ¼r ganz Bayern bereitgestellt.
-- Ein echter kleiner Teil-Download nur fÃ¼r eine einzelne Gemeinde ist Ã¼ber
-  dieses Format nicht zuverlÃ¤ssig mÃ¶glich.
-- Deshalb wird der vollstÃ¤ndige Datensatz einmal lokal vorgehalten und danach
+- Die offizielle Quelle wird als großes GeoPackage für ganz Bayern bereitgestellt.
+- Ein echter kleiner Teil-Download nur für eine einzelne Gemeinde ist über
+  dieses Format nicht zuverlässig möglich.
+- Deshalb wird der vollständige Datensatz einmal lokal vorgehalten und danach
   automatisiert per Bounding-Box und exaktem Gemeindezuschnitt verarbeitet.
 
 Die technologiespezifischen Landnutzungs-Skripte schreiben danach jeweils
-separate GeoPackages, zum Beispiel fÃ¼r Wind:
+separate GeoPackages, zum Beispiel für Wind:
 
 ```text
-data/processed/wind/<gemeinde>_landuse_wind_ausschluss.gpkg
-data/processed/wind/<gemeinde>_landuse_wind_potenzial.gpkg
-data/processed/wind/<gemeinde>_landuse_wind_geeignet.gpkg
-data/processed/wind/<gemeinde>_landuse_wind_unused.gpkg
+data/processed/2_technology_wind/<gemeinde>_landuse_wind_ausschluss.gpkg
+data/processed/2_technology_wind/<gemeinde>_landuse_wind_potenzial.gpkg
+data/processed/2_technology_wind/<gemeinde>_landuse_wind_geeignet.gpkg
+data/processed/2_technology_wind/<gemeinde>_landuse_wind_unused.gpkg
 ```
 
 Hinweis zur Wind-Klasse `unused`:
 
 - `ln_strassenundwegeverkehr` wird bewusst nicht mehr pauschal als Ausschluss
   behandelt.
-- Der offizielle Landnutzungslayer ist dafÃ¼r zu grob, weil dort auch kleinere
-  Wege enthalten sein kÃ¶nnen.
-- Die FlÃ¤che bleibt deshalb als eigener Zwischenlayer erhalten und kann spÃ¤ter
-  gezielt mit OSM-StraÃŸenklassen oder Puffern weiter verfeinert werden.
+- Der offizielle Landnutzungslayer ist dafür zu grob, weil dort auch kleinere
+  Wege enthalten sein können.
+- Die Fläche bleibt deshalb als eigener Zwischenlayer erhalten und kann später
+  gezielt mit OSM-Straßenklassen oder Puffern weiter verfeinert werden.
 
-Analog dazu gibt es dieselbe Grundstruktur auch fÃ¼r Solar und Wasser.
+Analog dazu gibt es dieselbe Grundstruktur auch für Solar und Wasser.
 
 ## OSM-Netzdaten
 
-Der allgemeine OSM-Download wird jetzt Ã¼ber ein gemeinsames Skript gesteuert:
+Der allgemeine OSM-Download wird jetzt über ein gemeinsames Skript gesteuert:
 
 ```text
 scripts/1_prepare_data/5_download_osm_network_data.py
@@ -420,14 +470,14 @@ Der Download arbeitet mit einem gemeinsamen Analysekontext:
 1000 m Buffer um die Gemeinde
 ```
 
-Dadurch werden StraÃŸen oder Schienen knapp auÃŸerhalb der Gemeinde nicht zu
-frÃ¼h abgeschnitten.
+Dadurch werden Straßen oder Schienen knapp außerhalb der Gemeinde nicht zu
+früh abgeschnitten.
 
-Zuerst entsteht immer ein gemeinsamer OSM-StraÃŸenbasisdatensatz:
+Zuerst entsteht immer ein gemeinsamer OSM-Straßenbasisdatensatz:
 
 ```text
-data/processed/osm_streets/<gemeinde>_osm_streets.gpkg
-data/processed/osm_streets/<gemeinde>_osm_streets_raw.json
+data/processed/1_base_osm_streets/<gemeinde>_osm_streets.gpkg
+data/processed/1_base_osm_streets/<gemeinde>_osm_streets_raw.json
 ```
 
 Layer:
@@ -437,14 +487,14 @@ analysekontext_<gemeinde>
 osm_streets_raw
 ```
 
-Dieser Datensatz enthÃ¤lt die breit geladenen StraÃŸenklassen. Die eigentliche
+Dieser Datensatz enthält die breit geladenen Straßenklassen. Die eigentliche
 fachliche Auswahl erfolgt danach in den Technologieordnern.
 
 ### Wind
 
 ```text
-data/processed/wind/<gemeinde>_osm_wind_streets.gpkg
-data/processed/wind/<gemeinde>_osm_wind_streets_puffer.gpkg
+data/processed/2_technology_wind/<gemeinde>_osm_wind_streets.gpkg
+data/processed/2_technology_wind/<gemeinde>_osm_wind_streets_puffer.gpkg
 ```
 
 Layer:
@@ -456,26 +506,12 @@ osm_streets_wind_ausschluss_puffer
 
 ### Solar
 
-FÃ¼r die allgemeinen Solar-StraÃŸenausschlÃ¼sse:
-
-```text
-data/processed/solar/<gemeinde>_osm_solar_streets.gpkg
-data/processed/solar/<gemeinde>_osm_solar_streets_puffer.gpkg
-```
-
-Layer:
-
-```text
-osm_streets_solar_ausschluss
-osm_streets_solar_ausschluss_puffer
-```
-
-FÃ¼r die 200-m- und 500-m-Solarpuffer entsteht zusÃ¤tzlich eine eigene
+Für die 200-m- und 500-m-Solarpuffer entsteht eine eigene
 Korridorgrundlage:
 
 ```text
-data/processed/solar/<gemeinde>_solar_corridor_basis.gpkg
-data/processed/solar/<gemeinde>_solar_corridor_basis_raw.json
+data/processed/2_technology_solar/corridor/<gemeinde>_solar_corridor_basis.gpkg
+data/processed/2_technology_solar/corridor/<gemeinde>_solar_corridor_basis_raw.json
 ```
 
 Layer:
@@ -486,11 +522,16 @@ solar_corridor_autobahnen_<gemeinde>
 solar_corridor_schienenwege_<gemeinde>
 ```
 
+Das frühere Skript `unused_prepare_solar_osm_streets.py` bleibt nur als
+Reserve im Codebestand. Im aktiven Solar-Workflow wird es nicht ausgeführt,
+weil die EEG-/BauGB-Korridore direkt aus `solar_corridor_basis` abgeleitet
+werden.
+
 ### Wasser
 
 ```text
-data/processed/wasser/<gemeinde>_osm_wasser_streets.gpkg
-data/processed/wasser/<gemeinde>_osm_wasser_streets_puffer.gpkg
+data/processed/2_technology_wasser/<gemeinde>_osm_wasser_streets.gpkg
+data/processed/2_technology_wasser/<gemeinde>_osm_wasser_streets_puffer.gpkg
 ```
 
 Layer:
@@ -502,30 +543,30 @@ osm_streets_wasser_ausschluss_puffer
 
 ## Fachliche Logik der Solarpuffer
 
-Der Solar-Workflow trennt bewusst zwei FlÃ¤chenkategorien:
+Der Solar-Workflow trennt bewusst zwei Flächenkategorien:
 
-1. `PV-FÃ¶rderkulisse 500 m`
-   - Orientierung an `EEG 2023 Â§ 37 Abs. 1 Nr. 2 Buchstabe c`
-   - rÃ¤umliche NÃ¤herung entlang von Autobahnen und Schienenwegen
+1. `PV-Förderkulisse 500 m`
+   - Orientierung an `EEG 2023 § 37 Abs. 1 Nr. 2 Buchstabe c`
+   - räumliche Näherung entlang von Autobahnen und Schienenwegen
 
 2. `PV-Privilegierung 200 m`
-   - Orientierung an `BauGB Â§ 35 Abs. 1 Nr. 8 Buchstabe b`
+   - Orientierung an `BauGB § 35 Abs. 1 Nr. 8 Buchstabe b`
    - ebenfalls entlang von Autobahnen und Schienenwegen
 
 Wichtig:
 
-- Die 500-m-FlÃ¤che ist **nicht** automatisch eine Baugenehmigung.
-- Die 200-m-FlÃ¤che ist ebenfalls **keine** abschlieÃŸende EinzelfallprÃ¼fung.
-- Beide Layer sind bewusst als automatisierte, nachvollziehbare NÃ¤herung
+- Die 500-m-Fläche ist **nicht** automatisch eine Baugenehmigung.
+- Die 200-m-Fläche ist ebenfalls **keine** abschließende Einzelfallprüfung.
+- Beide Layer sind bewusst als automatisierte, nachvollziehbare Näherung
   umgesetzt.
 
-## Welche OSM-Typen fÃ¼r Solar verwendet werden
+## Welche OSM-Typen für Solar verwendet werden
 
-Aktuell werden fÃ¼r die Solarpipeline nur diese OSM-Typen verwendet:
+Aktuell werden für die Solarpipeline nur diese OSM-Typen verwendet:
 
 - `highway = motorway`
 - `highway = motorway_link`
 - `railway = rail`
 
 Damit orientiert sich die Pipeline an `Autobahnen + Schienenwegen` und nicht an
-allgemeinen StraÃŸen.
+allgemeinen Straßen.

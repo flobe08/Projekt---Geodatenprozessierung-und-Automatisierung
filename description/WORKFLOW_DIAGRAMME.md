@@ -1,4 +1,4 @@
-﻿# Workflow-Diagramme
+# Workflow-Diagramme
 
 Diese Datei sammelt die aktuellen Workflow-Diagramme der Pipeline. Die
 Bezeichnungen entsprechen den Log-Ausgaben der Einstiegsskripte. Dadurch kann
@@ -6,13 +6,13 @@ man später direkt von der Konsole zur Dokumentation wechseln.
 
 ## 1. Nummerierungslogik
 
-Die Pipeline ist in drei BlÃ¶cke gegliedert:
+Die Pipeline ist in drei Blöcke gegliedert:
 
 | Block | Bedeutung | Beispiel |
 | --- | --- | --- |
 | `Step 1.x` | gemeinsame Datenvorbereitung | Gemeindegrenze, Schutzgebiete, Landnutzung, OSM-Rohdaten |
 | `Step 2.x` | technologiespezifische Verarbeitung | Wind-, Solar- oder Wasser-Layer |
-| `Step 3.x` | Kartenerzeugung | Ãœbersichtskarte, QGIS-Projekt und PDF |
+| `Step 3.x` | Kartenerzeugung | Übersichtskarte, QGIS-Projekt und PDF |
 
 So bleibt die Nummerierung stabil, auch wenn Wind, Solar und Wasser später
 unterschiedlich viele Einzelschritte haben.
@@ -38,9 +38,9 @@ flowchart TD
 
 ## 3. Wind-Workflow als Mermaid-Diagramm
 
-Der Wind-Workflow ist aktuell der wichtigste vollstÃ¤ndig ausgearbeitete
+Der Wind-Workflow ist aktuell der wichtigste vollständig ausgearbeitete
 Workflow. Er nutzt amtliche Windplanungsdaten, allgemeine Naturschutz-Layer,
-Landnutzung, OSM-StraÃŸen sowie einen kombinierten Ausschlusslayer.
+Landnutzung, OSM-Straßen sowie einen kombinierten Ausschlusslayer.
 
 ```mermaid
 flowchart TD
@@ -64,7 +64,7 @@ flowchart TD
 ## 4. Wind-Workflow als Textablauf
 
 Dieser Abschnitt ist bewusst nicht parallel geschrieben. Die Skripte werden
-nacheinander ausgefÃ¼hrt.
+nacheinander ausgeführt.
 
 ### Step 1.x: Gemeinsame Datenvorbereitung
 
@@ -86,13 +86,13 @@ nacheinander ausgefÃ¼hrt.
 
 5. `Step 1.5: Download OSM network data`
    - Skript: `scripts/1_prepare_data/5_download_osm_network_data.py`
-   - Aufgabe: OSM-Netzwerkdaten fÃ¼r den erweiterten Analysekontext laden.
+   - Aufgabe: OSM-Netzwerkdaten für den erweiterten Analysekontext laden.
 
 ### Step 2.x: Wind-spezifische Verarbeitung
 
 1. `Step 2.1: Prepare wind OSM street layers`
    - Skript: `scripts/2_1_wind/4_prepare_wind_osm_streets.py`
-   - Aufgabe: OSM-StraÃŸen fÃ¼r den Wind-Workflow filtern und vorbereiten.
+   - Aufgabe: OSM-Straßen für den Wind-Workflow filtern und vorbereiten.
 
 2. `Step 2.2: Clip wind datasets to the municipality`
    - Skript: `scripts/2_1_wind/1_clip_wind_planning_areas.py`
@@ -104,19 +104,19 @@ nacheinander ausgefÃ¼hrt.
 
 4. `Step 2.4: Build wind landuse buffer layers`
    - Skript: `scripts/2_1_wind/3_build_wind_landuse_buffers.py`
-   - Aufgabe: definierte Puffer fÃ¼r windrelevante Landnutzungsklassen erzeugen.
+   - Aufgabe: definierte Puffer für windrelevante Landnutzungsklassen erzeugen.
 
 5. `Step 2.5: Build combined wind exclusion layer`
    - Skript: `scripts/2_1_wind/5_build_wind_exclusion_layer.py`
-   - Aufgabe: Landnutzungs- und OSM-AusschlussflÃ¤chen zu einem Gesamtlayer
+   - Aufgabe: Landnutzungs- und OSM-Ausschlussflächen zu einem Gesamtlayer
      kombinieren.
 
 ### Step 3.x: Kartenerzeugung
 
 1. `Step 3.1: Prepare overview map layers`
    - Skript: `scripts/3_generate_map/1_prepare_overview_layers.py`
-   - Aufgabe: Bayern-AuÃŸenumriss und gemeindespezifische Locator-Layer fÃ¼r
-     die kleine Ãœbersichtskarte erzeugen.
+   - Aufgabe: Bayern-Außenumriss und gemeindespezifische Locator-Layer für
+     die kleine Übersichtskarte erzeugen.
 
 2. `Step 3.2: Create QGIS map project`
    - Skript: `scripts/3_generate_map/2_create_map_qgis_project.py`
@@ -126,11 +126,11 @@ nacheinander ausgefÃ¼hrt.
 3. `Step 3.3: Generate map PDF`
    - Skript: `scripts/3_generate_map/3_generate_map_pdf.py`
    - Aufgabe: PDF-Karte aus dem QGIS-Projekt exportieren und vorbereitete
-     Ãœbersichtskarten-Layer einbinden.
+     Übersichtskarten-Layer einbinden.
 
 ## 5. Solar-Workflow als Kurzdiagramm
 
-Der Solar-Workflow ist strukturell vorbereitet. Die fachliche PrÃ¼fung und
+Der Solar-Workflow ist strukturell vorbereitet. Die fachliche Prüfung und
 Kartendarstellung werden noch weiter verfeinert.
 
 ```mermaid
@@ -141,12 +141,11 @@ flowchart TD
     A13 --> A14["Step 1.4: Clip official landuse"]
     A14 --> A15["Step 1.5: Download OSM network data"]
 
-    A15 --> S21["Step 2.1: Prepare solar OSM street layers"]
-    S21 --> S22["Step 2.2: Prepare solar corridor layers"]
-    S22 --> S23["Step 2.3: Prepare solar landuse layers"]
+    A15 --> S21["Step 2.1: Prepare solar corridor layers"]
+    S21 --> S22["Step 2.2: Prepare solar landuse layers"]
 
-    S23 --> M31["Step 3.1: Prepare overview map layers"]
-    M31 --> M32["Step 3.2: Download solar WMS reference rasters"]
+    S22 --> M31["Step 3.1: Download solar WMS reference rasters"]
+    M31 --> M32["Step 3.2: Prepare overview map layers"]
     M32 --> M33["Step 3.3: Create QGIS map project"]
     M33 --> M34["Step 3.4: Generate map PDF"]
 ```

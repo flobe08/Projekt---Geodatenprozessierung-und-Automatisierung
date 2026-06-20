@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 1: Prepare data workflow.
 
 This entry point runs the data preparation steps in the correct order for one
@@ -124,7 +124,7 @@ def prepare_data(
 
     if not skip_existing_step(
         "Step 1.4: Clip official landuse",
-        BASE_DIR / "data/processed/landuse" / f"landnutzung_{safe_name}.gpkg",
+        BASE_DIR / "data/processed/1_base_landuse" / f"landnutzung_{safe_name}.gpkg",
         skip_existing,
     ):
         run_script(
@@ -179,40 +179,23 @@ def prepare_data(
             )
 
             run_script(
-                "Step 2.1: Prepare solar OSM street layers",
-                "2_2_solar/4_prepare_solar_osm_streets.py",
+                "Step 2.1: Prepare solar corridor layers",
+                "2_2_solar/1_prepare_solar_corridor_layers.py",
                 ["--municipality", municipality],
             )
 
             run_script(
-                "Step 2.2: Prepare solar corridor layers",
-                "2_2_solar/2_prepare_solar_corridor_layers.py",
-                ["--municipality", municipality],
-            )
-
-            run_script(
-                "Step 2.3: Prepare solar landuse layers",
-                "2_2_solar/3_prepare_solar_landuse.py",
+                "Step 2.2: Prepare solar landuse layers",
+                "2_2_solar/2_prepare_solar_landuse.py",
                 ["--municipality", municipality],
             )
 
         case "wasser":
-            run_script(
-                "Step 1.5: Download OSM network data",
-                "1_prepare_data/5_download_osm_network_data.py",
-                ["--municipality", municipality, "--technology", technology],
-            )
-
-            run_script(
-                "Step 2.1: Prepare water OSM street layers",
-                "2_3_wasser/2_prepare_water_osm_streets.py",
-                ["--municipality", municipality],
-            )
-
-            run_script(
-                "Step 2.2: Prepare water landuse layers",
-                "2_3_wasser/1_prepare_water_landuse.py",
-                ["--municipality", municipality],
+            log_section("Step 2.x: Water-specific processing")
+            log_info(
+                "Water-specific processing is TODO/TBD and is intentionally "
+                "not executed yet. The shared raw data, municipality boundary, "
+                "protection layers and clipped landuse layers are prepared."
             )
         case _:
             raise ValueError(f"Unknown technology: {technology}")

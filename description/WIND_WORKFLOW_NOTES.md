@@ -32,7 +32,7 @@ buffers or landuse proxies.
 ### Administrative boundary
 
 - Source: Bavarian ALKIS administrative dataset
-- Output: `data/processed/boundaries/<municipality>_boundary.gpkg`
+- Output: `data/processed/1_base_boundaries/<municipality>_boundary.gpkg`
 
 ### Official wind planning datasets
 
@@ -43,28 +43,28 @@ buffers or landuse proxies.
 
 - source: `data/raw/landuse/landnutzung.gpkg`
 - municipality clip:
-  `data/processed/landuse/landnutzung_<municipality>.gpkg`
+  `data/processed/1_base_landuse/landnutzung_<municipality>.gpkg`
 
 Additional wind-specific working outputs:
 
-- `data/processed/wind/<municipality>_landuse_wind_ausschluss.gpkg`
-- `data/processed/wind/<municipality>_landuse_wind_potenzial.gpkg`
-- `data/processed/wind/<municipality>_landuse_wind_geeignet.gpkg`
-- `data/processed/wind/<municipality>_landuse_wind_unused.gpkg`
-- `data/processed/wind/<municipality>_landuse_wind_ausschluss_puffer.gpkg`
-- `data/processed/wind/<municipality>_wind_ausschluss_gesamt.gpkg`
+- `data/processed/2_technology_wind/<municipality>_landuse_wind_ausschluss.gpkg`
+- `data/processed/2_technology_wind/<municipality>_landuse_wind_potenzial.gpkg`
+- `data/processed/2_technology_wind/<municipality>_landuse_wind_geeignet.gpkg`
+- `data/processed/2_technology_wind/<municipality>_landuse_wind_unused.gpkg`
+- `data/processed/2_technology_wind/<municipality>_landuse_wind_ausschluss_puffer.gpkg`
+- `data/processed/2_technology_wind/<municipality>_wind_ausschluss_gesamt.gpkg`
 
 Hinweis:
 
-- Die Landnutzungs-Outputs sind aktuell Arbeits- und PrÃ¼flayer.
+- Die Landnutzungs-Outputs sind aktuell Arbeits- und Prüflayer.
 - Sie sind im QGIS-Projektskript bereits als nächste TODO-Stufe vorbereitet,
   aber noch nicht aktiv in die finale Windkarte eingebunden.
 
-### OSM-StraÃŸendaten
+### OSM-Straßendaten
 
-- `data/processed/osm_streets/<municipality>_osm_streets.gpkg`
-- `data/processed/wind/<municipality>_osm_wind_streets.gpkg`
-- `data/processed/wind/<municipality>_osm_wind_streets_puffer.gpkg`
+- `data/processed/1_base_osm_streets/<municipality>_osm_streets.gpkg`
+- `data/processed/2_technology_wind/<municipality>_osm_wind_streets.gpkg`
+- `data/processed/2_technology_wind/<municipality>_osm_wind_streets_puffer.gpkg`
 
 Wichtige Layer:
 
@@ -83,30 +83,30 @@ Die aktuelle Windkarte bindet bereits ein:
 - offizielle Wind-Vorranggebiete
 - offizielle Wind-Vorbehaltsgebiete
 - harte allgemeine Naturschutz-Restriktionen
-- weiche allgemeine Naturschutz-KonfliktflÃ¤chen
+- weiche allgemeine Naturschutz-Konfliktflächen
 - windspezifische Naturschutz-Restriktionen
 
-ZusÃ¤tzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
+Zusätzlich vorbereitet, aber noch bewusst nicht aktiv eingebunden:
 
 - `landuse_wind_ausschluss_puffer`
 - `osm_streets_wind_ausschluss_puffer`
 - `wind_ausschluss_gesamt`
 
 Diese beiden Layer stehen im QGIS-Projektskript bereits als `TODO` bereit und
-werden spÃ¤ter zugeschaltet, sobald die endgÃ¼ltige Ausschlusslogik feststeht.
+werden später zugeschaltet, sobald die endgültige Ausschlusslogik feststeht.
 
 Aktueller Stand: `wind_ausschluss_gesamt` wird im QGIS-Projekt bereits als
-PrÃ¼flayer geladen, ist aber standardmÃ¤ÃŸig ausgeblendet. Dadurch kann der
-Layer manuell aktiviert und geprÃ¼ft werden, ohne die automatisch erzeugte
-PDF-Karte direkt zu verÃ¤ndern.
+Prüflayer geladen, ist aber standardmäßig ausgeblendet. Dadurch kann der
+Layer manuell aktiviert und geprüft werden, ohne die automatisch erzeugte
+PDF-Karte direkt zu verändern.
 
 ### General protection datasets
 
 - official LfU protection area downloads
 - municipality outputs:
-  - `data/processed/schutzgebiete/<municipality>_naturschutz_allgemein_hart.gpkg`
-  - `data/processed/schutzgebiete/<municipality>_naturschutz_allgemein_weich.gpkg`
-  - `data/processed/schutzgebiete/<municipality>_naturschutz_wind.gpkg`
+  - `data/processed/1_base_protection_areas/<municipality>_naturschutz_allgemein_hart.gpkg`
+  - `data/processed/1_base_protection_areas/<municipality>_naturschutz_allgemein_weich.gpkg`
+  - `data/processed/1_base_protection_areas/<municipality>_naturschutz_wind.gpkg`
 
 The current protection workflow separates:
 
@@ -163,69 +163,66 @@ The detailed validation steps are documented in:
 
 ## PDF-Layout-Feinabstimmung
 
-FÃ¼r die finale Windkarte wird das PDF-Layout weiter beruhigt. Ziel ist,
+Für die finale Windkarte wird das PDF-Layout weiter beruhigt. Ziel ist,
 dass Legende, Maßstab, Nordpfeil und Metadaten sauber lesbar bleiben und sich
-nicht gegenseitig Ã¼berlagern.
+nicht gegenseitig überlagern.
 
 Aktuelle Layout-Logik:
 
 - Autor und Datum werden etwas weiter nach unten gesetzt, damit mehr Abstand
-  zur MaÃŸstabszahl entsteht.
+  zur Maßstabszahl entsteht.
 - Der Nordpfeil bleibt innerhalb der Hauptkarte unten rechts, wird aber näher
   an den Kartenrand gesetzt.
 - Der lange Legendeneintrag `Ausschlussflächen durch Landnutzung` wird in der
-  PDF-Legende als `Nutzungsausschluss` gekÃ¼rzt.
+  PDF-Legende als `Nutzungsausschluss` gekürzt.
 - Der Legendeneintrag `Straßen` soll als einheitliches Symbol dargestellt
   werden: schwarzer Rahmen mit einer horizontalen Linie in der Mitte.
 
 Die roten Layout-Rahmen bleiben aktuell bewusst als Debug-Hilfe sichtbar,
 solange das PDF-Layout noch abgestimmt wird.
 
-## Ãœbersichtskarte Bayern
+## Übersichtskarte Bayern
 
-Die kleine Karte im PDF wird als echte Ãœbersichtskarte nach dem
+Die kleine Karte im PDF wird als echte Übersichtskarte nach dem
 Locator-Map-Prinzip aufgebaut. Sie beantwortet nur die Frage, wo die Gemeinde
 innerhalb Bayerns liegt.
 
 Ziel und Darstellung:
 
-- Bayern wird vollstÃ¤ndig dargestellt.
-- Die ausgewÃ¤hlte Gemeinde wird innerhalb Bayerns hervorgehoben.
-- Die Markierung erfolgt durch rote FÃ¼llung bzw. roten Rahmen und einen
-  zusÃ¤tzlichen roten Punktmarker auf Basis eines Point-on-Surface.
-- Die Ãœbersichtskarte bleibt oben links in der PDF-Karte.
+- Bayern wird vollständig dargestellt.
+- Die ausgewählte Gemeinde wird innerhalb Bayerns hervorgehoben.
+- Die Markierung erfolgt durch die rot dargestellte Gemeindegeometrie.
+- Die Übersichtskarte bleibt oben links in der PDF-Karte.
 - Die Hauptkarte bleibt weiterhin auf die Gemeinde und den Untersuchungsraum
   gezoomt.
 - Als Hintergrund wird ein dezenter OSM-Layer verwendet, damit die Lage der
-  Gemeinde innerhalb Bayerns rÃ¤umlich leichter einzuordnen ist.
-- Es werden keine weiteren thematischen Analyse-Layer in der Ãœbersichtskarte
+  Gemeinde innerhalb Bayerns räumlich leichter einzuordnen ist.
+- Es werden keine weiteren thematischen Analyse-Layer in der Übersichtskarte
   verwendet.
 
 Technischer Ansatz:
 
-1. Aus dem offiziellen Verwaltungsdatensatz wird die Bayern-Ãœbersichtsebene
+1. Aus dem offiziellen Verwaltungsdatensatz wird die Bayern-Übersichtsebene
    geladen.
-2. Die bereits extrahierte Gemeindegrenze wird zusÃ¤tzlich als Markierungslayer
+2. Die bereits extrahierte Gemeindegrenze wird zusätzlich als Markierungslayer
    verwendet.
-3. Der vorhandene OSM-Basislayer wird als Hintergrund ergÃ¤nzt.
+3. Der vorhandene OSM-Basislayer wird als Hintergrund ergänzt.
 4. In der PDF-Erzeugung wird ein zweiter Kartenrahmen mit eigener Layerliste
    angelegt.
-5. Dieser zweite Kartenrahmen erhÃ¤lt immer den festen Bayern-Ausschnitt.
-6. Die Zielgemeinde wird darin farblich und durch einen zusÃ¤tzlichen Marker
-   hervorgehoben.
+5. Dieser zweite Kartenrahmen erhält immer den festen Bayern-Ausschnitt.
+6. Die Zielgemeinde wird darin farblich hervorgehoben.
 
 Dieser Ansatz kombiniert die amtliche Gemeindegeometrie mit einem ruhigen
-OSM-Hintergrund. Falls die Gemeinde im Bayern-MaÃŸstab zu klein sichtbar ist,
-bleibt der zusÃ¤tzliche Punktmarker sichtbar.
+OSM-Hintergrund.
 
 ## Detail- und Attributlayer im QGIS-Projekt
 
-FÃ¼r die finale PDF-Karte werden bewusst aggregierte Kartenlayer verwendet,
+Für die finale PDF-Karte werden bewusst aggregierte Kartenlayer verwendet,
 damit die Darstellung lesbar bleibt. Im QGIS-Projekt sollen parallel dazu
-Detail- und Attributlayer verfÃ¼gbar bleiben. Diese dienen der Analyse,
-Nachvollziehbarkeit und AttributprÃ¼fung.
+Detail- und Attributlayer verfügbar bleiben. Diese dienen der Analyse,
+Nachvollziehbarkeit und Attributprüfung.
 
-FÃ¼r Naturschutz sind drei Detailgruppen vorgesehen:
+Für Naturschutz sind drei Detailgruppen vorgesehen:
 
 - `Detail- und Attributlayer Naturschutz hart`
 - `Detail- und Attributlayer Naturschutz weich`
@@ -234,9 +231,9 @@ FÃ¼r Naturschutz sind drei Detailgruppen vorgesehen:
 Die sichtbaren Kartenlayer bleiben dagegen zusammengefasst:
 
 - `Harte Naturschutz-Restriktionen`
-- `Weiche Naturschutz-KonfliktflÃ¤chen`
+- `Weiche Naturschutz-Konfliktflächen`
 - `Windspezifische Restriktionen`
 
-FÃ¼r den Nutzungsausschluss gilt dieselbe Logik: Die PDF zeigt einen kompakten
-Sammellayer, wÃ¤hrend das QGIS-Projekt die Detail- und Attributlayer zur
-Kontrolle enthÃ¤lt.
+Für den Nutzungsausschluss gilt dieselbe Logik: Die PDF zeigt einen kompakten
+Sammellayer, während das QGIS-Projekt die Detail- und Attributlayer zur
+Kontrolle enthält.
