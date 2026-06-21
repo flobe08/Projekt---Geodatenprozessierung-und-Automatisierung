@@ -126,3 +126,16 @@ die Nachvollziehbarkeit der Verarbeitung sichern. Dadurch können aggregierte
 Kartenlayer im Bericht übersichtlich dargestellt werden, ohne die Möglichkeit
 zu verlieren, einzelne Ursprungsdaten, Attribute und Zwischenergebnisse in QGIS
 zu prüfen.
+
+## Übersichtskarte in der PDF
+
+Für die PDF-Karten kann zusätzlich eine kleine Übersichtskarte `Lage in Bayern`
+eingebunden werden. Sie nutzt vorbereitete Übersichtslayer und dient nur der
+räumlichen Orientierung innerhalb Bayerns.
+
+Die Übersichtskarte wird nicht als zusätzlicher Analyse-Layer verstanden. Sie
+ist ein kartografisches Hilfselement. Damit sie die Hauptaussage nicht
+verdeckt, prüft die PDF-Erzeugung vor dem Einfügen, ob der geplante
+Übersichtskartenbereich die Gemeinde im Hauptkartenbild schneiden würde. Falls
+ja, wird die Übersichtskarte automatisch weggelassen. Die Geodaten und die
+QGIS-Projektlayer bleiben dadurch unverändert.

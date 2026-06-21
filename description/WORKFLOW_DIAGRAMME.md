@@ -12,7 +12,7 @@ Die Pipeline ist in drei Blöcke gegliedert:
 | --- | --- | --- |
 | `Step 1.x` | gemeinsame Datenvorbereitung | Gemeindegrenze, Schutzgebiete, Landnutzung, OSM-Rohdaten |
 | `Step 2.x` | technologiespezifische Verarbeitung | Wind-, Solar- oder Wasser-Layer |
-| `Step 3.x` | Kartenerzeugung | Übersichtskarte, QGIS-Projekt und PDF |
+| `Step 3.x` | Kartenerzeugung | Übersichtslayer, QGIS-Projekt und PDF |
 
 So bleibt die Nummerierung stabil, auch wenn Wind, Solar und Wasser später
 unterschiedlich viele Einzelschritte haben.
@@ -143,11 +143,11 @@ flowchart TD
 
     A15 --> S21["Step 2.1: Prepare solar corridor layers"]
     S21 --> S22["Step 2.2: Prepare solar landuse layers"]
+    S22 --> S23["Step 2.3: Download solar WMS reference rasters"]
 
-    S22 --> M31["Step 3.1: Download solar WMS reference rasters"]
-    M31 --> M32["Step 3.2: Prepare overview map layers"]
-    M32 --> M33["Step 3.3: Create QGIS map project"]
-    M33 --> M34["Step 3.4: Generate map PDF"]
+    S23 --> M31["Step 3.1: Prepare overview map layers"]
+    M31 --> M32["Step 3.2: Create QGIS map project"]
+    M32 --> M33["Step 3.3: Generate map PDF"]
 ```
 
 ## 6. Wasser-Workflow als Kurzdiagramm
@@ -169,3 +169,26 @@ flowchart TD
     M31 --> M32["Step 3.2: Create QGIS map project"]
     M32 --> M33["Step 3.3: Generate map PDF"]
 ```
+
+## 7. Kartografische Übersichtskarte
+
+Die Übersichtskarte ist Teil der PDF-Erzeugung, verändert aber keine
+Geodaten. Sie wird in `Step 3.1` vorbereitet und in `Step 3.3` in die Karte
+eingebunden.
+
+Die Logik ist bewusst defensiv:
+
+1. `scripts/3_generate_map/1_prepare_overview_layers.py` erzeugt den
+   Bayern-Außenumriss und einen gemeindespezifischen Übersichtslayer.
+2. `scripts/3_generate_map/3_generate_map_pdf.py` prüft vor dem Einfügen,
+   ob die Übersichtskarte im Hauptkartenbild einen relevanten Teil der
+   Gemeinde überdecken würde.
+3. Wenn die Übersichtskarte die Gemeinde im Hauptkartenausschnitt schneidet,
+   wird sie für diese PDF automatisch weggelassen.
+4. Wenn keine Überdeckung entsteht, wird sie oben links als Locator Map mit
+   dem Titel `Lage in Bayern` eingefügt.
+
+Dadurch bleibt die Pipeline für unterschiedliche Gemeindegrößen stabil. Bei
+kompakten Gemeinden wird die Lage in Bayern direkt gezeigt. Bei großen oder
+ungünstig liegenden Gemeinden wird die Hauptkarte nicht durch die
+Übersichtskarte verdeckt.

@@ -50,8 +50,8 @@ LAYOUT_TEMPLATE = {
     "overview_map_enabled": True,
     "overview_map_x": 6,
     "overview_map_y": 18,
-    "overview_map_width": 72,
-    "overview_map_height": 58,
+    "overview_map_width": 62,
+    "overview_map_height": 50,
     # Scale bar and metadata.
     "scale_bar_y": 176,
     "scale_text_y": 190,

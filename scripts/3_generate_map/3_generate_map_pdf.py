@@ -22,6 +22,7 @@ from datetime import date
 from qgis.core import (
     QgsApplication,
     QgsFillSymbol,
+    QgsGeometry,
     QgsLinePatternFillSymbolLayer,
     QgsLayerTreeLayer,
     QgsLayoutExporter,
@@ -704,6 +705,56 @@ def add_overview_map(
     title_label.setHAlign(Qt.AlignCenter)
 
 
+def overview_map_overlaps_boundary(
+    boundary_layer: QgsVectorLayer,
+    main_extent: QgsRectangle,
+    map_x: float,
+    map_y: float,
+    map_width: float,
+    map_height: float,
+    overview_x: float,
+    overview_y: float,
+    overview_width: float,
+    overview_height: float,
+) -> bool:
+    """Return True if the fixed overview map would cover the municipality."""
+
+    relative_left = (overview_x - map_x) / map_width
+    relative_right = (overview_x + overview_width - map_x) / map_width
+    relative_top = (overview_y - map_y) / map_height
+    relative_bottom = (overview_y + overview_height - map_y) / map_height
+
+    if (
+        relative_right <= 0
+        or relative_left >= 1
+        or relative_bottom <= 0
+        or relative_top >= 1
+    ):
+        return False
+
+    relative_left = max(0, relative_left)
+    relative_right = min(1, relative_right)
+    relative_top = max(0, relative_top)
+    relative_bottom = min(1, relative_bottom)
+
+    extent_width = main_extent.width()
+    extent_height = main_extent.height()
+    covered_extent = QgsRectangle(
+        main_extent.xMinimum() + relative_left * extent_width,
+        main_extent.yMaximum() - relative_bottom * extent_height,
+        main_extent.xMinimum() + relative_right * extent_width,
+        main_extent.yMaximum() - relative_top * extent_height,
+    )
+    covered_geometry = QgsGeometry.fromRect(covered_extent)
+
+    for feature in boundary_layer.getFeatures():
+        geometry = feature.geometry()
+        if geometry and geometry.intersects(covered_geometry):
+            return True
+
+    return False
+
+
 # -----------------------------------------------------------------------------
 # 2. Create the PDF layout
 # -----------------------------------------------------------------------------
@@ -916,16 +967,35 @@ def create_pdf_layout(
         else:
             overview_layers, overview_extent = overview
 
-        add_overview_map(
-            layout,
-            project,
-            overview_layers,
-            overview_extent,
+        overview_overlaps_boundary = overview_map_overlaps_boundary(
+            boundary_layer,
+            main_extent,
+            map_x,
+            map_y,
+            map_width,
+            map_height,
             layout_config["overview_map_x"],
             layout_config["overview_map_y"],
             layout_config["overview_map_width"],
             layout_config["overview_map_height"],
         )
+
+        if overview_overlaps_boundary:
+            log_info(
+                "Bavaria overview map skipped because it would cover the municipality "
+                "in the main map."
+            )
+        else:
+            add_overview_map(
+                layout,
+                project,
+                overview_layers,
+                overview_extent,
+                layout_config["overview_map_x"],
+                layout_config["overview_map_y"],
+                layout_config["overview_map_width"],
+                layout_config["overview_map_height"],
+            )
 
     north_arrow_x = panel_x
 

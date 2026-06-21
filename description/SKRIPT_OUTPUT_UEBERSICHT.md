@@ -120,6 +120,12 @@ Für die Wind-PDF ist zusätzlich eine Layout-Feinabstimmung dokumentiert:
 - die Übersichtskarte nutzt vorbereitete Locator-Layer aus `data/processed/1_base_overview/`
 - der Bayern-Außenumriss wird einmalig erzeugt und danach wiederverwendet
 - die gewählte Gemeinde wird in der Übersichtskarte als rote Fläche markiert
+- die Übersichtskarte wird nur eingefügt, wenn sie im Hauptkartenbild keinen
+  relevanten Teil der Gemeinde verdeckt
+
+Diese letzte Regel ist wichtig für Gemeinden mit sehr unterschiedlicher Größe
+oder Lage im Kartenrahmen. Die Pipeline bevorzugt in diesem Fall die Lesbarkeit
+der Hauptkarte gegenüber einer immer erzwungenen Locator Map.
 
 Die genauere Beschreibung steht in
 [WIND_WORKFLOW_NOTES.md](WIND_WORKFLOW_NOTES.md).
