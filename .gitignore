@@ -1,0 +1,35 @@
+# Data folder (raw + processed)
+data/
+
+# Optional: Struktur behalten (leere Ordner tracken)
+!data/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Große GIS Dateien
+*.pbf
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.cpg
+*.prj
+*.osm
+*.o5m
+
+# Temporäre Dateien
+*.tmp
+*.log
+
+# QGIS Cache / temporär
+*.qgz~
+*.aux.xml
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local Python environments
+.venv/
+.venv-wsl/
