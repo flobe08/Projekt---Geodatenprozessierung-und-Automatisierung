@@ -113,9 +113,17 @@ Der Solarbereich kann nach demselben Prinzip erweitert werden:
 
 ## Wasser
 
-Der Wasserbereich ist noch erweiterbar. Das gleiche Prinzip kann später für
-Gewässer, Wasserschutzgebiete, Überschwemmungsflächen und weitere
-wasserbezogene Infrastruktur- oder Konfliktlayer verwendet werden.
+Der Wasserbereich folgt demselben Grundprinzip wie Wind und Solar. Sichtbar
+dargestellt werden zusammengefasste Wasser- und Schutzlayer, während die
+zugrunde liegenden Einzellayer als Detail- und Attributlayer im QGIS-Projekt
+erhalten bleiben.
+
+| Bereich | Zweck |
+| --- | --- |
+| Wasserschutz hart | zusammengefasster Layer aus Trinkwasser- und Heilquellenschutzgebieten |
+| Detail- und Attributlayer Wasserschutz hart | geclippt erhaltene Ursprungslayer zur Attributprüfung |
+| WMS-Referenzlayer Wasser | Wasserkraftanlagen, Querbauwerk-Potenziale, Modernisierung/Nachrüstung, Überschwemmungs- und Hochwasserflächen |
+| Naturschutz hart/weich | allgemeiner Schutzgebietskontext analog zu Wind und Solar |
 
 ## Formulierung für Bericht oder MkDocs
 

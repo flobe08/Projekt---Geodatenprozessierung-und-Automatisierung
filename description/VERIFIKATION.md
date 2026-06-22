@@ -1,4 +1,4 @@
-﻿# Verifikation der Verarbeitungsschritte
+# Verifikation der Verarbeitungsschritte
 
 Diese Datei dokumentiert die fachliche Verifikation der aktuellen
 Verarbeitungsschritte. Sie ist getrennt von der reinen Bedienanleitung in
@@ -11,7 +11,9 @@ Die Struktur ist bereits für drei Technologierichtungen vorbereitet:
 - Solar
 - Wasser
 
-Aktuell ist nur der Bereich **Wind** vollständig umgesetzt und verifiziert.
+Aktuell ist der Bereich **Wind** am vollständigsten umgesetzt und verifiziert.
+Für **Solar** sind die zentralen Referenz- und Korridorlayer ebenfalls
+dokumentiert. **Wasser** ist weiterhin als vorbereiteter Bereich vorgesehen.
 
 ## 1. Allgemein
 
@@ -42,28 +44,33 @@ Ergebnis:
   von Drachselsried überein.
 - Damit ist die Extraktion der Gemeindegrenze fachlich plausibel verifiziert.
 
-Historische Referenz:
-
-```text
-# TODO: nicht mehr verwendet
-scripts/prepare_data/1_grenzen.py
-```
-
 Aktuelle Referenz:
 
 ```text
 scripts/1_prepare_data/2_extract_municipality_boundary.py
 ```
 
-## 2. Allgemeine Schutzgebiete
+Frühere Skriptversion:
 
-### 2.1 Verifikation der Schutzgebietsdaten
+```text
+scripts/prepare_data/1_grenzen.py
+```
+
+Diese frühere Skriptversion wird nicht mehr aktiv verwendet. Sie bleibt hier
+nur als historische Referenz dokumentiert.
+
+## 2. Schutzgebiete
+
+### 2.1 Verifikation der allgemeinen Schutzgebietslayer
 
 Verwendete Datensätze:
 
-- allgemeine Schutzgebietsdatensätze des LfU Bayern
-- Natura-2000-Datensätze FFH und Vogelschutz
-- automatischer Skript-Output:
+- Schutzgebietsdaten des Bayerischen Landesamts für Umwelt
+- Natura-2000-Daten
+- Ramsar-Gebiete
+- weitere Schutzgebietskategorien
+
+Automatische Outputs:
 
 ```text
 data/processed/1_base_protection_areas/drachselsried_naturschutz_allgemein_hart.gpkg
@@ -73,71 +80,63 @@ data/processed/1_base_protection_areas/drachselsried_naturschutz_wind.gpkg
 
 Vorgehen zur Verifikation:
 
-1. Die originalen Schutzgebietsdatensätze wurden in QGIS geladen.
-2. Die Gemeindegrenze von Drachselsried wurde ergänzt.
-3. Die flächenhaften Datensätze wurden manuell mit der Gemeinde verglichen.
-4. Der automatische Output aus
-   `scripts/1_prepare_data/3_build_protection_layers.py` wurde geladen.
-5. Die zusammengeführten Ergebnislayer
-   - `naturschutz_allgemein_hart_merged`
-   - `naturschutz_allgemein_weich_merged`
-   - `naturschutz_wind_merged`
-   wurden mit den Originaldaten visuell überlagert.
+1. Die erzeugten GeoPackages wurden in QGIS geladen.
+2. Die enthaltenen Ursprungslayer wurden mit den heruntergeladenen Rohdaten
+   verglichen.
+3. Die zusammengeführten Layer wurden gegen die Einzel-Layer geprüft.
+4. Die Layer wurden mit der Gemeindegrenze überlagert.
 
 Ergebnis:
 
-- Die automatisierten Schutzgebietslayer sind räumlich plausibel.
-- Die Einteilung in harte und weiche Restriktionen ist methodisch nachvollziehbar.
-- Großräumige Schutzkategorien wie Naturparke, Landschaftsschutzgebiete und
-  Biosphärenreservate werden bewusst nicht automatisch als absolute
-  Ausschlussflächen behandelt.
+- Die Schutzgebiete werden fachlich in harte und weiche Restriktionen
+  getrennt.
+- Harte Restriktionen werden als strengere Konflikt- und Ausschlussflächen
+  behandelt.
+- Weiche Restriktionen dienen als Konflikt- und Hinweisflächen.
+- Windspezifische Schutz- und Konfliktflächen werden zusätzlich separat
+  vorbereitet.
+- Punktförmige Naturdenkmale und punktförmige geschützte
+  Landschaftsbestandteile werden als Detail- und Attributlayer mitgeführt,
+  aber nicht ohne fachlich begründeten Puffer in den flächenhaften
+  Merged-Layer übernommen.
 
-Methodischer Hinweis:
+Aktuelle Referenz:
 
-- punktförmige Schutzobjekte bleiben weiterhin dokumentiert und verfügbar
-- sie werden als eigene geclippte Punktlayer mit ausgegeben
-- für den zusammengeführten harten Ausschlusslayer werden aber weiterhin die
-  flächenhaften Schutzgebietsdaten bevorzugt
+```text
+scripts/1_prepare_data/3_build_protection_layers.py
+```
 
 ## 3. Wind
 
-### 3.1 Verifikation der Wind-WFS-Daten
+### 3.1 Verifikation der Wind-Ausgangsdaten
 
-Verwendete Datensätze:
-
-- `wind_vorranggebiete.gpkg`
-- `wind_vorbehaltsgebiete.gpkg`
-
-Quelle:
+Verwendeter Datensatz:
 
 - WFS Regionalplanung Bayern
-- URL:
-
-```text
-https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung
-```
+- Vorranggebiete Windenergienutzung
+- Vorbehaltsgebiete Windenergienutzung
 
 Vorgehen zur Verifikation:
 
-1. Die automatisch heruntergeladenen WFS-Datensätze wurden in QGIS geöffnet.
-2. Die WFS-Layer wurden zusätzlich direkt über die WFS-Verbindung in QGIS
-   eingebunden.
-3. Beide Darstellungen wurden visuell gegengeprüft.
+1. Der WFS-Dienst wurde manuell in QGIS eingebunden.
+2. Die relevanten Layer wurden geladen.
+3. Die automatisch heruntergeladenen und zugeschnittenen Daten wurden mit den
+   WFS-Layern verglichen.
+4. Die Lage innerhalb der Gemeinde Drachselsried wurde geprüft.
 
 Ergebnis:
 
-- Die automatisch geladenen GeoPackages entsprechen den direkt eingebundenen
-  WFS-Layern.
-- Damit ist der Download der offiziellen Winddatensätze fachlich plausibel
-  verifiziert.
+- Die Windflächen stammen aus einer offiziellen regionalplanerischen Quelle.
+- Die im Workflow erzeugten Layer sind räumlich plausibel.
+- Vorrang- und Vorbehaltsgebiete werden in der Karte getrennt dargestellt.
 
-### 3.2 Verifikation des Clips der Windflächen
+Aktuelle Referenz:
 
-Verwendete Datensätze:
+```text
+scripts/1_prepare_data/1_download_data.py --technology wind
+```
 
-- offizieller Wind-Datensatz
-- Gemeindegrenze Drachselsried
-- automatischer Skript-Output
+### 3.2 Verifikation des Wind-Clips
 
 Automatischer Output:
 
@@ -145,42 +144,32 @@ Automatischer Output:
 data/processed/2_technology_wind/drachselsried_wind_layers.gpkg
 ```
 
-Relevante Layer:
-
-- `wind_vorranggebiete_drachselsried`
-- `wind_vorbehaltsgebiete_drachselsried`
-- `wind_spezifisch`
-
 Vorgehen zur Verifikation:
 
-1. Der originale Wind-Datensatz wurde manuell in QGIS geladen.
-2. Die Gemeindegrenze von Drachselsried wurde geladen.
-3. Der originale Wind-Datensatz wurde manuell mit der Gemeindegrenze
-   zugeschnitten.
-4. Der manuelle Zuschnitt wurde mit dem Output des aktuellen Skripts
-   überlagert.
-5. Die Geometrien wurden visuell verglichen.
+1. Die Windflächen wurden mit der Gemeindegrenze überlagert.
+2. Es wurde geprüft, ob nur die innerhalb der Gemeinde liegenden Teilflächen
+   übernommen wurden.
+3. Die Attributtabelle wurde stichprobenartig geprüft.
 
 Ergebnis:
 
-- Der automatische Skript-Output stimmt räumlich mit dem manuell erzeugten
-  Zuschnitt überein.
-- Der Clip der Windflächen ist damit fachlich nachvollziehbar verifiziert.
-- Der Layer `wind_spezifisch` fasst die technologiespezifischen Windflächen
-  für eine einfache QGIS-Prüfung zusammen.
-
-Historische Referenz:
-
-```text
-# TODO: nicht mehr verwendet
-scripts/wind/3_clip_wind_planning_areas.py
-```
+- Die Windflächen wurden korrekt auf die Gemeinde zugeschnitten.
+- Die Attributinformationen bleiben für die Nachvollziehbarkeit erhalten.
 
 Aktuelle Referenz:
 
 ```text
 scripts/2_1_wind/1_clip_wind_planning_areas.py
 ```
+
+Frühere Skriptversion:
+
+```text
+scripts/wind/3_clip_wind_planning_areas.py
+```
+
+Diese frühere Skriptversion wird nicht mehr aktiv verwendet. Die aktuelle
+Verarbeitung erfolgt über die oben genannte Referenz.
 
 ### 3.3 Verifikation der Wind-Landnutzungslayer
 
@@ -214,7 +203,7 @@ Vorgehen zur Verifikation:
    zugeschnittenen Gemeinde-Output verglichen.
 3. Die Datei `landnutzung_drachselsried.gpkg` wurde geprüft, ob die
    erwarteten Nutzungs-Layer für Drachselsried enthalten sind.
-4. Die vier windbezogenen Ergebnisdateien wurden in QGIS geladen.
+4. Die windbezogenen Ergebnisdateien wurden in QGIS geladen.
 5. Die Attributspalte `source_layer` wurde geprüft, um nachzuvollziehen,
    aus welchen offiziellen Nutzungs-Layern die Wind-Gruppen erzeugt wurden.
 
@@ -227,11 +216,11 @@ Ergebnis:
   nachvollziehbare Suchraum- und Prüflayer.
 - `landuse_wind_unused` enthält alle offiziellen Landnutzungs-Layer, die im
   aktuellen Wind-Landuse-Schritt noch keiner methodischen Kategorie zugeordnet
-  sind. Dazu gehört auch `ln_strassenundwegeverkehr`, weil dieser amtliche
-  Layer für Wind zu grob ist und später besser über OSM-Straßenklassen oder
-  begründete Puffer bewertet werden soll.
-- Die Landnutzungslayer sind aktuell vorbereitet, aber bewusst noch nicht in
-  die finale Windkarte eingebunden.
+  sind.
+- Die Landnutzungslayer bleiben als Detail- und Attributlayer im QGIS-Projekt
+  verfügbar.
+- Für die finale Windkarte wird daraus nicht jeder Einzellayer dargestellt,
+  sondern der aggregierte Layer `Nutzungsausschluss` verwendet.
 
 Aktuelle Referenz:
 
@@ -241,7 +230,7 @@ scripts/2_1_wind/2_prepare_wind_landuse.py
 
 ### 3.4 Verifikation der OSM-Highway-Daten für Wind
 
-Verwendeter Datensatz:
+Verwendete Datensätze:
 
 ```text
 data/processed/1_base_osm_streets/drachselsried_osm_streets.gpkg
@@ -251,7 +240,7 @@ data/processed/2_technology_wind/drachselsried_osm_wind_streets.gpkg
 Relevante Layer:
 
 - `osm_streets_raw`
-- `osm_streets_wind_ausschluss`
+- windbezogen gefilterte Straßen und Wege
 
 Vorgehen zur Verifikation:
 
@@ -260,8 +249,8 @@ Vorgehen zur Verifikation:
 3. Die Straßen wurden visuell mit der Basiskarte verglichen.
 4. Die Attribute wurden stichprobenartig geprüft, insbesondere das Feld
    `highway`.
-5. Der Layer `osm_streets_wind_ausschluss` wurde zusätzlich geprüft, weil er die
-   für Wind relevanten größeren Straßenklassen zusammenfasst.
+5. Der windbezogene OSM-Layer wurde geprüft, weil er die für Wind relevanten
+   Straßen- und Wegeklassen zusammenfasst.
 
 Ergebnis:
 
@@ -269,11 +258,10 @@ Ergebnis:
   Gemeinde.
 - Die Straßenklassen sind nachvollziehbar und können über `highway`
   kontrolliert werden.
-- `service`, `track` und `road` werden nicht pauschal als
-  Wind-Ausschlussstraßen behandelt, weil sie für Erschließung wichtig sein
-  können und fachlich anders bewertet werden müssen als größere Straßen.
-- Der OSM-Ausschlusslayer ist aktuell vorbereitet, aber noch nicht in die
-  finale Windkarte eingebunden.
+- Die gefilterten OSM-Straßen werden in der finalen Windkarte als
+  `Straßen und Wege` dargestellt.
+- Zusätzlich bleiben die OSM-Layer als Detail- und Attributlayer für die
+  Prüfung der Straßenklassen verfügbar.
 
 Hinweis:
 
@@ -286,6 +274,7 @@ Aktuelle Referenz:
 
 ```text
 scripts/1_prepare_data/5_download_osm_network_data.py --technology wind
+scripts/2_1_wind/4_prepare_wind_osm_streets.py
 ```
 
 ### 3.5 Verifikation der finalen Windkarte
@@ -305,24 +294,27 @@ In der finalen Windkarte aktiv dargestellte Layer:
 - harte allgemeine Naturschutz-Restriktionen
 - weiche allgemeine Naturschutz-Konfliktflächen
 - windspezifische Naturschutz-Restriktionen
+- Straßen und Wege aus OSM
+- Nutzungsausschluss als aggregierte Ausschlussfläche aus Landnutzung und
+  vorbereiteten Ausschlusslayern
 - OpenStreetMap als Hintergrundkarte
 
-Vorbereitet, aber aktuell nicht aktiv dargestellt:
+Im QGIS-Projekt zusätzlich als Detail- und Attributlayer verfügbar:
 
-- `landuse_wind_ausschluss`
-- `landuse_wind_potenzial`
-- `landuse_wind_geeignet`
-- `landuse_wind_unused`
-- `osm_streets_raw`
-- `osm_streets_wind_ausschluss`
+- einzelne Landnutzungsgruppen wie `landuse_wind_ausschluss`,
+  `landuse_wind_potenzial`, `landuse_wind_geeignet` und
+  `landuse_wind_unused`
+- OSM-Ausgangs- und Filterlayer
+- einzelne Naturschutz-Ursprungslayer
 
 Ergebnis:
 
-- Die finale Windkarte fokussiert bewusst auf die amtlichen Windflächen und
-  die wichtigsten Restriktionslayer.
-- Zusätzliche Landnutzungs- und OSM-Layer bleiben für Prüfung und spätere
-  methodische Erweiterung verfügbar, werden aber aus Gründen der Lesbarkeit
-  nicht automatisch in der finalen Karte angezeigt.
+- Die finale Windkarte fokussiert bewusst auf aggregierte und gut lesbare
+  Kartenlayer.
+- Detail- und Attributlayer bleiben im QGIS-Projekt verfügbar, werden aber
+  nicht einzeln in der PDF-Karte dargestellt.
+- Dadurch bleibt die Karte lesbar, während die fachliche Entstehung der Layer
+  weiterhin nachvollziehbar ist.
 
 ### 3.6 Zusammenfassung Wind
 
@@ -332,8 +324,9 @@ Für den Wind-Workflow wurden die zentralen Schritte verifiziert:
 - Windflächen aus offiziellem WFS
 - Clip der Windflächen auf die Gemeinde
 - allgemeine und windspezifische Naturschutzlayer
-- windbezogene Landnutzungslayer als vorbereitete Arbeitslayer
-- OSM-Highway-Daten als vorbereitete Kontext- und Ausschlusslayer
+- windbezogene Landnutzungslayer als Detail- und Attributlayer
+- OSM-Highway-Daten als sichtbarer Straßen-/Wegekontext und als Detaillayer
+- aggregierter Nutzungsausschluss als finaler Kartenlayer
 - QGIS-Projekt und PDF-Karte
 
 Damit ist der aktuelle Wind-Workflow fachlich plausibel und für die weitere
@@ -347,7 +340,7 @@ Verwendete Datensätze:
 
 - `data/processed/1_base_osm_streets/drachselsried_osm_streets.gpkg`
 - `data/processed/2_technology_solar/corridor/drachselsried_solar_corridor_basis.gpkg`
-- amtliche OSM-Basiskarte in QGIS
+- OpenStreetMap-Basiskarte in QGIS
 
 Vorgehen zur Verifikation:
 
@@ -404,8 +397,10 @@ Ergebnis:
 - Die selbst erzeugten 200-m- und 500-m-Puffer können gegen die amtlichen
   WMS-Darstellungen fachlich plausibilisiert werden.
 - Die amtlichen PV-Freiflächenkulissen dienen zusätzlich als visuelle
-  Referenz für die Einordnung, sind aber selbst kein gut weiterverarbeitbarer
-  Vektor-Eingabedatensatz der Pipeline.
+  Referenz für die Einordnung.
+- Die WMS-Referenzdaten werden als Raster auf Basis der Gemeinde-Bounding-Box
+  eingebunden. Ein exakter harter Zuschnitt an der Gemeindegrenze ist bei
+  diesen Darstellungsdaten nicht das Ziel der Verarbeitung.
 
 Hinweis zur Methodik:
 
@@ -414,13 +409,10 @@ Hinweis zur Methodik:
 - Die eigentliche automatisierte Analyse erfolgt weiterhin über die eigenen
   Vektorlayer aus OSM und Bufferoperationen.
 
-Historische Notizen:
+Historische Notiz:
 
-```text
-# TODO: nicht mehr verwendet
 Frühere Solar-Zwischenstände bleiben bewusst dokumentiert, auch wenn der
 aktuelle Workflow inzwischen über die neuen Skripte und Referenzlayer läuft.
-```
 
 ## 5. Wasser
 
@@ -446,3 +438,9 @@ https://risby.bayern.de/RisGate/servlet/WFSRegionalplanung
 
 4. Verbinden
 5. Relevante Layer laden
+
+Wichtig:
+
+- In QGIS kann derselbe WFS-Dienst mehrere Layer bereitstellen.
+- Für den Wind-Workflow sind insbesondere die regionalplanerischen
+  Vorrang- und Vorbehaltsgebiete relevant.
