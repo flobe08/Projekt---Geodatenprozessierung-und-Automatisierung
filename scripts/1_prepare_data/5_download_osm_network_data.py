@@ -25,7 +25,7 @@ import geopandas as gpd
 import requests
 from shapely.geometry import LineString
 
-sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 from spatial_context import area_to_overpass_bbox, build_analysis_context
 from utils import ColoredArgumentParser, log_error, log_info, log_success, log_warning
 

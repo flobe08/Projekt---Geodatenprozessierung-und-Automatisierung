@@ -24,7 +24,8 @@ Skripte und die manuelle Ausführung.
 - Solar: `scripts/2_2_solar/1_prepare_solar_corridor_layers.py`
 - Solar: `scripts/2_2_solar/2_prepare_solar_landuse.py`
 - Solar: `scripts/2_2_solar/3_download_solar_reference_wms.py`
-- Wasser: TODO/TBD, aktuell nur als Platzhalter vorbereitet
+- Wasser: `scripts/2_3_wasser/1_download_wasser_reference_wms.py`
+- Wasser: `scripts/2_3_wasser/2_build_wasser_protection_layers.py`
 
 Hinweis:
 

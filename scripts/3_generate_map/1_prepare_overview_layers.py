@@ -22,7 +22,7 @@ from qgis.core import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(BASE_DIR / "scripts/utils"))
+sys.path.insert(0, str(BASE_DIR / "scripts/utils"))
 
 from utils import ColoredArgumentParser, log_info, log_success, log_warning
 

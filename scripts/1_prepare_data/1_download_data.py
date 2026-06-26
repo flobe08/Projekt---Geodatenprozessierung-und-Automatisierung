@@ -1,4 +1,4 @@
-"""
+﻿"""
 Script 1: Prepare all raw datasets.
 
 Workflow:
@@ -15,7 +15,7 @@ import requests
 import sys
 import zipfile
 
-sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 from utils import (
     ColoredArgumentParser,
     log_dataset,
@@ -177,9 +177,31 @@ VOGELKULISSEN_2024_EXTRACT_DIR = WIND_RAW_DIR / "vogelkulissen_2024"
 # Wasser datasets
 # =============================================================================
 
-# TODO: no raw water download is configured here yet.
-# Later candidates are Gewässer, Wasserschutzgebiete, Überschwemmungsgebiete
-# and Hochwasserschutzflächen.
+WASSER_RAW_DIR = BASE_DIR / "data/raw/wasser"
+WASSERSCHUTZ_RAW_DIR = WASSER_RAW_DIR / "wasserschutzgebiete"
+
+TRINKWASSERSCHUTZGEBIETE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/wsg/twsg_epsg25832_shp.zip"
+TRINKWASSERSCHUTZGEBIETE_FILE = WASSERSCHUTZ_RAW_DIR / "trinkwasserschutzgebiete.zip"
+TRINKWASSERSCHUTZGEBIETE_EXTRACT_DIR = WASSERSCHUTZ_RAW_DIR / "trinkwasserschutzgebiete"
+
+HEILQUELLENSCHUTZGEBIETE_URL = "https://www.lfu.bayern.de/gdi/dls/daten/wsg/hqsg_epsg25832_shp.zip"
+HEILQUELLENSCHUTZGEBIETE_FILE = WASSERSCHUTZ_RAW_DIR / "heilquellenschutzgebiete.zip"
+HEILQUELLENSCHUTZGEBIETE_EXTRACT_DIR = WASSERSCHUTZ_RAW_DIR / "heilquellenschutzgebiete"
+
+WASSERSCHUTZ_DATASETS = [
+    (
+        TRINKWASSERSCHUTZGEBIETE_URL,
+        TRINKWASSERSCHUTZGEBIETE_FILE,
+        TRINKWASSERSCHUTZGEBIETE_EXTRACT_DIR,
+        "trinkwasserschutzgebiete",
+    ),
+    (
+        HEILQUELLENSCHUTZGEBIETE_URL,
+        HEILQUELLENSCHUTZGEBIETE_FILE,
+        HEILQUELLENSCHUTZGEBIETE_EXTRACT_DIR,
+        "heilquellenschutzgebiete",
+    ),
+]
 
 
 # =============================================================================
@@ -427,10 +449,14 @@ def prepare_solar_raw_datasets() -> None:
 # =============================================================================
 
 def prepare_wasser_raw_datasets() -> None:
-    """Placeholder for future raw water downloads.todo: """
+    """Download all required official water datasets for the workflow."""
 
     log_section("Wasser datasets")
-    log_info("No raw water download configured yet.")
+
+    for url, zip_file, extract_dir, dataset_name in WASSERSCHUTZ_DATASETS:
+        log_dataset(f"Dataset: {dataset_name}")
+        download_file(url, zip_file)
+        unzip_file(zip_file, extract_dir)
 
 
 # =============================================================================

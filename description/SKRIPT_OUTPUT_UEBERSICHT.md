@@ -24,6 +24,7 @@ data/processed/
 
   2_technology_wind/
   2_technology_solar/
+  2_technology_wasser/
 
   3_qgis_projects/
   3_maps/
@@ -38,6 +39,12 @@ data/processed/2_technology_solar/reference/
 
 `corridor/` enthält die OSM-basierte Grundlage für die EEG-/BauGB-Korridore.
 `reference/` enthält die WMS-Referenzbilder aus dem Energie-Atlas Bayern.
+
+Für Wasser werden die amtlichen WMS-Referenzbilder getrennt abgelegt:
+
+```text
+data/processed/2_technology_wasser/reference/
+```
 
 ## 1. Gemeinsame Datenvorbereitung
 
@@ -76,9 +83,10 @@ OSM-Netzwerkdownload.
 
 ## 4. Wasser
 
-Wasser ist aktuell TODO/TBD. Die wasserbezogenen Skripte und Outputs werden
-erst ergänzt, wenn die Wasser-Datengrundlagen und die fachliche Logik festgelegt
-sind.
+| Skriptname | Inputfiles | Outputfiles |
+| --- | --- | --- |
+| `scripts/2_3_wasser/2_build_wasser_protection_layers.py` | `data/processed/1_base_boundaries/<gemeinde>_boundary.gpkg`, `data/raw/wasser/wasserschutzgebiete/trinkwasserschutzgebiete/`, `data/raw/wasser/wasserschutzgebiete/heilquellenschutzgebiete/` | `data/processed/2_technology_wasser/<gemeinde>_wasserschutz_hart.gpkg` mit `trinkwasserschutzgebiete`, `heilquellenschutzgebiete`, `wasserschutz_hart_merged` |
+| `scripts/2_3_wasser/1_download_wasser_reference_wms.py` | `data/processed/1_base_boundaries/<gemeinde>_boundary.gpkg`, WMS `https://www.lfu.bayern.de/gdi/wms/energieatlas/wasserkraftanlagen`, WMS `https://www.lfu.bayern.de/gdi/wms/wasser/ueberschwemmungsgebiete` | `data/processed/2_technology_wasser/reference/<gemeinde>_wasserkraftanlagen.png`, `data/processed/2_technology_wasser/reference/<gemeinde>_neubaupotenzial_querbauwerke.png`, `data/processed/2_technology_wasser/reference/<gemeinde>_modernisierung_nachruestung.png`, `data/processed/2_technology_wasser/reference/<gemeinde>_ueberschwemmungsgebiete_festgesetzt_hart.png`, `data/processed/2_technology_wasser/reference/<gemeinde>_ueberschwemmungsgebiete_vorlaeufig_hart.png`, `data/processed/2_technology_wasser/reference/<gemeinde>_hochwassergefahren_hq100_weich.png`, `data/processed/2_technology_wasser/reference/<gemeinde>_hochwassergefahren_hqextrem_weich.png`, jeweils mit `.pgw` und `.prj`, plus `<gemeinde>_wasser_wms_reference.json` |
 
 ## 5. Kartenerzeugung
 
@@ -87,8 +95,10 @@ sind.
 | `scripts/3_generate_map/1_prepare_overview_layers.py` | `data/raw/Verwaltungsgebiet_Bayern/ALKIS-Vereinfacht/VerwaltungsEinheit.shp`, `data/processed/1_base_boundaries/<gemeinde>_boundary.gpkg` | `data/processed/1_base_overview/bayern_outline.gpkg`, `data/processed/1_base_overview/<gemeinde>_overview.gpkg` |
 | `scripts/3_generate_map/2_create_map_qgis_project.py --technology wind` | `data/processed/1_base_boundaries/<gemeinde>_boundary.gpkg`, `data/processed/2_technology_wind/<gemeinde>_wind_layers.gpkg`, `data/processed/2_technology_wind/<gemeinde>_wind_ausschluss_gesamt.gpkg`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_weich.gpkg`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_wind.gpkg` | `data/processed/3_qgis_projects/<gemeinde>_map_wind.qgz` mit sichtbaren Sammellayern und ausgeblendeten Detail- und Attributlayern |
 | `scripts/3_generate_map/2_create_map_qgis_project.py --technology solar` | `data/processed/1_base_boundaries/<gemeinde>_boundary.gpkg`, `data/processed/2_technology_solar/<gemeinde>_solar_layers.gpkg`, `data/processed/2_technology_solar/<gemeinde>_landuse_solar_ausschluss.gpkg`, `data/processed/2_technology_solar/<gemeinde>_landuse_solar_pv_freiflaechen_naehung_vektorlayer.gpkg`, `data/processed/2_technology_solar/reference/<gemeinde>_pv_freiflaechenkulisse_zoomstufe_1.png`, `data/processed/2_technology_solar/reference/<gemeinde>_pv_freiflaechenkulisse_zoomstufe_2.png`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_weich.gpkg` | `data/processed/3_qgis_projects/<gemeinde>_map_solar.qgz` |
+| `scripts/3_generate_map/2_create_map_qgis_project.py --technology wasser` | `data/processed/1_base_boundaries/<gemeinde>_boundary.gpkg`, `data/processed/2_technology_wasser/<gemeinde>_wasserschutz_hart.gpkg`, `data/processed/2_technology_wasser/reference/*.png`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_hart.gpkg`, `data/processed/1_base_protection_areas/<gemeinde>_naturschutz_allgemein_weich.gpkg` | `data/processed/3_qgis_projects/<gemeinde>_map_wasser.qgz` |
 | `scripts/3_generate_map/3_generate_map_pdf.py --technology wind` | `data/processed/3_qgis_projects/<gemeinde>_map_wind.qgz`, `data/processed/1_base_overview/bayern_outline.gpkg`, `data/processed/1_base_overview/<gemeinde>_overview.gpkg` | `data/processed/3_maps/<gemeinde>_map_wind.pdf` mit erweiterter Legende, Nordpfeil in der Karte und kleiner Übersichtskarte |
 | `scripts/3_generate_map/3_generate_map_pdf.py --technology solar` | `data/processed/3_qgis_projects/<gemeinde>_map_solar.qgz`, `data/processed/1_base_overview/bayern_outline.gpkg`, `data/processed/1_base_overview/<gemeinde>_overview.gpkg` | `data/processed/3_maps/<gemeinde>_map_solar.pdf` |
+| `scripts/3_generate_map/3_generate_map_pdf.py --technology wasser` | `data/processed/3_qgis_projects/<gemeinde>_map_wasser.qgz`, `data/processed/1_base_overview/bayern_outline.gpkg`, `data/processed/1_base_overview/<gemeinde>_overview.gpkg` | `data/processed/3_maps/<gemeinde>_map_wasser.pdf` |
 ## Hinweis zu OSM
 
 Das OSM-Skript schreibt zuerst immer den gemeinsamen Rohdatensatz

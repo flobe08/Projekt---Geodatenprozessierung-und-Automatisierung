@@ -17,7 +17,7 @@ import sys
 SCRIPTS_DIR = Path(__file__).resolve().parent
 BASE_DIR = SCRIPTS_DIR.parent
 
-sys.path.append(str(SCRIPTS_DIR / "utils"))
+sys.path.insert(0, str(SCRIPTS_DIR / "utils"))
 from utils import ColoredArgumentParser, log_info, log_section, log_success
 
 
@@ -191,11 +191,23 @@ def prepare_data(
             )
 
         case "wasser":
-            log_section("Step 2.x: Water-specific processing")
+            run_script(
+                "Step 1.5: Download OSM network data",
+                "1_prepare_data/5_download_osm_network_data.py",
+                ["--municipality", municipality, "--technology", technology],
+            )
+
+            run_script(
+                "Step 2.1: Build water protection layers",
+                "2_3_wasser/2_build_wasser_protection_layers.py",
+                ["--municipality", municipality],
+            )
+
+            log_section("Step 2.x: Water-specific WMS references")
             log_info(
-                "Water-specific processing is TODO/TBD and is intentionally "
-                "not executed yet. The shared raw data, municipality boundary, "
-                "protection layers and clipped landuse layers are prepared."
+                "Water-specific WMS reference rasters for hydropower and "
+                "flood hazard context are downloaded during map generation "
+                "because they need the final municipality extent and the QGIS runtime."
             )
         case _:
             raise ValueError(f"Unknown technology: {technology}")
