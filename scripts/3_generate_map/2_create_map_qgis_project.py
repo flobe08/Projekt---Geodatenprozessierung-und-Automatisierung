@@ -113,6 +113,18 @@ def naturschutz_wind_layer_name() -> str:
     return "naturschutz_wind_merged"
 
 
+def wasserschutz_hart_file_name(municipality_name: str) -> str:
+    """Create the municipality-specific file name for hard water protection areas."""
+
+    return f"{safe_filename(municipality_name)}_wasserschutz_hart.gpkg"
+
+
+def wasserschutz_hart_layer_name() -> str:
+    """Return the merged layer name for hard water protection areas."""
+
+    return "wasserschutz_hart_merged"
+
+
 NATURSCHUTZ_HART_DETAIL_LAYERS = [
     "naturschutzgebiete",
     "nationalparke",
@@ -136,6 +148,12 @@ NATURSCHUTZ_WEICH_DETAIL_LAYERS = [
 
 NATURSCHUTZ_WIND_DETAIL_LAYERS = [
     "vogelkulissen_2024",
+]
+
+
+WASSERSCHUTZ_HART_DETAIL_LAYERS = [
+    "trinkwasserschutzgebiete",
+    "heilquellenschutzgebiete",
 ]
 
 
@@ -565,6 +583,19 @@ def style_naturschutz_wind(layer: QgsVectorLayer) -> None:
         outline_width=0.22,
         hatch_width=0.24,
         hatch_distance=2.0,
+    )
+    apply_symbol(layer, symbol)
+
+
+def style_wasserschutz_hart(layer: QgsVectorLayer) -> None:
+    """Style hard water protection areas with a teal transparent fill."""
+
+    symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "79,184,166,125",
+            "outline_color": "0,118,110,220",
+            "outline_width": "0.16",
+        }
     )
     apply_symbol(layer, symbol)
 
@@ -1069,6 +1100,7 @@ def create_wasser_map_project(municipality_name: str) -> None:
     boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
     protection_hard_file = PROTECTION_DIR / naturschutz_hart_file_name(municipality_name)
     protection_weich_file = PROTECTION_DIR / naturschutz_weich_file_name(municipality_name)
+    wasser_protection_file = WASSER_DIR / wasserschutz_hart_file_name(municipality_name)
 
     output_file = OUTPUT_DIR / qgis_project_file_name(municipality_name, "wasser")
 
@@ -1124,6 +1156,11 @@ def create_wasser_map_project(municipality_name: str) -> None:
         naturschutz_weich_layer_name(),
         f"Weiche Naturschutz-Konfliktflächen {municipality_name}",
     )
+    wasserschutz_hart_layer = load_optional_vector_layer(
+        wasser_protection_file,
+        wasserschutz_hart_layer_name(),
+        f"Wasserschutz hart {municipality_name}",
+    )
 
     boundary_layer = QgsVectorLayer(str(boundary_file), municipality_name, "ogr")
 
@@ -1141,6 +1178,10 @@ def create_wasser_map_project(municipality_name: str) -> None:
         style_naturschutz_hart(naturschutz_hart_layer)
         project.addMapLayer(naturschutz_hart_layer)
 
+    if layer_has_features(wasserschutz_hart_layer):
+        style_wasserschutz_hart(wasserschutz_hart_layer)
+        project.addMapLayer(wasserschutz_hart_layer)
+
     add_optional_layers_to_group(
         project,
         "Detail- und Attributlayer Naturschutz hart",
@@ -1153,6 +1194,13 @@ def create_wasser_map_project(municipality_name: str) -> None:
         "Detail- und Attributlayer Naturschutz weich",
         protection_weich_file,
         NATURSCHUTZ_WEICH_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Wasserschutz hart",
+        wasser_protection_file,
+        WASSERSCHUTZ_HART_DETAIL_LAYERS,
         municipality_name,
     )
 
@@ -1171,6 +1219,8 @@ def create_wasser_map_project(municipality_name: str) -> None:
         move_layer_to_top(project, naturschutz_weich_layer)
     if layer_has_features(naturschutz_hart_layer):
         move_layer_to_top(project, naturschutz_hart_layer)
+    if layer_has_features(wasserschutz_hart_layer):
+        move_layer_to_top(project, wasserschutz_hart_layer)
 
     move_layer_to_top(project, boundary_layer)
 
