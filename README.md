@@ -1,11 +1,11 @@
 ﻿# Reproduzierbarer Energie-Workflow für eine Gemeinde
 
 Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow für eine
-ausgewählte Gemeinde in Bayern. Aktuell ist der **Wind-Workflow** als
-Referenzworkflow durchgängig umgesetzt. Der **Solar-Workflow** ist strukturell
-angebunden und basiert auf OSM-Verkehrsachsen, amtlichen WMS-Referenzlayern
-sowie rechtlichen 200-m- und 500-m-Pufferzonen. **Wasser** ist als
-Platzhalter/TODO vorbereitet.
+ausgewählte Gemeinde in Bayern. Aktuell sind **Wind**, **Solar** und
+**Wasser** an die reproduzierbare Pipeline angebunden. Der Wasser-Workflow
+nutzt amtliche SHP-Downloads für Wasserschutzgebiete, WMS-Referenzlayer zu
+Wasserkraftanlagen sowie Überschwemmungs-/Hochwasserflächen und kombiniert
+diese mit den allgemeinen Schutzgebietslayern.
 
 ## Zentrale Fragestellung
 
@@ -121,6 +121,7 @@ data/processed/
 
   2_technology_wind/
   2_technology_solar/
+  2_technology_wasser/
 
   3_qgis_projects/
   3_maps/
@@ -132,6 +133,14 @@ WMS-Referenzbilder zusätzlich getrennt abgelegt:
 ```text
 data/processed/2_technology_solar/corridor/
 data/processed/2_technology_solar/reference/
+```
+
+Im Wasser-Ordner werden die auf die Gemeinde geclippten Wasserschutzgebiete
+und die amtlichen WMS-Referenzbilder abgelegt:
+
+```text
+data/processed/2_technology_wasser/<gemeinde>_wasserschutz_hart.gpkg
+data/processed/2_technology_wasser/reference/
 ```
 
 ## Hauptskripte
@@ -194,6 +203,26 @@ python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsrie
 ```
 
 Hinweis: `3_download_solar_reference_wms.py` nutzt PyQGIS und wird deshalb
+außerhalb der `.venv-wsl` mit dem QGIS-/System-Python ausgeführt.
+
+### Wasser
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data/1_download_data.py --technology wasser
+python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
+python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
+python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
+python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wasser
+python3 scripts/2_3_wasser/2_build_wasser_protection_layers.py --municipality Drachselsried
+deactivate
+python3 scripts/2_3_wasser/1_download_wasser_reference_wms.py --municipality Drachselsried
+python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
+python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology wasser
+python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology wasser
+```
+
+Hinweis: `1_download_wasser_reference_wms.py` nutzt PyQGIS und wird deshalb
 außerhalb der `.venv-wsl` mit dem QGIS-/System-Python ausgeführt.
 
 ## Troubleshooting

@@ -236,33 +236,113 @@ TECHNOLOGY_CONFIG = {
         },
     },
     "wasser": {
-        "title": "Potenzielle Standorte für Wasserkraftanlagen in {municipality}",
+        "title": "Wasserkraft, Wasserrestriktionen und Schutzgebiete in {municipality}",
         "description": (
-            "Die Wasserkarte ist aktuell als\n"
-            "Platzhalter für den späteren Workflow\n"
-            "vorbereitet. Wasserbezogene Daten,\n"
-            "Schutzflächen und Konfliktflächen\n"
-            "werden in einem nächsten Schritt ergänzt."
+            "Die Karte zeigt wasserbezogene\n"
+            "Energie- und Planungslayer für\n"
+            "{municipality}.\n\n"
+            "Dargestellt werden bestehende\n"
+            "Wasserkraftanlagen, Potenziale an\n"
+            "Querbauwerken sowie Modernisierungs-\n"
+            "und Nachrüstungspotenziale aus dem\n"
+            "Energie-Atlas Bayern.\n\n"
+            "Zusätzlich werden Wasser- und\n"
+            "Heilquellenschutzgebiete sowie\n"
+            "festgesetzte und vorläufig gesicherte\n"
+            "Überschwemmungsgebiete als harte\n"
+            "wasserrechtliche Restriktionen gezeigt.\n"
+            "HQ100- und HQextrem-Flächen dienen\n"
+            "als weicher Hochwasser-Kontext."
         ),
         "sources": (
             "Gemeindegrenze: ALKIS Bayern, Bayerische Vermessungsverwaltung, "
-            "https://geodaten.bayern.de.\n"
-            "Wasserdaten: TODO, noch nicht im aktiven Workflow umgesetzt.\n"
+            "https://geodaten.bayern.de. "
+            "Naturschutz: LfU Bayern, Schutzgebiete und Natura-2000-Daten. "
+            "Wasserkraft: Energie-Atlas Bayern, Wasserkraftanlagen, "
+            "https://www.lfu.bayern.de/gdi/wms/energieatlas/wasserkraftanlagen. "
+            "Wasserschutz: LfU Bayern Downloaddienst Wasserschutzgebiete, "
+            "https://www.lfu.bayern.de/gdi/dls/wsg.xml. "
+            "Hochwasser: LfU Bayern WMS Überschwemmungsgebiete und Hochwassergefahren, "
+            "https://www.lfu.bayern.de/gdi/wms/wasser/ueberschwemmungsgebiete.\n"
             "Hintergrundkarte: OpenStreetMap. "
             "Koordinatensystem: EPSG:25832 / ETRS89 UTM Zone 32N"
         ),
-        "legend_section": "Standortinformationen",
+        "legend_section": "Wasser und Restriktionen",
         "legend_items": [
             {
                 "label": "Gemeindegrenze",
                 "color": "255,255,255,255",
                 "outline_color": "0,0,0,255",
             },
+            {
+                "label": "Wasserkraft Bestand",
+                "color": "44,116,179,210",
+                "outline_color": "26,77,125,255",
+                "symbol": "image",
+                "legend_image": "wasserkraftanlagen_icon.png",
+                "subnote": "Laufkraft | Speicherkraft | <= 30 kW",
+                "subnote_extra_gap": 3.8,
+            },
+            {
+                "label": "Querbauwerk-Potenzial",
+                "color": "132,82,164,205",
+                "outline_color": "84,45,120,255",
+                "symbol": "image",
+                "legend_image": "neubaupotenzial_querbauwerke_icon.png",
+                "subnote": "Standort | in Prüfung/Genehmigung | Rückbau",
+                "subnote_extra_gap": 3.8,
+            },
+            {
+                "label": "Modernisierung",
+                "color": "250,184,56,210",
+                "outline_color": "185,124,28,255",
+                "symbol": "image",
+                "legend_image": "modernisierung_nachruestung_icon.png",
+                "subnote": "Nachrüstung + Modernisierung | Modernisierung | Nachrüstung",
+                "subnote_extra_gap": 3.8,
+            },
+            {
+                "label": "Wasserschutz hart",
+                "color": "0,150,136,120",
+                "outline_color": "0,105,92,245",
+            },
+            {
+                "label": "Überschwemmung hart",
+                "color": "18,52,128,220",
+                "outline_color": "10,35,100,255",
+                "symbol": "stripe_box",
+            },
+            {
+                "label": "HQ100/HQextrem weich",
+                "color": "145,211,232,105",
+                "outline_color": "45,125,164,210",
+            },
+            {
+                "label": "Harte Naturschutz-Restriktionen",
+                "color": "255,0,0,255",
+                "outline_color": "255,0,0,255",
+                "symbol": "stripe_box",
+            },
+            {
+                "label": "Weiche Naturschutzflächen",
+                "color": "245,210,80,90",
+                "outline_color": "196,150,35,180",
+            },
         ],
         "grid_distance_label": "Abstand: 500 m",
         "scale_units_per_segment": 1000,
         "layout_overrides": {
-            "debug_frames": True,
+            "debug_frames": False,
+            "title_font_size": 12,
+            "description_font_size": 7,
+            "legend_y": 84,
+            "legend_width": 60,
+            "legend_height": 92,
+            "legend_section_font_size": 8,
+            "legend_row_gap": 5.45,
+            "legend_gap_after_first_item": 1.5,
+            "grid_title_gap_after_last_row": 7.5,
+            "grid_row_offset": 3,
         },
     },
 }

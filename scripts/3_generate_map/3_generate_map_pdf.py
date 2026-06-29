@@ -47,8 +47,8 @@ from qgis.PyQt.QtGui import QColor, QFont
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(BASE_DIR / "scripts/utils"))
-sys.path.append(str(BASE_DIR / "scripts/3_generate_map"))
+sys.path.insert(0, str(BASE_DIR / "scripts/utils"))
+sys.path.insert(0, str(BASE_DIR / "scripts/3_generate_map"))
 
 from map_config import get_map_config
 from utils import ColoredArgumentParser, log_error, log_info, log_success
@@ -64,6 +64,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 PROJECT_DIR = BASE_DIR / "data/processed/3_qgis_projects"
 OVERVIEW_DIR = BASE_DIR / "data/processed/1_base_overview"
 BAVARIA_OUTLINE_FILE = OVERVIEW_DIR / "bayern_outline.gpkg"
+WASSER_WMS_LEGEND_DIR = (
+    BASE_DIR / "data/processed/2_technology_wasser/reference/legends"
+)
 
 # output
 OUTPUT_DIR = BASE_DIR / "data/processed/3_maps"
@@ -385,6 +388,7 @@ def add_legend_row(
     label: str,
     outline_color: str | None = None,
     symbol: str = "box",
+    image_path: Path | None = None,
 ) -> None:
     """Add one legend row with an aligned symbol and label."""
 
@@ -394,8 +398,21 @@ def add_legend_row(
     symbol_width = 8
     symbol_height = 3.6
     symbol_y = y + 1.2
+    label_x = x + 12
 
-    if symbol == "line":
+    if symbol == "image" and image_path is not None and image_path.exists():
+        symbol_width = 14
+        label_x = x + 16
+        picture = QgsLayoutItemPicture(layout)
+        picture.setPicturePath(str(image_path))
+        picture.attemptMove(
+            QgsLayoutPoint(x, y + 0.55, QgsUnitTypes.LayoutMillimeters)
+        )
+        picture.attemptResize(
+            QgsLayoutSize(symbol_width, 4.8, QgsUnitTypes.LayoutMillimeters)
+        )
+        layout.addLayoutItem(picture)
+    elif symbol == "line":
         # Roads are represented as a framed line symbol, not as a filled area.
         add_box(
             layout,
@@ -439,7 +456,18 @@ def add_legend_row(
             "0.3",
         )
 
-    add_label(layout, label, x + 12, y + 1.1, 8)  # Align legend text vertically with the symbol.
+    add_label(layout, label, label_x, y + 1.1, 8)  # Align legend text vertically with the symbol.
+
+
+def resolve_legend_image_path(technology: str, item: dict) -> Path | None:
+    """Return an optional local image path for an item-specific legend symbol."""
+
+    image_name = item.get("legend_image")
+
+    if technology == "wasser" and image_name:
+        return WASSER_WMS_LEGEND_DIR / image_name
+
+    return None
 
 def add_scale_bar_block(
     layout: QgsPrintLayout,
@@ -808,10 +836,23 @@ def create_pdf_layout(
     legend_section_y = legend_y + layout_config["legend_section_offset"]
     legend_row_start_y = legend_y + layout_config["legend_row_start_offset"]
     legend_row_gap = layout_config["legend_row_gap"]
+    legend_note = map_config.get("legend_note")
+    legend_note_after_index = map_config.get("legend_note_after_index")
+    legend_note_extra_gap = (
+        map_config.get("legend_note_extra_gap", 0) if legend_note else 0
+    )
+    legend_subnote_extra_gap = sum(
+        float(item.get("subnote_extra_gap", 0))
+        for item in map_config["legend_items"]
+        if item.get("subnote")
+    )
+    legend_gap_after_first_item = float(
+        layout_config.get("legend_gap_after_first_item", 0)
+    )
 
     last_legend_row_y = legend_row_start_y + (
         (len(map_config["legend_items"]) - 1) * legend_row_gap
-    )
+    ) + legend_note_extra_gap + legend_subnote_extra_gap + legend_gap_after_first_item
     grid_title_y = last_legend_row_y + layout_config["grid_title_gap_after_last_row"]
     grid_row_y = grid_title_y + layout_config["grid_row_offset"]
 
@@ -930,16 +971,50 @@ def create_pdf_layout(
         height=6,
     )
 
+    current_legend_row_y = legend_row_start_y
+
     for index, item in enumerate(map_config["legend_items"]):
         add_legend_row(
             layout,
             panel_x + 2,
-            legend_row_start_y + index * legend_row_gap,
+            current_legend_row_y,
             item["color"],
             item["label"],
             item["outline_color"],
             item.get("symbol", "box"),
+            resolve_legend_image_path(technology, item),
         )
+
+        if legend_note and index == legend_note_after_index:
+            add_label(
+                layout,
+                legend_note,
+                panel_x + 2,
+                current_legend_row_y + legend_row_gap + 1.5,
+                6,
+                False,
+                width=legend_width - 4,
+                height=4,
+            )
+            current_legend_row_y += legend_note_extra_gap
+
+        if item.get("subnote"):
+            add_label(
+                layout,
+                item["subnote"],
+                panel_x + 2,
+                current_legend_row_y + 6.0,
+                5,
+                False,
+                width=legend_width - 4,
+                height=3,
+            )
+            current_legend_row_y += float(item.get("subnote_extra_gap", 0))
+
+        if index == 0:
+            current_legend_row_y += legend_gap_after_first_item
+
+        current_legend_row_y += legend_row_gap
 
     add_label(layout, "Gitternetz", panel_x + 2, grid_title_y, 9, True)
     add_legend_row(

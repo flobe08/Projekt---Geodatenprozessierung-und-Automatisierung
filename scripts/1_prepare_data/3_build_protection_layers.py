@@ -29,7 +29,7 @@ import pandas as pd
 from pyogrio.errors import DataSourceError
 from shapely.ops import unary_union
 
-sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 from utils import ColoredArgumentParser, log_error, log_info, log_success, log_warning
 
 

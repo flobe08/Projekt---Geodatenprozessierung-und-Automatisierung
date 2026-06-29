@@ -46,6 +46,8 @@ WIND_DIR = BASE_DIR / "data/processed/2_technology_wind"
 PROTECTION_DIR = BASE_DIR / "data/processed/1_base_protection_areas"
 SOLAR_DIR = BASE_DIR / "data/processed/2_technology_solar"
 SOLAR_REFERENCE_DIR = SOLAR_DIR / "reference"
+WASSER_DIR = BASE_DIR / "data/processed/2_technology_wasser"
+WASSER_REFERENCE_DIR = WASSER_DIR / "reference"
 
 # output
 OUTPUT_DIR = BASE_DIR / "data/processed/3_qgis_projects"
@@ -111,6 +113,18 @@ def naturschutz_wind_layer_name() -> str:
     return "naturschutz_wind_merged"
 
 
+def wasserschutz_hart_file_name(municipality_name: str) -> str:
+    """Create the municipality-specific file name for hard water protection areas."""
+
+    return f"{safe_filename(municipality_name)}_wasserschutz_hart.gpkg"
+
+
+def wasserschutz_hart_layer_name() -> str:
+    """Return the merged layer name for hard water protection areas."""
+
+    return "wasserschutz_hart_merged"
+
+
 NATURSCHUTZ_HART_DETAIL_LAYERS = [
     "naturschutzgebiete",
     "nationalparke",
@@ -134,6 +148,12 @@ NATURSCHUTZ_WEICH_DETAIL_LAYERS = [
 
 NATURSCHUTZ_WIND_DETAIL_LAYERS = [
     "vogelkulissen_2024",
+]
+
+
+WASSERSCHUTZ_HART_DETAIL_LAYERS = [
+    "trinkwasserschutzgebiete",
+    "heilquellenschutzgebiete",
 ]
 
 
@@ -291,7 +311,7 @@ def load_optional_vector_layer(
 
     return layer
 
-
+#TODO
 def load_optional_raster_layer(
     raster_file: Path,
     display_name: str,
@@ -563,6 +583,19 @@ def style_naturschutz_wind(layer: QgsVectorLayer) -> None:
         outline_width=0.22,
         hatch_width=0.24,
         hatch_distance=2.0,
+    )
+    apply_symbol(layer, symbol)
+
+
+def style_wasserschutz_hart(layer: QgsVectorLayer) -> None:
+    """Style hard water protection areas with a teal transparent fill."""
+
+    symbol = QgsFillSymbol.createSimple(
+        {
+            "color": "79,184,166,125",
+            "outline_color": "0,118,110,220",
+            "outline_width": "0.16",
+        }
     )
     apply_symbol(layer, symbol)
 
@@ -1056,6 +1089,144 @@ def create_solar_map_project(municipality_name: str) -> None:
     project.write(str(output_file))
     print(f"QGIS map project created: {display_path(output_file)}")
 
+# =============================================================================
+# Wasser workflow
+# =============================================================================
+def create_wasser_map_project(municipality_name: str) -> None:
+    """Create a QGIS project for the water workflow."""
+
+    safe_name = safe_filename(municipality_name)
+
+    boundary_file = BOUNDARY_DIR / f"{safe_name}_boundary.gpkg"
+    protection_hard_file = PROTECTION_DIR / naturschutz_hart_file_name(municipality_name)
+    protection_weich_file = PROTECTION_DIR / naturschutz_weich_file_name(municipality_name)
+    wasser_protection_file = WASSER_DIR / wasserschutz_hart_file_name(municipality_name)
+
+    output_file = OUTPUT_DIR / qgis_project_file_name(municipality_name, "wasser")
+
+    require_file(boundary_file, "Boundary file not found. Run script 2 first")
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    project = create_empty_project()
+
+    # -------------------------------------------------------------------------
+    # Water WMS reference rasters
+    # -------------------------------------------------------------------------
+    water_reference_rasters = [
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_wasserkraftanlagen.png",
+            f"Wasserkraftanlagen {municipality_name}",
+        ),
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_neubaupotenzial_querbauwerke.png",
+            f"Neubaupotenzial Querbauwerke {municipality_name}",
+        ),
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_modernisierung_nachruestung.png",
+            f"Modernisierungs- und Nachrüstungspotenzial {municipality_name}",
+        ),
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_ueberschwemmungsgebiete_festgesetzt_hart.png",
+            f"Festgesetzte Überschwemmungsgebiete {municipality_name}",
+        ),
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_ueberschwemmungsgebiete_vorlaeufig_hart.png",
+            f"Vorläufig gesicherte Überschwemmungsgebiete {municipality_name}",
+        ),
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_hochwassergefahren_hq100_weich.png",
+            f"Hochwassergefahren HQ100 {municipality_name}",
+        ),
+        (
+            WASSER_REFERENCE_DIR / f"{safe_name}_hochwassergefahren_hqextrem_weich.png",
+            f"Hochwassergefahren HQextrem {municipality_name}",
+        ),
+    ]
+
+    # -------------------------------------------------------------------------
+    # General protection layers
+    # -------------------------------------------------------------------------
+    naturschutz_hart_layer = load_optional_vector_layer(
+        protection_hard_file,
+        naturschutz_hart_layer_name(),
+        f"Harte Naturschutz-Restriktionen {municipality_name}",
+    )
+    naturschutz_weich_layer = load_optional_vector_layer(
+        protection_weich_file,
+        naturschutz_weich_layer_name(),
+        f"Weiche Naturschutz-Konfliktflächen {municipality_name}",
+    )
+    wasserschutz_hart_layer = load_optional_vector_layer(
+        wasser_protection_file,
+        wasserschutz_hart_layer_name(),
+        f"Wasserschutz hart {municipality_name}",
+    )
+
+    boundary_layer = QgsVectorLayer(str(boundary_file), municipality_name, "ogr")
+
+    if not boundary_layer.isValid():
+        raise RuntimeError(f"Boundary layer could not be loaded: {boundary_file}")
+
+    style_boundary(boundary_layer)
+
+    # Protection layers first
+    if layer_has_features(naturschutz_weich_layer):
+        style_naturschutz_weich(naturschutz_weich_layer)
+        project.addMapLayer(naturschutz_weich_layer)
+
+    if layer_has_features(naturschutz_hart_layer):
+        style_naturschutz_hart(naturschutz_hart_layer)
+        project.addMapLayer(naturschutz_hart_layer)
+
+    if layer_has_features(wasserschutz_hart_layer):
+        style_wasserschutz_hart(wasserschutz_hart_layer)
+        project.addMapLayer(wasserschutz_hart_layer)
+
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz hart",
+        protection_hard_file,
+        NATURSCHUTZ_HART_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Naturschutz weich",
+        protection_weich_file,
+        NATURSCHUTZ_WEICH_DETAIL_LAYERS,
+        municipality_name,
+    )
+    add_optional_layers_to_group(
+        project,
+        "Detail- und Attributlayer Wasserschutz hart",
+        wasser_protection_file,
+        WASSERSCHUTZ_HART_DETAIL_LAYERS,
+        municipality_name,
+    )
+
+    # WMS rasters
+    for raster_file, display_name in water_reference_rasters:
+        raster_layer = load_optional_raster_layer(raster_file, display_name)
+
+        if raster_layer is not None:
+            project.addMapLayer(raster_layer)
+
+    project.addMapLayer(boundary_layer)
+
+    set_project_extent_from_boundary(project, boundary_layer)
+
+    if layer_has_features(naturschutz_weich_layer):
+        move_layer_to_top(project, naturschutz_weich_layer)
+    if layer_has_features(naturschutz_hart_layer):
+        move_layer_to_top(project, naturschutz_hart_layer)
+    if layer_has_features(wasserschutz_hart_layer):
+        move_layer_to_top(project, wasserschutz_hart_layer)
+
+    move_layer_to_top(project, boundary_layer)
+
+    project.write(str(output_file))
+    print(f"QGIS map project created: {display_path(output_file)}")
+
 
 # =============================================================================
 # Main entry point
@@ -1091,6 +1262,8 @@ def main() -> None:
             create_wind_map_project(args.municipality)
         case "solar":
             create_solar_map_project(args.municipality)
+        case "wasser":
+            create_wasser_map_project(args.municipality)
         case _:
             raise SystemExit(
                 f"Map script 1 currently supports only wind and solar, not: {args.technology}"

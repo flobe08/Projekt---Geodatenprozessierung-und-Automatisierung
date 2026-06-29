@@ -16,7 +16,7 @@ import sys
 import geopandas as gpd
 import pandas as pd
 
-sys.path.append(str(Path(__file__).resolve().parent.parent / "utils"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "utils"))
 from landuse_utils import (
     BASE_DIR,
     display_path,
