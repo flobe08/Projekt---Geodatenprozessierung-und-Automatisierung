@@ -1,0 +1,8 @@
+site_name: Geodatenprozessierung Dokumentation
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Run: run.md
+  - Reproduce: reproduce.md
+  - Arbeitsaufteilung: aufteilung.md
+
