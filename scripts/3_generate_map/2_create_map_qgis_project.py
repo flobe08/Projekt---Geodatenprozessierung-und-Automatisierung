@@ -311,18 +311,17 @@ def load_optional_vector_layer(
 
     return layer
 
-#TODO
 def load_optional_raster_layer(
     raster_file: Path,
     display_name: str,
 ) -> QgsRasterLayer | None:
-    """Load one optional local solar reference raster for the QGIS project."""
+    """Load one optional local WMS reference raster for the QGIS project."""
 
     if not raster_file.exists():
-        log_warning(f"Solar reference raster not found: {display_path(raster_file)}")
+        log_warning(f"Reference raster not found: {display_path(raster_file)}")
         log_warning(
-            "Run Step 3.1 first through scripts/3_generate_map.py, or run: "
-            "python3 scripts/2_2_solar/3_download_solar_reference_wms.py --municipality <name>"
+            "Run the complete map generation workflow first, for example: "
+            "python3 scripts/3_generate_map.py --municipality <name> --technology <wind|solar|wasser>"
         )
         return None
 
@@ -330,7 +329,7 @@ def load_optional_raster_layer(
 
     if image.isNull():
         log_warning(
-            f"Solar reference raster could not be read as image: {display_name}"
+            f"Reference raster could not be read as image: {display_name}"
         )
         return None
 
@@ -347,7 +346,7 @@ def load_optional_raster_layer(
 
         if not has_visible_pixels:
             log_warning(
-                f"Solar reference raster is fully transparent and will be skipped: {display_name}"
+                f"Reference raster is fully transparent and will be skipped: {display_name}"
             )
             return None
 
@@ -355,7 +354,7 @@ def load_optional_raster_layer(
 
     if not layer.isValid():
         log_warning(
-            f"Amtlicher Solar-Referenzlayer konnte nicht geladen werden: {display_name}"
+            f"Amtlicher WMS-Referenzlayer konnte nicht geladen werden: {display_name}"
         )
         log_warning(
             "Die Kartenerstellung läuft weiter. Der Referenzlayer kann bei Bedarf manuell in QGIS ergänzt werden."
@@ -791,25 +790,6 @@ def create_wind_map_project(municipality_name: str) -> None:
         wind_ausschluss_osm_buffer_layer_name(),
         f"{safe_name}_wind_ausschluss_gesamt - wind_ausschluss_osm_streets_puffer",
     )
-    # -------------------------------------------------------------------------
-    # TODO: Future wind exclusion layers
-    # These prepared exclusion layers already exist as processing outputs.
-    # They are intentionally kept commented out until the final exclusion
-    # design for the wind map is fixed and cartographically tested.
-    # -------------------------------------------------------------------------
-    # wind_landuse_file = WIND_DIR / wind_landuse_ausschluss_file_name(municipality_name)
-    # wind_osm_file = WIND_DIR / f"{safe_name}_osm_wind_streets.gpkg"
-    # wind_landuse_layer = load_optional_vector_layer(
-    #     wind_landuse_file,
-    #     wind_landuse_ausschluss_layer_name(),
-    #     f"Landnutzung Ausschluss Wind {municipality_name}",
-    # )
-    # wind_osm_layer = load_optional_vector_layer(
-    #     wind_osm_file,
-    #     osm_wind_ausschluss_layer_name(),
-    #     f"OSM Straßen Ausschluss Wind {municipality_name}",
-    # )
-
     # -------------------------------------------------------------------------
     # Administrative boundary
     # The municipality boundary is always added last and moved to the top.

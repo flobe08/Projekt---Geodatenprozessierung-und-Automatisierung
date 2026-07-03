@@ -85,23 +85,8 @@ def parse_arguments() -> argparse.Namespace:
 def generate_map(municipality: str, technology: str) -> None:
     """Run all map generation steps for one municipality."""
 
-    # =========================================================================
-    # Wind
-    # =========================================================================
-    # The current wind workflow uses the same QGIS project and PDF scripts as
-    # the other technologies, but with wind-specific layers and map text.
-
-    # =========================================================================
-    # Solar
-    # =========================================================================
-    # The current solar workflow uses the same QGIS project and PDF scripts as
-    # the other technologies, but with solar-specific layers, map text and
-    # additional amtliche WMS-Referenzraster.
-
-    # =========================================================================
-    # Wasser
-    # =========================================================================
     if technology == "solar":
+        # Solar needs official PV WMS reference rasters before the project is built.
         run_script(
             "Step 3.1: Download solar WMS reference rasters",
             "2_2_solar/3_download_solar_reference_wms.py",
@@ -111,6 +96,7 @@ def generate_map(municipality: str, technology: str) -> None:
         create_project_step = "Step 3.3: Create QGIS map project"
         generate_pdf_step = "Step 3.4: Generate map PDF"
     elif technology == "wasser":
+        # Wasser needs official WMS reference rasters for hydropower and flood context.
         run_script(
             "Step 3.1: Download water WMS reference rasters",
             "2_3_wasser/1_download_wasser_reference_wms.py",
@@ -120,6 +106,8 @@ def generate_map(municipality: str, technology: str) -> None:
         create_project_step = "Step 3.3: Create QGIS map project"
         generate_pdf_step = "Step 3.4: Generate map PDF"
     else:
+        # Wind can start directly with the overview layer because all thematic
+        # inputs are already produced during data preparation.
         overview_step = "Step 3.1: Prepare overview map layers"
         create_project_step = "Step 3.2: Create QGIS map project"
         generate_pdf_step = "Step 3.3: Generate map PDF"

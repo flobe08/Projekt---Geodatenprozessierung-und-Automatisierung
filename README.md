@@ -1,39 +1,9 @@
-﻿# Reproduzierbarer Energie-Workflow für eine Gemeinde
+# Reproduzierbarer Energie-Workflow für eine Gemeinde
 
-Dieses Projekt erstellt einen reproduzierbaren Geodaten-Workflow für eine
-ausgewählte Gemeinde in Bayern. Aktuell sind **Wind**, **Solar** und
-**Wasser** an die reproduzierbare Pipeline angebunden. Der Wasser-Workflow
-nutzt amtliche SHP-Downloads für Wasserschutzgebiete, WMS-Referenzlayer zu
-Wasserkraftanlagen sowie Überschwemmungs-/Hochwasserflächen und kombiniert
-diese mit den allgemeinen Schutzgebietslayern.
-
-## Zentrale Fragestellung
-
-Welche räumlichen Potenzial- und Konfliktflächen für erneuerbare Energien
-lassen sich für eine Gemeinde automatisiert aus offenen Geodaten ableiten und
-kartografisch darstellen?
-
-Das Projekt beantwortet damit nicht die Frage, wo eine Anlage rechtsverbindlich
-genehmigt werden darf. Ziel ist eine reproduzierbare Pipeline, die für eine
-ausgewählte bayerische Gemeinde relevante offene Geodaten automatisch sammelt,
-harmonisiert, zuschneidet und kartografisch ausgibt.
-
-Die Karten zeigen, welche Flächen aus Sicht von Raumplanung,
-Energieinfrastruktur, Landnutzung und Naturschutz für Windenergie,
-Freiflächen-Photovoltaik und wasserbezogene Planung besonders relevant oder
-konfliktbehaftet sind.
-
-Die einzelnen Karten beantworten dabei:
-
-- **Windkarte:** Wo liegen offizielle regionalplanerische
-  Windenergieflächen innerhalb der Gemeinde und welche allgemeinen bzw.
-  windspezifischen Restriktionsflächen überschneiden oder begrenzen diese?
-- **Solarkarte:** Wo liegen potenziell relevante
-  Freiflächen-Photovoltaikbereiche in der Gemeinde und wie verhalten sie sich
-  zu 200-m-/500-m-Randstreifen sowie Naturschutz-Konfliktflächen?
-- **Wasserkarte:** Welche wasserbezogenen Infrastruktur-, Schutz- und
-  Konfliktflächen liegen innerhalb der Gemeinde und welche Bereiche sind für
-  eine weitere wasserbezogene Energie- oder Planungsanalyse relevant?
+Dieses Projekt erstellt für eine ausgewählte bayerische Gemeinde automatisch
+QGIS-Projekte und PDF-Karten für die Technologien **Wind**, **Solar** und
+**Wasser**. Der README beschreibt Setup und Ausführung der Pipeline. Methodik,
+Datengrundlagen und Workflow-Diagramme liegen im Ordner `description/`.
 
 ## Setup
 
@@ -41,7 +11,14 @@ Empfohlenes System:
 
 - Windows mit **WSL / Ubuntu**
 - QGIS in WSL installiert
-- Verwendete QGIS-Version im Projekt: **QGIS 4.0 Norrköping**
+- verwendete QGIS-Version im Projekt: **QGIS 4.0 Norrköping**
+
+Projekt herunterladen, zum Beispiel im gewünschten Arbeitsordner:
+
+```powershell
+git clone https://github.com/flobe08/Projekt---Geodatenprozessierung-und-Automatisierung.git
+cd Projekt---Geodatenprozessierung-und-Automatisierung
+```
 
 WSL starten:
 
@@ -49,10 +26,17 @@ WSL starten:
 wsl -d Ubuntu
 ```
 
-In den Projektordner wechseln:
+In den Projektordner wechseln. Wenn das Projekt auf einem Windows-Laufwerk
+liegt, wird es in WSL über `/mnt/<laufwerk>/...` erreicht, zum Beispiel:
 
 ```bash
 cd "/mnt/e/Eigene Daten/Studium/THD/Module/Semester 6/Geodatenprozessierung und Automatisierung/Projekt/Projekt---Geodatenprozessierung-und-Automatisierung"
+```
+
+Wenn das Projekt direkt in WSL geklont wurde:
+
+```bash
+cd Projekt---Geodatenprozessierung-und-Automatisierung
 ```
 
 Systempakete installieren:
@@ -82,34 +66,84 @@ deactivate
 python3 -c "from qgis.core import QgsApplication; print('qgis ok')"
 ```
 
-Wichtig zur Python-Umgebung:
+Wichtig:
 
-- Die Datenvorbereitung läuft in der lokalen Umgebung `.venv-wsl`.
-- Die Kartenerzeugung läuft außerhalb von `.venv-wsl` mit dem System-/QGIS-Python.
+- Die Datenvorbereitung läuft in `.venv-wsl`.
+- Die Kartenerzeugung läuft außerhalb von `.venv-wsl` mit dem
+  System-/QGIS-Python.
 - Deshalb wird vor `scripts/3_generate_map.py` immer `deactivate` ausgeführt.
-- Wenn `from qgis.core import QgsApplication` fehlschlägt, fehlen meistens
-  `qgis` oder `python3-qgis`.
 
-## Schnellstart
+## Ausführung
 
-Empfohlener Gesamtworkflow:
+### Gesamtworkflow über Bash-Skript
+
+Der einfachste Weg ist das Bash-Skript `run_workflow.sh`. Es erwartet zwei
+Parameter: Gemeinde und Technologie.
+
+```bash
+bash run_workflow.sh <gemeinde> <technologie>
+```
+
+Parameter:
+
+| Parameter | Bedeutung | Mögliche Werte |
+| --- | --- | --- |
+| `<gemeinde>` | Name der zu verarbeitenden Gemeinde | z. B. `Drachselsried`, `Bodenmais`, `München` |
+| `<technologie>` | Technologie-Workflow | `wind`, `solar`, `wasser` |
+
+Beispiele:
 
 ```bash
 bash run_workflow.sh Drachselsried wind
+bash run_workflow.sh Drachselsried solar
+bash run_workflow.sh Drachselsried wasser
 ```
 
-Hinweis:
+Hinweis: Der erste vollständige Durchlauf kann deutlich länger dauern, weil
+mehrere große Bayern-Datensätze geladen und verarbeitet werden. Vor allem die
+amtliche Landnutzung wird lokal als großer Datensatz vorgehalten.
 
-- Der erste vollständige Durchlauf kann deutlich länger dauern.
-- Grund dafür sind mehrere große Bayern-Datensätze.
-- Vor allem die offizielle Landnutzung wird lokal als großer Datensatz
-  vorgehalten und liegt ungefähr im Bereich von 5 bis 6 GB.
+### Ausführung über die beiden Einstiegsskripte
+
+Alternativ können Datenvorbereitung und Kartenerzeugung getrennt gestartet
+werden.
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality <gemeinde> --technology <technologie>
+deactivate
+python3 scripts/3_generate_map.py --municipality <gemeinde> --technology <technologie>
+```
+
+Parameter:
+
+| Parameter | Bedeutung | Mögliche Werte |
+| --- | --- | --- |
+| `<gemeinde>` | Name der zu verarbeitenden Gemeinde | z. B. `Drachselsried`, `Bodenmais`, `München` |
+| `<technologie>` | Technologie-Workflow | `wind`, `solar`, `wasser` |
+
+Beispiel:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
+
+Wenn bereits erzeugte Zwischenergebnisse wiederverwendet werden sollen, kann
+die Datenvorbereitung mit `--skip-existing` gestartet werden:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind --skip-existing
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
 
 ## Ergebnisstruktur
 
-Die automatisch erzeugten Daten liegen unter `data/processed/`. Die Ordner sind
-nach Verarbeitungsebene nummeriert, damit Basisdaten, technologiespezifische
-Zwischenergebnisse und finale Ausgaben klar getrennt bleiben:
+Die erzeugten Daten liegen unter `data/processed/`:
 
 ```text
 data/processed/
@@ -118,112 +152,19 @@ data/processed/
   1_base_osm_streets/
   1_base_overview/
   1_base_protection_areas/
-
   2_technology_wind/
   2_technology_solar/
   2_technology_wasser/
-
   3_qgis_projects/
   3_maps/
 ```
 
-Im Solar-Ordner werden die Korridorgrundlage und die amtlichen
-WMS-Referenzbilder zusätzlich getrennt abgelegt:
+Die finalen QGIS-Projekte und PDF-Karten liegen in:
 
 ```text
-data/processed/2_technology_solar/corridor/
-data/processed/2_technology_solar/reference/
+data/processed/3_qgis_projects/
+data/processed/3_maps/
 ```
-
-Im Wasser-Ordner werden die auf die Gemeinde geclippten Wasserschutzgebiete
-und die amtlichen WMS-Referenzbilder abgelegt:
-
-```text
-data/processed/2_technology_wasser/<gemeinde>_wasserschutz_hart.gpkg
-data/processed/2_technology_wasser/reference/
-```
-
-## Hauptskripte
-
-Daten vorbereiten:
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind
-deactivate
-```
-
-QGIS-Projekt und PDF-Karte erzeugen:
-
-```bash
-python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
-```
-
-## Manuelle Ausführung ohne Bash-Skript
-
-Wenn du jeden Schritt einzeln starten willst, erreichst du dasselbe Ergebnis
-mit diesen Befehlen.
-
-### Wind
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data/1_download_data.py --technology wind
-python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
-python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
-python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
-python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wind
-python3 scripts/2_1_wind/4_prepare_wind_osm_streets.py --municipality Drachselsried
-python3 scripts/2_1_wind/1_clip_wind_planning_areas.py --municipality Drachselsried
-python3 scripts/2_1_wind/2_prepare_wind_landuse.py --municipality Drachselsried
-python3 scripts/2_1_wind/3_build_wind_landuse_buffers.py --municipality Drachselsried
-python3 scripts/2_1_wind/5_build_wind_exclusion_layer.py --municipality Drachselsried
-deactivate
-python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
-python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology wind
-python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology wind
-```
-
-### Solar
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data/1_download_data.py --technology solar
-python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
-python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
-python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
-python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology solar
-python3 scripts/2_2_solar/1_prepare_solar_corridor_layers.py --municipality Drachselsried
-python3 scripts/2_2_solar/2_prepare_solar_landuse.py --municipality Drachselsried
-deactivate
-python3 scripts/2_2_solar/3_download_solar_reference_wms.py --municipality Drachselsried
-python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
-python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology solar
-python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology solar
-```
-
-Hinweis: `3_download_solar_reference_wms.py` nutzt PyQGIS und wird deshalb
-außerhalb der `.venv-wsl` mit dem QGIS-/System-Python ausgeführt.
-
-### Wasser
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data/1_download_data.py --technology wasser
-python3 scripts/1_prepare_data/2_extract_municipality_boundary.py --municipality Drachselsried
-python3 scripts/1_prepare_data/3_build_protection_layers.py --municipality Drachselsried
-python3 scripts/1_prepare_data/4_clip_landuse.py --municipality Drachselsried
-python3 scripts/1_prepare_data/5_download_osm_network_data.py --municipality Drachselsried --technology wasser
-python3 scripts/2_3_wasser/2_build_wasser_protection_layers.py --municipality Drachselsried
-deactivate
-python3 scripts/2_3_wasser/1_download_wasser_reference_wms.py --municipality Drachselsried
-python3 scripts/3_generate_map/1_prepare_overview_layers.py --municipality Drachselsried
-python3 scripts/3_generate_map/2_create_map_qgis_project.py --municipality Drachselsried --technology wasser
-python3 scripts/3_generate_map/3_generate_map_pdf.py --municipality Drachselsried --technology wasser
-```
-
-Hinweis: `1_download_wasser_reference_wms.py` nutzt PyQGIS und wird deshalb
-außerhalb der `.venv-wsl` mit dem QGIS-/System-Python ausgeführt.
 
 ## Troubleshooting
 
@@ -247,16 +188,3 @@ läuft der Befehl wahrscheinlich außerhalb von WSL. Dann zuerst WSL starten:
 ```powershell
 wsl -d Ubuntu
 ```
-
-## Wichtige Hinweise
-
-- `.venv-wsl` ist eine **lokale** Umgebung und wird **nicht** in Git
-  eingecheckt.
-- Große Roh- und Ergebnisdaten unter `data/` werden ebenfalls nicht normal in
-  Git versioniert.
-- Die genaue Schritt-für-Schritt-Anleitung steht in
-  [Anleitung.md](Anleitung.md).
-- Die manuelle Datenprüfung und Verifikation steht in
-  [description/VERIFIKATION.md](description/VERIFIKATION.md).
-- Die Workflow-Diagramme mit den Log-Step-Namen stehen in
-  [description/WORKFLOW_DIAGRAMME.md](description/WORKFLOW_DIAGRAMME.md).
