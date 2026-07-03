@@ -203,11 +203,10 @@ def prepare_data(
                 ["--municipality", municipality],
             )
 
-            log_section("Step 2.x: Water-specific WMS references")
             log_info(
-                "Water-specific WMS reference rasters for hydropower and "
-                "flood hazard context are downloaded during map generation "
-                "because they need the final municipality extent and the QGIS runtime."
+                "Hinweis: Wasser-WMS-Referenzraster für Wasserkraft und "
+                "Hochwasser werden später in Step 3.1 der Kartenerzeugung "
+                "geladen, weil dafür die QGIS-/System-Python-Umgebung benötigt wird."
             )
         case _:
             raise ValueError(f"Unknown technology: {technology}")
