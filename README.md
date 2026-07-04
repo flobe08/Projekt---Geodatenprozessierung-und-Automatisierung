@@ -13,6 +13,8 @@ Empfohlenes System:
 - QGIS in WSL installiert
 - verwendete QGIS-Version im Projekt: **QGIS 4.0 Norrköping**
 
+### Projekt herunterladen
+
 Projekt herunterladen, zum Beispiel im gewünschten Arbeitsordner:
 
 ```powershell
@@ -20,11 +22,41 @@ git clone https://github.com/flobe08/Projekt---Geodatenprozessierung-und-Automat
 cd Projekt---Geodatenprozessierung-und-Automatisierung
 ```
 
-WSL starten:
+Für die Ausführung des Workflows unter Windows wird WSL mit Ubuntu verwendet.
+
+### WSL prüfen und starten
+
+Zunächst prüfen, ob bereits eine WSL-Distribution installiert ist:
+
+```powershell
+wsl -l -v
+```
+
+#### Fall A: Ubuntu ist bereits installiert
+
+Wenn `Ubuntu` bereits angezeigt wird, kann WSL direkt gestartet werden:
 
 ```powershell
 wsl -d Ubuntu
 ```
+
+#### Fall B: Ubuntu ist noch nicht installiert
+
+Falls Ubuntu noch nicht installiert ist, kann es mit folgendem Befehl installiert
+werden:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Nach der Installation muss das Terminal gegebenenfalls neu geöffnet werden.
+Anschließend kann Ubuntu gestartet werden mit:
+
+```powershell
+wsl -d Ubuntu
+```
+
+### Projektordner in WSL öffnen
 
 In den Projektordner wechseln. Wenn das Projekt auf einem Windows-Laufwerk
 liegt, wird es in WSL über `/mnt/<laufwerk>/...` erreicht, zum Beispiel:
@@ -39,12 +71,16 @@ Wenn das Projekt direkt in WSL geklont wurde:
 cd Projekt---Geodatenprozessierung-und-Automatisierung
 ```
 
-Systempakete installieren:
+### Systempakete installieren
+
+Die benötigten Systempakete werden in WSL installiert:
 
 ```bash
 sudo apt update
 sudo apt install python3 python3-venv python3-pip qgis python3-qgis
 ```
+
+### Python-Umgebung anlegen
 
 Python-Umgebung für die Datenvorbereitung anlegen:
 
@@ -55,7 +91,11 @@ pip install -r requirements.txt
 deactivate
 ```
 
-Installation prüfen:
+Der Schritt `pip install -r requirements.txt` kann je nach Internetverbindung
+und System einige Zeit dauern, da alle benötigten Python-Pakete installiert
+werden.
+
+### Installation prüfen
 
 ```bash
 python3 --version
@@ -66,7 +106,7 @@ deactivate
 python3 -c "from qgis.core import QgsApplication; print('qgis ok')"
 ```
 
-Wichtig:
+### Hinweis zur Python-Umgebung
 
 - Die Datenvorbereitung läuft in `.venv-wsl`.
 - Die Kartenerzeugung läuft außerhalb von `.venv-wsl` mit dem
