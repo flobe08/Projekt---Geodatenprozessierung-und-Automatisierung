@@ -2,8 +2,26 @@
 
 Dieses Projekt erstellt für eine ausgewählte bayerische Gemeinde automatisch
 QGIS-Projekte und PDF-Karten für die Technologien **Wind**, **Solar** und
-**Wasser**. Der README beschreibt Setup und Ausführung der Pipeline. Methodik,
-Datengrundlagen und Workflow-Diagramme liegen im Ordner `description/`.
+**Wasser**. Das README beschreibt Setup und Ausführung der Pipeline. 
+
+## Dokumentation
+
+Eine ausführlichere technische Dokumentation zu Installation, Ausführung,
+Reproduktion und Fehlerbehebung befindet sich in MkDocs.
+
+Die Dokumentation kann lokal gestartet werden mit:
+
+```bash
+source .venv-wsl/bin/activate
+mkdocs serve
+```
+Falls für MkDocs eine eigene virtuelle Umgebung verwendet wird, muss diese
+vorher aktiviert werden.
+
+Die fachliche Beschreibung von Methodik, Datengrundlagen und Ergebnissen erfolgt
+in der beigefügten Studienarbeit.
+
+---
 
 ## Setup
 
@@ -113,6 +131,8 @@ python3 -c "from qgis.core import QgsApplication; print('qgis ok')"
   System-/QGIS-Python.
 - Deshalb wird vor `scripts/3_generate_map.py` immer `deactivate` ausgeführt.
 
+---
+
 ## Ausführung
 
 ### Gesamtworkflow über Bash-Skript
@@ -181,50 +201,18 @@ deactivate
 python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
 ```
 
-## Ergebnisstruktur
+---
 
-Die erzeugten Daten liegen unter `data/processed/`:
+## Ergebnisse
 
-```text
-data/processed/
-  1_base_boundaries/
-  1_base_landuse/
-  1_base_osm_streets/
-  1_base_overview/
-  1_base_protection_areas/
-  2_technology_wind/
-  2_technology_solar/
-  2_technology_wasser/
-  3_qgis_projects/
-  3_maps/
-```
+Die finalen Ausgaben werden unter `data/processed/` erzeugt.
 
-Die finalen QGIS-Projekte und PDF-Karten liegen in:
+Wichtige Ergebnisordner sind:
 
 ```text
-data/processed/3_qgis_projects/
 data/processed/3_maps/
+data/processed/3_qgis_projects/
 ```
+Die PDF-Karten liegen in `3_maps`, die QGIS-Projekte in `3_qgis_projects`.
 
-## Troubleshooting
-
-Wenn `python3` nicht gefunden wird:
-
-```bash
-sudo apt update
-sudo apt install python3 python3-venv python3-pip
-```
-
-Wenn `qgis` oder `from qgis.core import QgsApplication` nicht funktioniert:
-
-```bash
-sudo apt update
-sudo apt install qgis python3-qgis
-```
-
-Wenn PowerShell Befehle wie `source .venv-wsl/bin/activate` nicht erkennt,
-läuft der Befehl wahrscheinlich außerhalb von WSL. Dann zuerst WSL starten:
-
-```powershell
-wsl -d Ubuntu
-```
+Weitere Informationen zur vollständigen Ausgabe- und Ordnerstruktur stehen in der MkDocs-Dokumentation.
