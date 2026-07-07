@@ -1,4 +1,4 @@
-# Arbeitsabteilung
+# Arbeitsaufteilung
 
 |Aufgabe|Bearbeiter|
 | --- | --- |

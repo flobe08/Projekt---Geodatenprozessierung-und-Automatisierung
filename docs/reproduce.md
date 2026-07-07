@@ -32,13 +32,17 @@ Nach erfolgreicher Ausführung werden die Ergebnisse unter `data/processed/` ges
 Wichtige Ausgabeordner sind:
 
 ```text
-data/processed/1_base_boundaries/
-data/processed/1_base_protection_areas/
-data/processed/2_technology_wind/
-data/processed/2_technology_solar/
-data/processed/2_technology_wasser/
-data/processed/3_qgis_projects/
-data/processed/3_maps/
+data/processed/
+  1_base_boundaries/
+  1_base_landuse/
+  1_base_osm_streets/
+  1_base_overview/
+  1_base_protection_areas/
+  2_technology_wind/
+  2_technology_solar/
+  2_technology_wasser/
+  3_qgis_projects/
+  3_maps/
 ```
 Die finale Karte liegt im Ordner:
 ```text

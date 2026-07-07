@@ -29,7 +29,10 @@ cd "/mnt/c/Users/elena/Desktop/Uni/Semester 6/Geodaten/Projekt---Geodatenprozess
 ## 3. Virtuelle Python-Umgebung erstellen
 
 ```bash
-cd "/mnt/c/Users/elena/Desktop/Uni/Semester 6/Geodaten/Projekt---Geodatenprozessierung-und-Automatisierung"
+python3 -m venv .venv-wsl
+source .venv-wsl/bin/activate
+pip install -r requirements.txt
+deactivate
 ```
 Die virtuelle Umgebung wird für die allgemeine Datenverarbeitung verwendet. Die QGIS-basierten Schritte werden mit dem systemweiten Python ausgeführt, da nur dort das Modul `qgis` verfügbar ist.
 
