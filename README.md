@@ -163,43 +163,9 @@ Hinweis: Der erste vollständige Durchlauf kann deutlich länger dauern, weil
 mehrere große Bayern-Datensätze geladen und verarbeitet werden. Vor allem die
 amtliche Landnutzung wird lokal als großer Datensatz vorgehalten.
 
-### Ausführung über die beiden Einstiegsskripte
-
-Alternativ können Datenvorbereitung und Kartenerzeugung getrennt gestartet
-werden.
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data.py --municipality <gemeinde> --technology <technologie>
-deactivate
-python3 scripts/3_generate_map.py --municipality <gemeinde> --technology <technologie>
-```
-
-Parameter:
-
-| Parameter | Bedeutung | Mögliche Werte |
-| --- | --- | --- |
-| `<gemeinde>` | Name der zu verarbeitenden Gemeinde | z. B. `Drachselsried`, `Bodenmais`, `München` |
-| `<technologie>` | Technologie-Workflow | `wind`, `solar`, `wasser` |
-
-Beispiel:
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind
-deactivate
-python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
-```
-
-Wenn bereits erzeugte Zwischenergebnisse wiederverwendet werden sollen, kann
-die Datenvorbereitung mit `--skip-existing` gestartet werden:
-
-```bash
-source .venv-wsl/bin/activate
-python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind --skip-existing
-deactivate
-python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
-```
+Weitere Ausführungsvarianten, zum Beispiel die getrennte Ausführung von
+Datenvorbereitung und Kartenerzeugung, sind in der MkDocs-Dokumentation
+beschrieben.
 
 ---
 

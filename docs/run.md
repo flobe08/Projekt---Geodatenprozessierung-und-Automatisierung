@@ -36,3 +36,35 @@ Die Pipeline kann auch für eine andere bayerische Gemeinde gestartet werden:
 bash run_workflow.sh München wasser
 ```
 Der Gemeindename muss in den verwendeten Verwaltungsgrenzen enthalten sein.
+
+
+### Ausführung über die beiden Einstiegsskripte
+
+Alternativ können Datenvorbereitung und Kartenerzeugung getrennt gestartet werden. 
+Diese Variante ist hilfreich, wenn beide Schritte separat geprüft werden sollen.
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality <Gemeinde> --technology <Technologie>
+deactivate
+python3 scripts/3_generate_map.py --municipality <Gemeinde> --technology <Technologie>
+```
+
+Beispiel:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
+
+Wenn bereits erzeugte Zwischenergebnisse wiederverwendet werden sollen, kann
+die Datenvorbereitung mit `--skip-existing` gestartet werden:
+
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind --skip-existing
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
