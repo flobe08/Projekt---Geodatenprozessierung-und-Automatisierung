@@ -57,15 +57,7 @@ Eine korrekte Ausgabe enthält:
 i/lf    w/lf    attr/text eol=lf
 ```
 
-Falls bei der Arbeitsdatei `w/crlf` angezeigt wird, können die Zeilenenden mit
-`dos2unix` korrigiert werden:
-
-```bash
-sudo apt install dos2unix
-dos2unix run_workflow.sh
-```
-
-Alternativ ohne zusätzliche Installation:
+Falls bei der Arbeitsdatei `w/crlf` angezeigt wird, müssen die Zeilenenden in WSL/Linux korrigiert werden:
 
 ```bash
 sed -i 's/\r$//' run_workflow.sh
