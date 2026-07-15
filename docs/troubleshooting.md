@@ -43,15 +43,38 @@ Wenn `pip` nicht gefunden wird:
 sudo apt install python3-pip
 ```
 
-Wenn `set: pipefail: invalid option name` erscheint, enthält das Startskript wahrscheinlich Windows-Zeilenenden:
+Wenn `set: pipefail: invalid option name` erscheint, enthält das Startskript wahrscheinlich Windows-Zeilenenden (CRLF).
+
+Zeilenenden prüfen:
+
 ```bash
-sudo apt install dos2unix
-dos2unix run_workflow.sh
+git ls-files --eol run_workflow.sh
 ```
-Alternativ:
+
+Eine korrekte Ausgabe enthält:
+
+```text
+i/lf    w/lf    attr/text eol=lf
+```
+
+Falls bei der Arbeitsdatei `w/crlf` angezeigt wird, müssen die Zeilenenden in WSL/Linux korrigiert werden:
+
 ```bash
 sed -i 's/\r$//' run_workflow.sh
 ```
+
+Anschließend erneut prüfen:
+
+```bash
+git ls-files --eol run_workflow.sh
+```
+
+Danach kann der Workflow erneut gestartet werden:
+
+```bash
+bash run_workflow.sh Drachselsried wind
+```
+
 Wenn `ModuleNotFoundError: No module named 'qgis'` während der Kartenerstellung erscheint, wird der QGIS-Schritt wahrscheinlich innerhalb der virtuellen Umgebung ausgeführt. Dann die Umgebung verlassen und den Kartenschritt mit dem System-Python starten:
 Beispiel Wasser:
 ```bash
@@ -73,3 +96,22 @@ rm -rf data/processed/3_maps/*wasser*
 rm -rf data/processed/3_qgis_projects/*wasser*
 bash run_workflow.sh Drachselsried wasser
 ```
+
+---
+
+### Overpass-Timeout beim OSM-Download
+
+Wenn beim Schritt `Download OSM network data` ein Fehler wie `Read timed out`, `Overpass endpoint failed` oder `Could not download OSM network data` erscheint, konnte der Overpass-Server die OSM-Abfrage nicht rechtzeitig beantworten.
+Das ist meistens ein temporäres Problem des externen Dienstes und kein Fehler im Code. In diesem Fall kann der Workflow später erneut gestartet werden:
+
+```bash
+bash run_workflow.sh Drachselsried wind
+```
+Wenn bereits Zwischenergebnisse erzeugt wurden, kann die Datenvorbereitung mit vorhandenen Outputs fortgesetzt werden:
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind --skip-existing
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
+Bei großen Gemeinden kann die Abfrage länger dauern oder häufiger fehlschlagen. In diesem Fall sollte der Workflow zu einem späteren Zeitpunkt erneut ausgeführt werden.
