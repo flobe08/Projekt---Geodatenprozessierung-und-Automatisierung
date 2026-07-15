@@ -73,3 +73,22 @@ rm -rf data/processed/3_maps/*wasser*
 rm -rf data/processed/3_qgis_projects/*wasser*
 bash run_workflow.sh Drachselsried wasser
 ```
+
+---
+
+### Overpass-Timeout beim OSM-Download
+
+Wenn beim Schritt `Download OSM network data` ein Fehler wie `Read timed out`, `Overpass endpoint failed` oder `Could not download OSM network data` erscheint, konnte der Overpass-Server die OSM-Abfrage nicht rechtzeitig beantworten.
+Das ist meistens ein temporäres Problem des externen Dienstes und kein Fehler im Code. In diesem Fall kann der Workflow später erneut gestartet werden:
+
+```bash
+bash run_workflow.sh Drachselsried wind
+```
+Wenn bereits Zwischenergebnisse erzeugt wurden, kann die Datenvorbereitung mit vorhandenen Outputs fortgesetzt werden:
+```bash
+source .venv-wsl/bin/activate
+python3 scripts/1_prepare_data.py --municipality Drachselsried --technology wind --skip-existing
+deactivate
+python3 scripts/3_generate_map.py --municipality Drachselsried --technology wind
+```
+Bei großen Gemeinden kann die Abfrage länger dauern oder häufiger fehlschlagen. In diesem Fall sollte der Workflow zu einem späteren Zeitpunkt erneut ausgeführt werden.
