@@ -43,15 +43,46 @@ Wenn `pip` nicht gefunden wird:
 sudo apt install python3-pip
 ```
 
-Wenn `set: pipefail: invalid option name` erscheint, enthält das Startskript wahrscheinlich Windows-Zeilenenden:
+Wenn `set: pipefail: invalid option name` erscheint, enthält das Startskript wahrscheinlich Windows-Zeilenenden (CRLF).
+
+Zeilenenden prüfen:
+
+```bash
+git ls-files --eol run_workflow.sh
+```
+
+Eine korrekte Ausgabe enthält:
+
+```text
+i/lf    w/lf    attr/text eol=lf
+```
+
+Falls bei der Arbeitsdatei `w/crlf` angezeigt wird, können die Zeilenenden mit
+`dos2unix` korrigiert werden:
+
 ```bash
 sudo apt install dos2unix
 dos2unix run_workflow.sh
 ```
-Alternativ:
+
+Alternativ ohne zusätzliche Installation:
+
 ```bash
 sed -i 's/\r$//' run_workflow.sh
 ```
+
+Anschließend erneut prüfen:
+
+```bash
+git ls-files --eol run_workflow.sh
+```
+
+Danach kann der Workflow erneut gestartet werden:
+
+```bash
+bash run_workflow.sh Drachselsried wind
+```
+
 Wenn `ModuleNotFoundError: No module named 'qgis'` während der Kartenerstellung erscheint, wird der QGIS-Schritt wahrscheinlich innerhalb der virtuellen Umgebung ausgeführt. Dann die Umgebung verlassen und den Kartenschritt mit dem System-Python starten:
 Beispiel Wasser:
 ```bash
